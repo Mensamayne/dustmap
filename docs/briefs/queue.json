@@ -255,10 +255,13 @@
         "DUST-20"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-15T19:46:08.845Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T21:46:14.662Z",
+      "gitProofSha": "2fe60915bdd81a8e408bfd9f05e7f4071c463efb",
+      "closureNotes": "30 par: >=0.85 6/8 real, 0.82-0.85 4/6; tokeny nie widza wiekszosci; CPU 1.3-2.1 fn/s, cache 0.08s; decyzja w DUST-05"
     },
     {
       "id": "DUST-16",
@@ -272,10 +275,10 @@
         "DUST-20"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T22:02:37.464Z",
+      "startedBy": "agent"
     },
     {
       "id": "DUST-17",

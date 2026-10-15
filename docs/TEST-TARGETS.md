@@ -54,7 +54,15 @@ Od DUST-10: `dustmap scan` na tym repo, wynik w `.tmp/targets/self/`. Własny br
 | Tryb | Komenda (DUST-16) | Do czego |
 |------|-------------------|----------|
 | **live** | `npm run target -- monorepo-a` | szybki rzut oka po zmianie; dysk celu taki, jaki jest teraz |
-| **snapshot** | `npm run target -- monorepo-a --snapshot <sha>` | pomiary jakości i zbiór prawdy; `git archive <sha>` z celu do `.tmp/targets/monorepo-a@<sha>/` (tylko odczyt celu), wynik powtarzalny |
+| **snapshot** | `npm run target -- monorepo-a --snapshot <sha>` | pomiary jakości i zbiór prawdy; `git archive <sha>` z celu (tylko pliki kodu i `package.json` / `tsconfig` / `.gitignore` / `.gitattributes`) do `.tmp/targets/monorepo-a@<sha12>/src/`, tam świeże `git init` — reguły ignorowania i atrybuty działają jak w oryginale; pierwszy raz ~20 s, potem z pamięci |
+| **ad hoc** | `npm run target -- --path <katalog> [--label x]` | dowolne repo bez wpisu w rejestrze |
+
+Wynik każdego przebiegu: `.tmp/targets/<etykieta>/inventory.json` (pliki per rola, pominięte z powodem, punkty wejścia, czasy) i — gdy są wykrywacze — `out/report.json`.
+
+| Komenda | Co robi |
+|---------|---------|
+| `npm run target:compare -- monorepo-a` | raport przypiętej migawki vs zbiór prawdy; czerwone przy naruszeniu zakazu, spadku trafności, raporcie z innego commita |
+| `npm run verify:targets` | migawka + porównanie dla każdego celu ze zbiorem prawdy; brak celu = czerwone (kod 2), nigdy udawane zielone |
 
 ## Zbiór prawdy i pomiar trafności
 
@@ -62,6 +70,10 @@ Od DUST-10: `dustmap scan` na tym repo, wynik w `.tmp/targets/self/`. Własny br
 
 - **trafność wysokiej pewności** = ile znalezisk `high` z próbki to `real` — bramka: nie spada między wersjami,
 - **twarde zakazy** (np. „żadna `page.tsx` jako martwa `high`”) — bramka: zero naruszeń.
+
+Przypięte commity: `monorepo-a` → `dbe35aa00cd6`, `service-b` → `0c0aa958e6b3` (pole `sha` w plikach zbioru prawdy). Nowy commit = nowa migawka i ponowny przegląd werdyktów, nie cicha podmiana.
+
+Stan 16.10.2026: zbiór prawdy ma tylko zakazy — wykrywacze jeszcze nie istnieją. 30 par ocenionych w pomiarze embeddingów ([experiments/embedding-spike.md](experiments/embedding-spike.md)) trafia tu jako werdykty, gdy DUST-05 nada im odciski.
 
 ## Raportowanie przy zamknięciu briefu
 

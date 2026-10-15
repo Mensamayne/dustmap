@@ -16,7 +16,7 @@ Zaraz po pierwszym wykrywaczu (martwy kod, DUST-03) człowiek i agent mogą uruc
 
 ### Step 2 — Uruchomienie z repo i na celach
 
-- **Plik:** `package.json`, `tools/targets/run.mjs`
+- **Plik:** `package.json`, `tools/targets/run.mts`
 - **Zmiana:** `npm run dustmap -- …` z root tego repo; runner celów (DUST-16) woła tę komendę zamiast rdzenia bezpośrednio.
 - **Done when:** `npm run dustmap -- scan ../service-b --out .tmp/targets/service-b` + `summary` działa.
 
@@ -27,7 +27,7 @@ Zaraz po pierwszym wykrywaczu (martwy kod, DUST-03) człowiek i agent mogą uruc
 
 ## Pliki (scope)
 
-- `packages/cli/**`, `package.json`, `package-lock.json`, `tools/targets/run.mjs`
+- `packages/cli/**`, `package.json`, `package-lock.json`, `tools/targets/run.mts`
 
 ## Weryfikacja
 

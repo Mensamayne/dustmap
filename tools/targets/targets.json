@@ -1,0 +1,20 @@
+{
+  "notes": "Real repos for measuring Dustmap. Read-only: output goes to .tmp/targets/<target>/. Paths are relative to this repo; override with the env var on another machine. See docs/TEST-TARGETS.md.",
+  "targets": {
+    "monorepo-a": {
+      "path": "../monorepo-a",
+      "env": "DUSTMAP_TARGET_MONOREPO_A",
+      "config": "tools/targets/monorepo-a.dustmap.config.json"
+    },
+    "service-b": {
+      "path": "../service-b",
+      "env": "DUSTMAP_TARGET_SERVICE_B",
+      "config": "tools/targets/service-b.dustmap.config.json"
+    },
+    "self": {
+      "path": ".",
+      "env": "DUSTMAP_TARGET_SELF",
+      "config": null
+    }
+  }
+}
