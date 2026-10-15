@@ -23,6 +23,7 @@ export type {
 export { fingerprint, normalizeSnippet } from "./fingerprint.js";
 
 export {
+  CacheStats,
   CategoryCounts,
   REPORT_SCHEMA_ID,
   Report,
@@ -33,6 +34,7 @@ export {
   TopPlace,
 } from "./report.js";
 export type {
+  CacheStats as CacheStatsType,
   CategoryCounts as CategoryCountsType,
   Report as ReportType,
   ReportSummary as ReportSummaryType,

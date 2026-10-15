@@ -12,9 +12,19 @@ export const ScanTool = z
   .object({
     name: z.string().min(1),
     version: z.string().min(1),
+    /** Set when the adapter threw; other adapters still contribute findings. */
+    error: z.string().min(1).optional(),
   })
   .strict();
 export type ScanTool = z.infer<typeof ScanTool>;
+
+export const CacheStats = z
+  .object({
+    hits: z.number().int().nonnegative(),
+    misses: z.number().int().nonnegative(),
+  })
+  .strict();
+export type CacheStats = z.infer<typeof CacheStats>;
 
 export const ScanMeta = z
   .object({
@@ -23,6 +33,7 @@ export const ScanMeta = z
     baseRef: z.string().min(1).optional(),
     startedAt: z.string().datetime({ offset: true }),
     tools: z.array(ScanTool).min(1),
+    cache: CacheStats.optional(),
   })
   .strict();
 export type ScanMeta = z.infer<typeof ScanMeta>;

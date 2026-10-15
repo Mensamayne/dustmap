@@ -1,0 +1,7 @@
+{
+  "name": "@fixture/cli",
+  "private": true,
+  "bin": {
+    "fix-cli": "./bin/cli.js"
+  }
+}
