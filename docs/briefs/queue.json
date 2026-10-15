@@ -352,10 +352,13 @@
         "BUG-01"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-15T21:17:12.307Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T21:20:55.772Z",
+      "gitProofSha": "64e547176be479721a6c81b958d62301b2b3ac99",
+      "closureNotes": "Monorepo-A: 7647 source / 3207 test / 53 generated+minified+vendored+oversized (~10MB); skan 4.4s; Service-B 117 source / 36 test"
     }
   ]
 }

@@ -8,7 +8,7 @@ Raport pokazuje „te 5 funkcji robi praktycznie to samo”, także gdy są napi
 
 ## Read first
 
-1. **[docs/experiments/embedding-spike.md](../experiments/embedding-spike.md) (DUST-15)** — wynik pomiaru na Monorepo-A: domyślnie włączone czy nie, model, próg. Ten brief realizuje tamtą decyzję.
+1. **[docs/experiments/embedding-spike.md](../experiments/embedding-spike.md) (DUST-15)** — **decyzja (15.10.2026):** domyślnie włączone, model `jina-embeddings-v2-base-code`, próg w języku 0.82 (≥ 0.85 → medium, 0.82–0.85 → low), grupowanie po parze plików i po funkcji, pierwszy pełny przebieg jako budowanie indeksu w tle, `diff` liczy tylko zmienione funkcje, opcja `semantic.provider: http`. Ten brief realizuje tamtą decyzję (sekcja „Decyzja dla DUST-05”).
 2. jscpd `--semantic` (eksperymentalne od 5.3) — sprawdź aktualny stan flag w README jscpd przed kodem
 
 ## Plan
