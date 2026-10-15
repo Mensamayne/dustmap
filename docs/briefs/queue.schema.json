@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dustmap.dev/schemas/queue.schema.json",
+  "title": "Agent continue queue",
+  "type": "object",
+  "required": ["version", "tasks"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "notes": { "type": "string" },
+    "tasks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/task" }
+    }
+  },
+  "$defs": {
+    "taskStatus": {
+      "type": "string",
+      "enum": ["todo", "in_progress", "done", "blocked", "cancelled"]
+    },
+    "taskKind": {
+      "type": "string",
+      "enum": ["feature", "bug"]
+    },
+    "bugSeverity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low"]
+    },
+    "task": {
+      "type": "object",
+      "required": ["id", "title", "layer", "segment", "brief", "gates", "status", "kind"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "layer": { "type": "integer" },
+        "segment": { "type": "string", "minLength": 1 },
+        "brief": { "type": "string", "minLength": 1 },
+        "gates": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "status": { "$ref": "#/$defs/taskStatus" },
+        "kind": { "$ref": "#/$defs/taskKind" },
+        "severity": { "$ref": "#/$defs/bugSeverity" },
+        "source": { "type": "string" },
+        "reportedAt": { "type": ["string", "null"] },
+        "startedAt": { "type": ["string", "null"] },
+        "startedBy": { "type": ["string", "null"] },
+        "note": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "bug" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["severity"]
+          }
+        }
+      ]
+    }
+  }
+}

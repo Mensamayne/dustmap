@@ -1,0 +1,300 @@
+{
+  "version": 1,
+  "notes": "Kolejka zadań agenta. Statusy tylko tutaj. Zamknięcie wymaga commita Fixes {ID} (TKR).",
+  "tasks": [
+    {
+      "id": "DUST-00",
+      "title": "Overview + szkielet repo",
+      "layer": 0,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-00-overview.md",
+      "gates": [],
+      "epic": "DUST",
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-15T19:24:57.549Z",
+      "startedBy": "agent"
+    },
+    {
+      "id": "DUST-01",
+      "title": "Kontrakt raportu v1 (znalezisko, fingerprint, decyzje, SARIF)",
+      "layer": 1,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-01-report-contract.md",
+      "gates": [
+        "DUST-00"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-02",
+      "title": "Rdzeń: konfiguracja, init, tryby full/diff, cache",
+      "layer": 2,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-02-core-config-scan-modes.md",
+      "gates": [
+        "DUST-01"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-03",
+      "title": "Adapter Knip (martwy kod)",
+      "layer": 3,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-03-adapter-knip.md",
+      "gates": [
+        "DUST-02",
+        "DUST-16"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-04",
+      "title": "Adapter jscpd (kopiuj-wklej, klastry)",
+      "layer": 4,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-04-adapter-jscpd.md",
+      "gates": [
+        "DUST-02",
+        "DUST-16"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-05",
+      "title": "Podobieństwo po sensie (embeddingi)",
+      "layer": 5,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-05-semantic-similarity.md",
+      "gates": [
+        "DUST-04",
+        "DUST-15"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-06",
+      "title": "Sygnały makaronu w kodzie",
+      "layer": 6,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-06-code-signals.md",
+      "gates": [
+        "DUST-02",
+        "DUST-16"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-07",
+      "title": "Sygnały z historii git",
+      "layer": 7,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-07-git-history-signals.md",
+      "gates": [
+        "DUST-06"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-08",
+      "title": "Sygnały struktury (graf importów)",
+      "layer": 8,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-08-structure-signals.md",
+      "gates": [
+        "DUST-02",
+        "DUST-16"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-09",
+      "title": "Ranking miejsc, decyzje, zapadka",
+      "layer": 9,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-09-ranking-decisions-ratchet.md",
+      "gates": [
+        "DUST-03",
+        "DUST-05",
+        "DUST-07",
+        "DUST-08"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-10",
+      "title": "CLI dustmap + eksport markdown/SARIF",
+      "layer": 10,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-10-cli.md",
+      "gates": [
+        "DUST-09"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-11",
+      "title": "Serwer MCP",
+      "layer": 11,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-11-mcp.md",
+      "gates": [
+        "DUST-10"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-12",
+      "title": "GitHub Action + izolacja + obce repo",
+      "layer": 12,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-12-github-action-portability.md",
+      "gates": [
+        "DUST-10"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-13",
+      "title": "Wtyczka: znaleziska → briefy w kolejce",
+      "layer": 13,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-13-briefs-sink.md",
+      "gates": [
+        "DUST-11",
+        "DUST-12"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-14",
+      "title": "Opcjonalny sędzia LLM (domyślnie wyłączony)",
+      "layer": 14,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-14-llm-judge.md",
+      "gates": [
+        "DUST-09"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-15",
+      "title": "Pomiar embeddingów na Monorepo-A",
+      "layer": 15,
+      "segment": "research",
+      "brief": "docs/briefs/DUST-15-embedding-spike.md",
+      "gates": [
+        "DUST-00"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-16",
+      "title": "Cele testowe: Monorepo-A / Service-B / self + zbiór prawdy",
+      "layer": 16,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-16-test-targets.md",
+      "gates": [
+        "DUST-02"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-17",
+      "title": "Agent wpięty: playbook, init --agent, dustmap_guide",
+      "layer": 17,
+      "segment": "agent",
+      "brief": "docs/briefs/DUST-17-agent-playbook.md",
+      "gates": [
+        "DUST-11",
+        "DUST-13"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-18",
+      "title": "Próba prawdziwego agenta na Monorepo-A",
+      "layer": 18,
+      "segment": "agent",
+      "brief": "docs/briefs/DUST-18-agent-dogfood.md",
+      "gates": [
+        "DUST-16",
+        "DUST-17"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    }
+  ]
+}

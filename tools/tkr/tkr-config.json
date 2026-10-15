@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "enabled": true,
+  "queuePath": "docs/briefs/queue.json",
+  "historyPath": "docs/briefs/history.json",
+  "commitPatterns": [
+    "Fixes {id}",
+    "Closes {id}",
+    "Fix {id}",
+    "Resolves {id}",
+    "TKR-{id}"
+  ],
+  "requireGitProofOnClose": true,
+  "requireGitProofForGates": false,
+  "requireCleanWorktreeOnNext": false,
+  "logScanLimit": 8000,
+  "exemptTaskIds": [],
+  "notes": "TKR: zadanie jest done tylko z commitem Fixes {ID}. Skopiowane z monorepo Monorepo-A (tools/tkr/install.mjs)."
+}
