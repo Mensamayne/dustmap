@@ -29,3 +29,10 @@ export {
   RemoteEmbeddingsForbiddenError,
 } from "./semantic/index.js";
 export type { EmbeddingProvider, SemanticRunResult } from "./semantic/index.js";
+export {
+  codeSignalsAdapter,
+  runCodeSignals,
+  collectFileMetrics,
+  findingIsPrescriptionFree,
+} from "./signals/code/index.js";
+

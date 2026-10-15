@@ -103,10 +103,13 @@
         "DUST-15"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-15T23:22:28.180Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T23:35:06.209Z",
+      "gitProofSha": "3cfa874a9dd1dc6b0eba5aeae22e6244b699b907",
+      "closureNotes": "semantic: service-b 5 clusters in 141s (e.g. ‹private› ‹private› 0.87 medium — real parallel stores; ‹private› ‹private› 0.83 low). monorepo-a semantic off in target config (cost). Remote HTTP blocked without allowRemote."
     },
     {
       "id": "DUST-06",
@@ -119,10 +122,10 @@
         "DUST-16"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T23:44:39.188Z",
+      "startedBy": "agent"
     },
     {
       "id": "DUST-07",

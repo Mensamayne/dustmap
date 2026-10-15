@@ -6,9 +6,10 @@
  */
 import type { Adapter } from "../adapter.js";
 import { semanticAdapter } from "../semantic/index.js";
+import { codeSignalsAdapter } from "../signals/code/index.js";
 import { jscpdAdapter } from "./jscpd/index.js";
 import { knipAdapter } from "./knip/index.js";
 
 export function builtinAdapters(): Adapter[] {
-  return [knipAdapter(), jscpdAdapter(), semanticAdapter()];
+  return [knipAdapter(), jscpdAdapter(), semanticAdapter(), codeSignalsAdapter()];
 }
