@@ -28,6 +28,7 @@ Raport grupuje fragmenty skopiowane dosłownie (po tokenach) w klastry: „ten b
 
 ## Constraints
 
+- Pliki wejściowe z ról (DUST-20): domyślnie `filesWithRole("source")`; nigdy `generated` / `vendored` / `minified` / `oversized`
 - Zero wiedzy o konkretnym projekcie użytkownika w kodzie paczek
 
 ## Pliki (scope)

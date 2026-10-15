@@ -251,7 +251,8 @@
       "segment": "research",
       "brief": "docs/briefs/DUST-15-embedding-spike.md",
       "gates": [
-        "DUST-00"
+        "DUST-00",
+        "DUST-20"
       ],
       "epic": "DUST",
       "status": "in_progress",
@@ -267,7 +268,8 @@
       "brief": "docs/briefs/DUST-16-test-targets.md",
       "gates": [
         "DUST-02",
-        "BUG-01"
+        "BUG-01",
+        "DUST-20"
       ],
       "epic": "DUST",
       "status": "todo",
@@ -315,12 +317,15 @@
       "brief": "docs/briefs/BUG-01-scan-real-repo-junk.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "high",
       "source": "pomiar Monorepo-A 2026-10-15",
       "startedAt": "2026-10-15T20:41:37.815Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T20:50:32.753Z",
+      "gitProofSha": "5a1927af7f77e8557c653d39b7812528ca54d8bb",
+      "closureNotes": "Monorepo-A: 32587->10973 plikow, skan 96s->6s, detect 172s->0.5s; 0 wejsc z dist/node_modules; 6 nierozwiazanych (skrypty wskazujace nieistniejace pliki)"
     },
     {
       "id": "DUST-19",
@@ -336,6 +341,21 @@
       "kind": "feature",
       "startedAt": null,
       "startedBy": null
+    },
+    {
+      "id": "DUST-20",
+      "title": "Rola każdego pliku: co jest naprawdę kodem",
+      "layer": 20,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-20-file-roles.md",
+      "gates": [
+        "BUG-01"
+      ],
+      "epic": "DUST",
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-15T21:17:12.307Z",
+      "startedBy": "agent"
     }
   ]
 }

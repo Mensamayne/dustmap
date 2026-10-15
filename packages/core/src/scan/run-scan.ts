@@ -1,12 +1,15 @@
 /**
- * Orchestrate full/diff scans: collect files, run adapters with cache, write report.json under outputDir only.
+ * Orchestrate full/diff scans: collect files, classify their roles (DUST-20), run adapters with cache,
+ * write report.json under outputDir only.
  */
 import { mkdirSync, readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import {
+  FileRole,
   Finding,
   REPORT_SCHEMA_ID,
   Report,
+  type FileRoleType,
   type FindingCategoryType,
   type FindingType,
   type ReportType,
@@ -17,6 +20,7 @@ import { loadConfig, resolveOutputDir, type LoadConfigResult } from "../config/l
 import type { DustmapConfig } from "../config/schema.js";
 import { toPosix } from "../posix.js";
 import { openAdapterCache } from "./cache.js";
+import { classifyFile, linguistAttributes, pathClassifier } from "./classify.js";
 import { collectFiles, filterExisting } from "./collect-files.js";
 import { gitDiffNameOnly, gitHead } from "./git.js";
 import { expandImportNeighbors } from "./import-neighbors.js";
@@ -100,15 +104,36 @@ export function snapshotRepoPaths(repoRoot: string): string[] {
   return [...listRepoFiles(repoRoot)].sort();
 }
 
-async function loadContents(
-  repoRoot: string,
-  files: readonly string[],
-): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+type LoadedFiles = {
+  /** Text of every file that was read (all but `oversized`). */
+  contents: Map<string, string>;
+  /** Cache key material per file: its text, or size+mtime for files never read. */
+  cacheKeys: Map<string, string>;
+  roles: Map<string, FileRoleType>;
+  byRole: Record<FileRoleType, number>;
+};
+
+function classifyAndLoad(repoRoot: string, files: readonly string[], config: DustmapConfig): LoadedFiles {
+  const contents = new Map<string, string>();
+  const cacheKeys = new Map<string, string>();
+  const roles = new Map<string, FileRoleType>();
+  const byRole = Object.fromEntries(FileRole.options.map((r) => [r, 0])) as Record<FileRoleType, number>;
+  const attrs = linguistAttributes(repoRoot, files);
+  const byPath = pathClassifier(config.classify);
+
   for (const f of files) {
-    map.set(f, readFileSync(path.join(repoRoot, f), "utf8"));
+    const abs = path.join(repoRoot, f);
+    const st = statSync(abs);
+    let text: string | undefined;
+    const readText = () => (text ??= readFileSync(abs, "utf8"));
+    const { role } = classifyFile(f, st.size, readText, config.classify, attrs, byPath);
+    if (role !== "oversized") readText();
+    if (text !== undefined) contents.set(f, text);
+    cacheKeys.set(f, text ?? `\0unread size=${st.size} mtime=${st.mtimeMs}`);
+    roles.set(f, role);
+    byRole[role] += 1;
   }
-  return map;
+  return { contents, cacheKeys, roles, byRole };
 }
 
 export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
@@ -134,7 +159,8 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
     files = filterExisting(repoRoot, expandImportNeighbors(repoRoot, existing), config);
   }
 
-  const contents = await loadContents(repoRoot, files);
+  const { contents, cacheKeys, roles, byRole } = classifyAndLoad(repoRoot, files, config);
+  const filesWithRole = (...wanted: FileRoleType[]) => files.filter((f) => wanted.includes(roles.get(f)!));
   const readFile = async (rel: string) => {
     const hit = contents.get(rel);
     if (hit !== undefined) return hit;
@@ -159,7 +185,7 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
   for (const adapter of enabledAdapters) {
     const version = adapter.version();
     const cache = openAdapterCache(outputDir, adapter.name, version);
-    const cached = cache.tryGet(files, contents);
+    const cached = cache.tryGet(files, cacheKeys);
     if (cached) {
       cacheHits += cache.stats.hits;
       findings.push(...cached);
@@ -172,12 +198,14 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
       const produced = await adapter.run({
         repoRoot,
         files,
+        roles,
+        filesWithRole,
         config,
         mode: opts.mode,
         readFile,
       });
       const parsed = Finding.array().parse(produced);
-      cache.put(files, contents, parsed);
+      cache.put(files, cacheKeys, parsed);
       findings.push(...parsed);
       tools.push({ name: adapter.name, version });
     } catch (err) {
@@ -200,6 +228,7 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
       startedAt: new Date().toISOString(),
       tools,
       cache: { hits: cacheHits, misses: cacheMisses },
+      files: { total: files.length, byRole },
     },
     summary: summarize(unique),
     findings: unique,

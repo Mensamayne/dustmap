@@ -21,3 +21,4 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | DUST-18 | Próba prawdziwego agenta na Monorepo-A |
 | DUST-19 | Pierwsza komenda: dustmap scan + summary (zaraz po DUST-03) |
 | BUG-01 | Skan bierze pliki ignorowane przez git; punkty wejścia z dist/ |
+| DUST-20 | Rola każdego pliku: co jest naprawdę kodem |

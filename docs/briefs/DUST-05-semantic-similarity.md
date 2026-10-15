@@ -33,6 +33,7 @@ Raport pokazuje „te 5 funkcji robi praktycznie to samo”, także gdy są napi
 
 ## Constraints
 
+- Pliki wejściowe z ról (DUST-20): domyślnie `filesWithRole("source")`; nigdy `generated` / `vendored` / `minified` / `oversized`
 - Brak sieci domyślnie; zero wysyłki kodu bez jawnej zgody w configu
 - Zero wiedzy o konkretnym projekcie użytkownika w kodzie paczek
 

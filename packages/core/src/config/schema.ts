@@ -26,6 +26,19 @@ export const SemanticConfig = z
   .strict();
 export type SemanticConfig = z.infer<typeof SemanticConfig>;
 
+/** Extra role globs for what generic rules cannot know; generic rules still apply to everything else. */
+export const ClassifyConfig = z
+  .object({
+    /** Files larger than this are `oversized` and never read. */
+    maxFileBytes: z.number().int().positive().default(300_000),
+    generated: z.array(z.string().min(1)).default([]),
+    vendored: z.array(z.string().min(1)).default([]),
+    test: z.array(z.string().min(1)).default([]),
+    fixture: z.array(z.string().min(1)).default([]),
+  })
+  .strict();
+export type ClassifyConfig = z.infer<typeof ClassifyConfig>;
+
 export const DustmapConfig = z
   .object({
     include: z.array(z.string().min(1)).default([
@@ -42,6 +55,7 @@ export const DustmapConfig = z
     layers: z.array(LayerRule).default([]),
     adapters: z.record(z.string(), AdapterConfig).default({}),
     semantic: SemanticConfig.default({ provider: "none" }),
+    classify: ClassifyConfig.default({}),
     /** Relative to scanned repo, or absolute path (may lie outside the repo). */
     outputDir: z.string().min(1).default(".dustmap"),
   })

@@ -28,6 +28,7 @@ Raport wskazuje miejsca, które *wyglądają* na kandydatów do przebudowy: zawi
 
 ## Constraints
 
+- Pliki wejściowe z ról (DUST-20): domyślnie `filesWithRole("source")`; nigdy `generated` / `vendored` / `minified` / `oversized`
 - Sygnały, nie recepty
 - Zero wiedzy o konkretnym projekcie użytkownika w kodzie paczek
 

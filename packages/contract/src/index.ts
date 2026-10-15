@@ -22,6 +22,13 @@ export type {
 
 export { fingerprint, normalizeSnippet } from "./fingerprint.js";
 
+export { FileRole, FileRoleCounts, ScanFiles } from "./file-role.js";
+export type {
+  FileRole as FileRoleType,
+  FileRoleCounts as FileRoleCountsType,
+  ScanFiles as ScanFilesType,
+} from "./file-role.js";
+
 export {
   CacheStats,
   CategoryCounts,

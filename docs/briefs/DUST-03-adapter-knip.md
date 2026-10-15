@@ -28,6 +28,7 @@ Raport pokazuje nieużywane pliki, eksporty i zależności z dowodem „nikt teg
 
 ## Constraints
 
+- Pliki wejściowe z ról (DUST-20): domyślnie `filesWithRole("source")` + `test` jako punkty wejścia grafu; nigdy `generated` / `vendored` / `minified` / `oversized`
 - Adapter tylko czyta wynik Knip; żadnego `knip --fix`
 - Zero wiedzy o konkretnym projekcie użytkownika w kodzie paczek
 

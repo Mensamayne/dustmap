@@ -2,6 +2,7 @@
  * Report v1 — the single document written under outputDir and read by CLI, MCP, SARIF, sinks.
  */
 import { z } from "zod";
+import { ScanFiles } from "./file-role.js";
 import { Finding, FindingCategory } from "./finding.js";
 import { RepoRelativePath } from "./paths.js";
 
@@ -34,6 +35,8 @@ export const ScanMeta = z
     startedAt: z.string().datetime({ offset: true }),
     tools: z.array(ScanTool).min(1),
     cache: CacheStats.optional(),
+    /** What the scanned files are (source, test, generated, …). */
+    files: ScanFiles.optional(),
   })
   .strict();
 export type ScanMeta = z.infer<typeof ScanMeta>;
