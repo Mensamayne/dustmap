@@ -84,10 +84,13 @@
         "DUST-16"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-15T23:13:50.796Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T23:21:01.951Z",
+      "gitProofSha": "a4d0cbae278ee274643bfed514df4d8eac7e0905",
+      "closureNotes": "jscpd: service-b 11 duplicate / 67 dead (0.6s); monorepo-a 1874 duplicate + 4444 dead (16.5s). High clones: ‹private› x4, ‹private› ingredients steps, fix-*.mjs scripts. Zod schema clones demoted to low."
     },
     {
       "id": "DUST-05",
@@ -100,10 +103,10 @@
         "DUST-15"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T23:22:28.180Z",
+      "startedBy": "agent"
     },
     {
       "id": "DUST-06",

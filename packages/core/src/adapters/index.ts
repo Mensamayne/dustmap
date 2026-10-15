@@ -5,9 +5,10 @@
  * and callers report "no detectors" instead of running a scan.
  */
 import type { Adapter } from "../adapter.js";
+import { semanticAdapter } from "../semantic/index.js";
 import { jscpdAdapter } from "./jscpd/index.js";
 import { knipAdapter } from "./knip/index.js";
 
 export function builtinAdapters(): Adapter[] {
-  return [knipAdapter(), jscpdAdapter()];
+  return [knipAdapter(), jscpdAdapter(), semanticAdapter()];
 }

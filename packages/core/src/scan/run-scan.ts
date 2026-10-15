@@ -18,6 +18,7 @@ import type { Adapter } from "../adapter.js";
 import { loadConfig, resolveOutputDir, type LoadConfigResult } from "../config/load.js";
 import type { DustmapConfig } from "../config/schema.js";
 import { toPosix } from "../posix.js";
+import { dedupeSemanticAgainstClones } from "../semantic/dedupe-vs-clones.js";
 import { openAdapterCache } from "./cache.js";
 import { gitHead } from "./git.js";
 import { takeInventory } from "./inventory.js";
@@ -171,10 +172,10 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
     }
   }
 
-  // Dedupe by fingerprint (last wins).
+  // Dedupe by fingerprint (last wins), then drop semantic clusters already covered by token clones.
   const byFp = new Map<string, FindingType>();
   for (const f of findings) byFp.set(f.fingerprint, f);
-  const unique = [...byFp.values()];
+  const unique = dedupeSemanticAgainstClones([...byFp.values()]);
 
   const report = Report.parse({
     schema: REPORT_SCHEMA_ID,

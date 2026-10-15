@@ -18,3 +18,14 @@ export { classifyFiles, selectFiles, takeInventory } from "./scan/inventory.js";
 export type { ClassifiedFiles, Inventory } from "./scan/inventory.js";
 export { expandImportNeighbors } from "./scan/import-neighbors.js";
 export { toPosix, relativePosix } from "./posix.js";
+export {
+  semanticAdapter,
+  runSemanticAnalysis,
+  dedupeSemanticAgainstClones,
+  createEmbeddingProvider,
+  createMemoryEmbeddingProvider,
+  assertHttpProviderAllowed,
+  isLoopbackUrl,
+  RemoteEmbeddingsForbiddenError,
+} from "./semantic/index.js";
+export type { EmbeddingProvider, SemanticRunResult } from "./semantic/index.js";
