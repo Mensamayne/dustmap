@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@dustmap/contract": "*",
+    "jscpd": "^5.4.1",
     "knip": "^6.16.0",
     "minimatch": "^10.0.1",
     "typescript": "^5.8.2",

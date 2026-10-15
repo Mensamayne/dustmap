@@ -65,10 +65,13 @@
         "DUST-16"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-15T22:09:25.784Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T23:11:12.517Z",
+      "gitProofSha": "6926154a5c6d9b6464c865e71e4ccbdfd3436752",
+      "closureNotes": "Knip: service-b 67 dead-code (2.3s), monorepo-a 4444 (530s first / ~5s cache); high examples: ‹private›, ‹private› (likely real junk), ‹private› on service-b; zero forbidden page/route/layout/action highs."
     },
     {
       "id": "DUST-04",
@@ -81,10 +84,10 @@
         "DUST-16"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T23:13:50.796Z",
+      "startedBy": "agent"
     },
     {
       "id": "DUST-05",
