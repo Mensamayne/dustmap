@@ -1,23 +1,44 @@
 /**
- * Walk the scanned repo and select files matching include/exclude globs (POSIX paths).
+ * Select the scanned repo's files matching include/exclude globs (POSIX paths).
+ * Inside a git work tree the candidate list comes from git (tracked + untracked-not-ignored),
+ * so everything .gitignore hides (build caches, temp dirs, node_modules) never reaches adapters.
+ * Outside git it falls back to walking the disk with `exclude` only.
  */
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { minimatch } from "minimatch";
+import { Minimatch } from "minimatch";
 import type { DustmapConfig } from "../config/schema.js";
 import { relativePosix, toPosix } from "../posix.js";
+import { gitListFiles, isGitWorkTree } from "./git.js";
 
-function isExcluded(relPosix: string, exclude: readonly string[]): boolean {
-  return exclude.some((pattern) => minimatch(relPosix, pattern, { dot: true }));
+type Matchers = { include: Minimatch[]; exclude: Minimatch[] };
+
+function compile(config: DustmapConfig): Matchers {
+  const opts = { dot: true };
+  return {
+    include: config.include.map((p) => new Minimatch(p, opts)),
+    exclude: config.exclude.map((p) => new Minimatch(p, opts)),
+  };
 }
 
-function isIncluded(relPosix: string, include: readonly string[]): boolean {
-  return include.some((pattern) => minimatch(relPosix, pattern, { dot: true }));
+function isExcluded(relPosix: string, m: Matchers): boolean {
+  return m.exclude.some((mm) => mm.match(relPosix));
 }
 
-export function collectFiles(repoRoot: string, config: DustmapConfig): string[] {
+function isIncluded(relPosix: string, m: Matchers): boolean {
+  return m.include.some((mm) => mm.match(relPosix));
+}
+
+function isFile(abs: string): boolean {
+  try {
+    return statSync(abs).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function walkDisk(repoRoot: string, m: Matchers): string[] {
   const out: string[] = [];
-
   function walk(absDir: string): void {
     let entries;
     try {
@@ -26,21 +47,33 @@ export function collectFiles(repoRoot: string, config: DustmapConfig): string[] 
       return;
     }
     for (const ent of entries) {
+      if (ent.name === ".git") continue;
       const abs = path.join(absDir, ent.name);
       const rel = relativePosix(repoRoot, abs);
       if (rel === "" || rel.startsWith("..")) continue;
-      if (isExcluded(rel, config.exclude) || isExcluded(`${rel}/`, config.exclude)) continue;
+      if (isExcluded(rel, m) || isExcluded(`${rel}/`, m)) continue;
       if (ent.isDirectory()) {
         walk(abs);
         continue;
       }
-      if (!ent.isFile()) continue;
-      if (isIncluded(rel, config.include)) out.push(toPosix(rel));
+      if (ent.isFile() && isIncluded(rel, m)) out.push(toPosix(rel));
     }
   }
-
   walk(repoRoot);
-  return out.sort();
+  return out;
+}
+
+export function collectFiles(repoRoot: string, config: DustmapConfig): string[] {
+  const m = compile(config);
+  if (!isGitWorkTree(repoRoot)) return walkDisk(repoRoot, m).sort();
+
+  const out: string[] = [];
+  for (const rel of gitListFiles(repoRoot)) {
+    if (isExcluded(rel, m) || !isIncluded(rel, m)) continue;
+    // Tracked but deleted on disk (not yet committed) is not scannable.
+    if (isFile(path.join(repoRoot, rel))) out.push(rel);
+  }
+  return [...new Set(out)].sort();
 }
 
 export function filterExisting(
@@ -48,16 +81,12 @@ export function filterExisting(
   relPaths: readonly string[],
   config: DustmapConfig,
 ): string[] {
+  const m = compile(config);
   const out: string[] = [];
   for (const rel of relPaths) {
     const posix = toPosix(rel);
-    if (isExcluded(posix, config.exclude)) continue;
-    if (!isIncluded(posix, config.include)) continue;
-    try {
-      if (statSync(path.join(repoRoot, posix)).isFile()) out.push(posix);
-    } catch {
-      // deleted between diff and walk
-    }
+    if (isExcluded(posix, m) || !isIncluded(posix, m)) continue;
+    if (isFile(path.join(repoRoot, posix))) out.push(posix);
   }
   return [...new Set(out)].sort();
 }

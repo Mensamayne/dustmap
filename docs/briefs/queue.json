@@ -10,10 +10,13 @@
       "brief": "docs/briefs/DUST-00-overview.md",
       "gates": [],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-15T19:24:57.549Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T19:29:21.722Z",
+      "gitProofSha": "8f30e3fb2ad42f2dd6a7294c74475786961c0353",
+      "closureNotes": "Szkielet: architecture map, queue self-test, verify E2E"
     },
     {
       "id": "DUST-01",
@@ -25,10 +28,13 @@
         "DUST-00"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T19:30:18.045Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T19:34:23.944Z",
+      "gitProofSha": "5533e6ac8b26d1c638015411563351d49630e1a4",
+      "closureNotes": "Kontrakt v1: Finding/Report/Decision + fingerprint + SARIF 2.1.0 (14 testów)"
     },
     {
       "id": "DUST-02",
@@ -40,10 +46,13 @@
         "DUST-01"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T19:36:00.309Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T19:41:39.869Z",
+      "gitProofSha": "36c600e0b0a9832111750dc344f9a4586ec76a13",
+      "closureNotes": "Rdzeń: config/init/detect, full+diff, cache, adapter errors w raporcie"
     },
     {
       "id": "DUST-03",
@@ -165,7 +174,8 @@
       "segment": "core",
       "brief": "docs/briefs/DUST-10-cli.md",
       "gates": [
-        "DUST-09"
+        "DUST-09",
+        "DUST-19"
       ],
       "epic": "DUST",
       "status": "todo",
@@ -244,10 +254,10 @@
         "DUST-00"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T19:46:08.845Z",
+      "startedBy": "agent"
     },
     {
       "id": "DUST-16",
@@ -256,7 +266,8 @@
       "segment": "core",
       "brief": "docs/briefs/DUST-16-test-targets.md",
       "gates": [
-        "DUST-02"
+        "DUST-02",
+        "BUG-01"
       ],
       "epic": "DUST",
       "status": "todo",
@@ -289,6 +300,36 @@
       "gates": [
         "DUST-16",
         "DUST-17"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-01",
+      "title": "Skan czyta pliki ignorowane przez git; punkty wejścia wskazują dist/",
+      "layer": 100,
+      "segment": "core",
+      "brief": "docs/briefs/BUG-01-scan-real-repo-junk.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "in_progress",
+      "kind": "bug",
+      "severity": "high",
+      "source": "pomiar Monorepo-A 2026-10-15",
+      "startedAt": "2026-10-15T20:41:37.815Z",
+      "startedBy": "agent"
+    },
+    {
+      "id": "DUST-19",
+      "title": "Pierwsza komenda: dustmap scan + summary",
+      "layer": 19,
+      "segment": "cli",
+      "brief": "docs/briefs/DUST-19-first-cli-scan.md",
+      "gates": [
+        "DUST-03"
       ],
       "epic": "DUST",
       "status": "todo",

@@ -29,7 +29,7 @@ export type SemanticConfig = z.infer<typeof SemanticConfig>;
 export const DustmapConfig = z
   .object({
     include: z.array(z.string().min(1)).default([
-      "**/*.{ts,tsx,js,jsx,mjs,cjs}",
+      "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}",
     ]),
     exclude: z.array(z.string().min(1)).default([
       "**/node_modules/**",

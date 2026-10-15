@@ -19,3 +19,5 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | DUST-16 | Cele testowe + zbiór prawdy |
 | DUST-17 | Agent wpięty: playbook, init --agent |
 | DUST-18 | Próba prawdziwego agenta na Monorepo-A |
+| DUST-19 | Pierwsza komenda: dustmap scan + summary (zaraz po DUST-03) |
+| BUG-01 | Skan bierze pliki ignorowane przez git; punkty wejścia z dist/ |

@@ -7,7 +7,7 @@ export type { DustmapConfig as DustmapConfigType } from "./config/schema.js";
 export { defaultConfig, loadConfig, resolveOutputDir } from "./config/load.js";
 export type { LoadConfigResult } from "./config/load.js";
 export { detectProject } from "./init/detect.js";
-export type { DetectedProject } from "./init/detect.js";
+export type { DetectedProject, UnresolvedEntryPoint } from "./init/detect.js";
 export { runInit } from "./init/run-init.js";
 export type { InitResult } from "./init/run-init.js";
 export { runScan, snapshotRepoPaths, isOutsideRepo } from "./scan/run-scan.js";

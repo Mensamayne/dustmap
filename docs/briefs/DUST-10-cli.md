@@ -11,7 +11,7 @@ Jedno CLI do całości: `dustmap init`, `dustmap scan [--diff <ref>]`, `dustmap 
 ### Step 1 — Paczka i komendy
 
 - **Plik:** `packages/cli/`
-- **Zmiana:** `bin/dustmap.mjs`; komendy jak wyżej; kody wyjścia 0 = OK, 1 = znaleziska blokujące (ratchet), 2 = błąd użycia/konfiguracji.
+- **Zmiana:** rozszerza paczkę z DUST-19 (`scan`, `summary` już są — nie drugie CLI); dokłada pozostałe komendy; kody wyjścia 0 = OK, 1 = znaleziska blokujące (ratchet), 2 = błąd użycia/konfiguracji.
 - **Done when:** test e2e na fixture: init → scan → summary → decide → scan (znalezisko znika).
 
 ### Step 2 — Eksport markdown i SARIF
