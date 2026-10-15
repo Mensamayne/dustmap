@@ -32,6 +32,11 @@ export type RunScanOptions = {
   configPath?: string;
   /** Override config.outputDir for this run. */
   outputDir?: string;
+  /**
+   * Commit id recorded in the report. Use when scanning a snapshot tree whose local HEAD is not
+   * the pinned source SHA (fresh `git init` after `git archive`). Defaults to `git rev-parse HEAD`.
+   */
+  commit?: string;
 };
 
 export type RunScanResult = {
@@ -175,7 +180,7 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
     schema: REPORT_SCHEMA_ID,
     scan: {
       mode: opts.mode,
-      commit: gitHead(repoRoot),
+      commit: opts.commit ?? gitHead(repoRoot),
       ...(opts.mode === "diff" && opts.baseRef ? { baseRef: opts.baseRef } : {}),
       startedAt: new Date().toISOString(),
       tools,

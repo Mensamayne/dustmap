@@ -1,0 +1,7 @@
+{
+  "name": "knip-app",
+  "private": true,
+  "bin": { "knip-app": "bin/cli.js" },
+  "dependencies": { "next": "16.0.0", "left-pad": "1.3.0" },
+  "devDependencies": { "vitest": "3.0.0" }
+}

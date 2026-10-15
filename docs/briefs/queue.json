@@ -65,10 +65,10 @@
         "DUST-16"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T22:09:25.784Z",
+      "startedBy": "agent"
     },
     {
       "id": "DUST-04",
@@ -275,10 +275,13 @@
         "DUST-20"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-15T22:02:37.464Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T22:09:13.482Z",
+      "gitProofSha": "c253f4182a52e9168936a3a40e8cee4d1531bf82",
+      "closureNotes": "Monorepo-A migawka: 10972 plikow (7647 kod, 3207 testy, 118 pominiete), 462 punkty wejscia, inwentarz 4s; Service-B 127 plikow; selftest 12/12; zbior prawdy: tylko zakazy do czasu wykrywaczy"
     },
     {
       "id": "DUST-17",

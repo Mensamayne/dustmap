@@ -154,7 +154,15 @@ if (adapters.length) {
   const writtenConfig = path.join(workDir, "dustmap.config.json");
   mkdirSync(workDir, { recursive: true });
   writeFileSync(writtenConfig, `${JSON.stringify(config, null, 2)}\n`);
-  const result = await runScan({ repoRoot: scanRoot, mode: "full", adapters, configPath: writtenConfig, outputDir: outDir });
+  const result = await runScan({
+    repoRoot: scanRoot,
+    mode: "full",
+    adapters,
+    configPath: writtenConfig,
+    outputDir: outDir,
+    // Snapshot trees are a fresh git init after archive; pin the source SHA for ground-truth compare.
+    ...(snapshot ? { commit } : {}),
+  });
   scan = {
     ms: Date.now() - t1,
     findings: result.report.findings.length,

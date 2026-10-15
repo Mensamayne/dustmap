@@ -18,7 +18,9 @@ export type FindingCategory = z.infer<typeof FindingCategory>;
 export const FindingKind = z.enum([
   "unused-file",
   "unused-export",
+  "unused-type",
   "unused-dependency",
+  "unlisted-dependency",
   "clone-cluster",
   "semantic-cluster",
   "complexity",
