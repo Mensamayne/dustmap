@@ -35,4 +35,9 @@ export {
   collectFileMetrics,
   findingIsPrescriptionFree,
 } from "./signals/code/index.js";
+export {
+  gitSignalsAdapter,
+  runGitSignals,
+  gitSignalsLastStats,
+} from "./signals/git/index.js";
 
