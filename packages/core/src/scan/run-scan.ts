@@ -17,6 +17,7 @@ import type { Adapter } from "../adapter.js";
 import { loadConfig, resolveOutputDir, type LoadConfigResult } from "../config/load.js";
 import type { DustmapConfig } from "../config/schema.js";
 import { applyDecisions, loadDecisions } from "../decisions/index.js";
+import { annotateWithJudge } from "../judge/index.js";
 import { toPosix } from "../posix.js";
 import { rankingWeightsFromConfig, summarizeFindings } from "../rank/index.js";
 import { dedupeSemanticAgainstClones } from "../semantic/dedupe-vs-clones.js";
@@ -147,6 +148,13 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
   // keep / wontfix mute from ranking and category counts (fingerprint change brings them back).
   const visible = applyDecisions(unique, loadDecisions(outputDir));
   const summary = summarizeFindings(visible, rankingWeightsFromConfig(config.ranking));
+  // Optional LLM judge (default off) — attaches judgement only; does not change scores or ranking.
+  const judged = await annotateWithJudge({
+    findings: visible,
+    summary,
+    config: config.judge,
+    outputDir,
+  });
 
   const report = Report.parse({
     schema: REPORT_SCHEMA_ID,
@@ -160,7 +168,7 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
       files: { total: files.length, byRole },
     },
     summary,
-    findings: visible,
+    findings: judged.findings,
   });
 
   const reportPath = path.join(outputDir, "report.json");

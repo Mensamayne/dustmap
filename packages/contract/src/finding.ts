@@ -58,6 +58,26 @@ export const Evidence = z.object({
 });
 export type Evidence = z.infer<typeof Evidence>;
 
+/**
+ * Optional LLM judge note (DUST-14). Informational only — never changes confidence or ranking.
+ * Omitted when the judge is disabled (default).
+ */
+export const JudgementVerdict = z.enum([
+  "real-duplicate",
+  "intentional-pattern",
+  "uncertain",
+]);
+export type JudgementVerdict = z.infer<typeof JudgementVerdict>;
+
+export const Judgement = z
+  .object({
+    verdict: JudgementVerdict,
+    reason: z.string().min(1),
+    model: z.string().min(1),
+  })
+  .strict();
+export type Judgement = z.infer<typeof Judgement>;
+
 export const Finding = z
   .object({
     fingerprint: z
@@ -71,6 +91,7 @@ export const Finding = z
     suggestedAction: SuggestedAction,
     verifyHint: z.string().min(1),
     source: z.string().min(1),
+    judgement: Judgement.optional(),
   })
   .strict();
 export type Finding = z.infer<typeof Finding>;

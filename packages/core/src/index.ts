@@ -10,6 +10,7 @@ export {
   SemanticConfig,
   RankingConfig,
   RatchetConfig,
+  JudgeConfig,
   formatConfigError,
 } from "./config/schema.js";
 export type { DustmapConfig as DustmapConfigType } from "./config/schema.js";
@@ -91,4 +92,13 @@ export {
   DEFAULT_RATCHET_OPTIONS,
 } from "./ratchet/index.js";
 export type { RatchetOptions, RatchetResult, BaselineFileType } from "./ratchet/index.js";
+export {
+  annotateWithJudge,
+  assertJudgeReady,
+  createJudgeProvider,
+  createRecordingJudgeProvider,
+  JudgeConfigError,
+  JudgeRemoteForbiddenError,
+} from "./judge/index.js";
+export type { JudgeProvider, AnnotateJudgeOptions } from "./judge/index.js";
 

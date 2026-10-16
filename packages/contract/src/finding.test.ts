@@ -46,4 +46,17 @@ describe("Finding", () => {
       Finding.safeParse({ ...valid, locations: [{ path: "C:/repo/src/x.ts" }] }).success,
     ).toBe(false);
   });
+
+  it("accepts an optional judgement without changing other fields", () => {
+    const parsed = Finding.parse({
+      ...valid,
+      judgement: {
+        verdict: "intentional-pattern",
+        reason: "Shared framework callback shape, not accidental copy-paste.",
+        model: "test-model",
+      },
+    });
+    expect(parsed.judgement?.verdict).toBe("intentional-pattern");
+    expect(parsed.confidence).toBe("high");
+  });
 });

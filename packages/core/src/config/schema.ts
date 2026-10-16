@@ -93,6 +93,29 @@ export const RatchetConfig = z
   .strict();
 export type RatchetConfig = z.infer<typeof RatchetConfig>;
 
+/**
+ * Optional LLM judge for duplicate clusters and top-ranked places (DUST-14).
+ * Disabled by default — the report is complete without it; agents can judge from evidence.
+ * API keys come only from env (`DUSTMAP_JUDGE_API_KEY`), never from this file.
+ */
+export const JudgeConfig = z
+  .object({
+    enabled: z.boolean().default(false),
+    /** `openai` = OpenAI-compatible chat completions; `anthropic` = Anthropic Messages API. */
+    provider: z.enum(["openai", "anthropic"]).default("openai"),
+    model: z.string().min(1).default("gpt-4o-mini"),
+    /** Base URL for openai-compatible providers (e.g. http://127.0.0.1:11434/v1). */
+    url: z.string().url().optional(),
+    /** Max findings to judge per scan (clusters first, then top-place findings). */
+    maxClustersPerScan: z.number().int().positive().default(20),
+    /** Soft budget of completion tokens across the scan; stops requesting when exceeded. */
+    maxTokensBudget: z.number().int().positive().default(8000),
+    /** Allow non-loopback URLs (code snippets leave the machine). Default false. */
+    allowRemote: z.boolean().default(false),
+  })
+  .strict();
+export type JudgeConfig = z.infer<typeof JudgeConfig>;
+
 export const DustmapConfig = z
   .object({
     include: z.array(z.string().min(1)).default([
@@ -112,6 +135,7 @@ export const DustmapConfig = z
     classify: ClassifyConfig.default({}),
     ranking: RankingConfig.default({}),
     ratchet: RatchetConfig.default({}),
+    judge: JudgeConfig.default({}),
     /** Relative to scanned repo, or absolute path (may lie outside the repo). */
     outputDir: z.string().min(1).default(".dustmap"),
   })

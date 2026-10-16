@@ -7,6 +7,8 @@ export {
   Finding,
   FindingCategory,
   FindingKind,
+  Judgement,
+  JudgementVerdict,
   Location,
   SuggestedAction,
 } from "./finding.js";
@@ -16,6 +18,8 @@ export type {
   Finding as FindingType,
   FindingCategory as FindingCategoryType,
   FindingKind as FindingKindType,
+  Judgement as JudgementType,
+  JudgementVerdict as JudgementVerdictType,
   Location as LocationType,
   SuggestedAction as SuggestedActionType,
 } from "./finding.js";
