@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`dustmap CLI full loop (real bin) > export markdown has stable sections; SARIF validates 1`] = `
+"# Dustmap report
+
+Scan: **full** · commit \`uncommitted\` · <timestamp>
+
+## Summary by category
+
+- **dead-code**: 1
+
+## Top places
+
+1. \`src/dead.ts#dead\` — score 1.5 (1 signals)
+
+## Findings by category
+
+### dead-code
+
+- **unused-file** (\`90b09a8daa2d061e\`, high) — \`src/dead.ts\`
+  - knip: unused-file; name-mentions: 0
+
+---
+_Dustmap is report-only: it never edits your source._
+"
+`;

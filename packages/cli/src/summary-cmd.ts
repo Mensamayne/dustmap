@@ -1,12 +1,10 @@
 /**
  * `dustmap summary` — short view of an existing report (category counts, top places, age vs HEAD).
  */
-import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import path from "node:path";
-import { Report, type ReportType } from "@dustmap/contract";
-import { resolveOutputDir, loadConfig, defaultConfig } from "@dustmap/core";
+import type { ReportType } from "@dustmap/contract";
 import type { SummaryArgs } from "./args.js";
+import { loadReportOrThrow, resolveCliOutputDir } from "./report-io.js";
 
 export type SummaryCommandResult = {
   exitCode: 0 | 2;
@@ -26,14 +24,6 @@ function gitHead(cwd: string): string | null {
   }
 }
 
-function loadReport(outDir: string): ReportType {
-  const reportPath = path.join(outDir, "report.json");
-  if (!existsSync(reportPath)) {
-    throw new Error(`No report.json under ${outDir}. Run: dustmap scan --out ${outDir}`);
-  }
-  return Report.parse(JSON.parse(readFileSync(reportPath, "utf8")));
-}
-
 function ageLabel(startedAt: string): string {
   const ms = Date.now() - Date.parse(startedAt);
   if (!Number.isFinite(ms) || ms < 0) return startedAt;
@@ -47,16 +37,11 @@ function ageLabel(startedAt: string): string {
 }
 
 export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): SummaryCommandResult {
-  const outDir = args.out
-    ? path.resolve(cwd, args.out)
-    : resolveOutputDir(cwd, (existsSync(path.join(cwd, "dustmap.config.json"))
-        ? loadConfig(cwd).config
-        : defaultConfig()
-      ).outputDir);
+  const outDir = resolveCliOutputDir(cwd, args.out);
 
   let report: ReportType;
   try {
-    report = loadReport(outDir);
+    report = loadReportOrThrow(outDir);
   } catch (err) {
     return {
       exitCode: 2,
@@ -106,7 +91,12 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
       );
     }
   }
-  lines.push(`dalej: dustmap summary --out ${outDir} --json`);
+  const topFp = report.summary.topPlaces[0]?.findingFingerprints[0];
+  lines.push(
+    topFp
+      ? `dalej: dustmap show ${topFp} --out ${outDir}`
+      : `dalej: dustmap summary --out ${outDir} --json`,
+  );
 
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };
 }
