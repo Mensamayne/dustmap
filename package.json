@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "verify": "node tools/verify.mjs",
+    "dustmap": "node packages/cli/bin/dustmap.mjs",
     "queue:next": "node tools/queue/next.mjs",
     "queue:next-bug": "node tools/queue/next.mjs --bug",
     "queue:next-epic": "node tools/queue/next-epic.mjs",

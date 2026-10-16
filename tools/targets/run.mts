@@ -14,18 +14,19 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { Report } from "../../packages/contract/src/index.ts";
 import {
   builtinAdapters,
   defaultConfig,
   detectProject,
   isOutsideRepo,
   loadConfig,
-  runScan,
   takeInventory,
   type DustmapConfigType,
 } from "../../packages/core/src/index.ts";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const dustmapBin = path.join(repo, "packages", "cli", "bin", "dustmap.mjs");
 const registry = JSON.parse(readFileSync(path.join(repo, "tools/targets/targets.json"), "utf8")) as {
   targets: Record<string, { path: string; env: string; config: string | null }>;
 };
@@ -154,20 +155,36 @@ if (adapters.length) {
   const writtenConfig = path.join(workDir, "dustmap.config.json");
   mkdirSync(workDir, { recursive: true });
   writeFileSync(writtenConfig, `${JSON.stringify(config, null, 2)}\n`);
-  const result = await runScan({
-    repoRoot: scanRoot,
-    mode: "full",
-    adapters,
-    configPath: writtenConfig,
-    outputDir: outDir,
-    // Snapshot trees are a fresh git init after archive; pin the source SHA for ground-truth compare.
-    ...(snapshot ? { commit } : {}),
+  // DUST-19: scan through the real CLI bin (same path humans/agents use), not runScan in-process.
+  const cliArgs = [
+    dustmapBin,
+    "scan",
+    scanRoot,
+    "--config",
+    writtenConfig,
+    "--out",
+    outDir,
+    ...(snapshot ? ["--commit", commit] : []),
+  ];
+  const cli = spawnSync(process.execPath, cliArgs, {
+    cwd: repo,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+    windowsHide: true,
   });
+  if (cli.status !== 0) {
+    fail(
+      cli.status === 2 ? 2 : 1,
+      `dustmap scan failed (exit ${cli.status}): ${cli.stderr || cli.stdout}`,
+    );
+  }
+  const reportPath = path.join(outDir, "report.json");
+  const report = Report.parse(JSON.parse(readFileSync(reportPath, "utf8")));
   scan = {
     ms: Date.now() - t1,
-    findings: result.report.findings.length,
-    byCategory: result.report.summary.byCategory,
-    reportPath: result.reportPath,
+    findings: report.findings.length,
+    byCategory: report.summary.byCategory,
+    reportPath,
   };
 }
 
