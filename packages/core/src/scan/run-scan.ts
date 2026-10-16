@@ -9,7 +9,6 @@ import {
   REPORT_SCHEMA_ID,
   Report,
   type FileRoleType,
-  type FindingCategoryType,
   type FindingType,
   type ReportType,
   type ScanToolType,
@@ -17,7 +16,9 @@ import {
 import type { Adapter } from "../adapter.js";
 import { loadConfig, resolveOutputDir, type LoadConfigResult } from "../config/load.js";
 import type { DustmapConfig } from "../config/schema.js";
+import { applyDecisions, loadDecisions } from "../decisions/index.js";
 import { toPosix } from "../posix.js";
+import { rankingWeightsFromConfig, summarizeFindings } from "../rank/index.js";
 import { dedupeSemanticAgainstClones } from "../semantic/dedupe-vs-clones.js";
 import { openAdapterCache } from "./cache.js";
 import { gitHead } from "./git.js";
@@ -48,39 +49,6 @@ export type RunScanResult = {
   adapterRuns: number;
   filesScanned: string[];
 };
-
-function emptyByCategory(): Record<FindingCategoryType, number> {
-  return {
-    "dead-code": 0,
-    duplicate: 0,
-    "semantic-duplicate": 0,
-    "refactor-signal": 0,
-    structure: 0,
-  };
-}
-
-function summarize(findings: FindingType[]) {
-  const byCategory = emptyByCategory();
-  const placeScores = new Map<string, { score: number; fps: Set<string> }>();
-  for (const f of findings) {
-    byCategory[f.category] = (byCategory[f.category] ?? 0) + 1;
-    for (const loc of f.locations) {
-      const cur = placeScores.get(loc.path) ?? { score: 0, fps: new Set() };
-      cur.score += 1;
-      cur.fps.add(f.fingerprint);
-      placeScores.set(loc.path, cur);
-    }
-  }
-  const topPlaces = [...placeScores.entries()]
-    .map(([p, v]) => ({
-      path: p,
-      score: v.score,
-      findingFingerprints: [...v.fps].sort(),
-    }))
-    .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path))
-    .slice(0, 20);
-  return { byCategory, topPlaces };
-}
 
 function listRepoFiles(repoRoot: string): Set<string> {
   const out = new Set<string>();
@@ -176,6 +144,9 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
   const byFp = new Map<string, FindingType>();
   for (const f of findings) byFp.set(f.fingerprint, f);
   const unique = dedupeSemanticAgainstClones([...byFp.values()]);
+  // keep / wontfix mute from ranking and category counts (fingerprint change brings them back).
+  const visible = applyDecisions(unique, loadDecisions(outputDir));
+  const summary = summarizeFindings(visible, rankingWeightsFromConfig(config.ranking));
 
   const report = Report.parse({
     schema: REPORT_SCHEMA_ID,
@@ -188,8 +159,8 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
       cache: { hits: cacheHits, misses: cacheMisses },
       files: { total: files.length, byRole },
     },
-    summary: summarize(unique),
-    findings: unique,
+    summary,
+    findings: visible,
   });
 
   const reportPath = path.join(outputDir, "report.json");

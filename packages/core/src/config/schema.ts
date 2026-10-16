@@ -60,6 +60,39 @@ export const ClassifyConfig = z
   .strict();
 export type ClassifyConfig = z.infer<typeof ClassifyConfig>;
 
+/** Place ranking — weights live in config, never hard-coded per customer repo. */
+export const RankingConfig = z
+  .object({
+    topN: z.number().int().positive().default(10),
+    diversityBonus: z.number().nonnegative().default(3),
+    categoryWeights: z
+      .object({
+        "dead-code": z.number().nonnegative().default(1),
+        duplicate: z.number().nonnegative().default(1.2),
+        "semantic-duplicate": z.number().nonnegative().default(1.1),
+        "refactor-signal": z.number().nonnegative().default(1.3),
+        structure: z.number().nonnegative().default(1.4),
+      })
+      .default({}),
+    confidenceWeights: z
+      .object({
+        low: z.number().nonnegative().default(0.5),
+        medium: z.number().nonnegative().default(1),
+        high: z.number().nonnegative().default(1.5),
+      })
+      .default({}),
+  })
+  .strict();
+export type RankingConfig = z.infer<typeof RankingConfig>;
+
+/** Baseline ratchet — only findings at or above minConfidence count as new. */
+export const RatchetConfig = z
+  .object({
+    minConfidence: z.enum(["low", "medium", "high"]).default("medium"),
+  })
+  .strict();
+export type RatchetConfig = z.infer<typeof RatchetConfig>;
+
 export const DustmapConfig = z
   .object({
     include: z.array(z.string().min(1)).default([
@@ -77,6 +110,8 @@ export const DustmapConfig = z
     adapters: z.record(z.string(), AdapterConfig).default({}),
     semantic: SemanticConfig.default({}),
     classify: ClassifyConfig.default({}),
+    ranking: RankingConfig.default({}),
+    ratchet: RatchetConfig.default({}),
     /** Relative to scanned repo, or absolute path (may lie outside the repo). */
     outputDir: z.string().min(1).default(".dustmap"),
   })

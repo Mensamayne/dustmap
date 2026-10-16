@@ -3,7 +3,15 @@
  */
 export type { Adapter, AdapterContext, ScanMode } from "./adapter.js";
 export { builtinAdapters } from "./adapters/index.js";
-export { DustmapConfig, AdapterConfig, LayerRule, SemanticConfig, formatConfigError } from "./config/schema.js";
+export {
+  DustmapConfig,
+  AdapterConfig,
+  LayerRule,
+  SemanticConfig,
+  RankingConfig,
+  RatchetConfig,
+  formatConfigError,
+} from "./config/schema.js";
 export type { DustmapConfig as DustmapConfigType } from "./config/schema.js";
 export { defaultConfig, loadConfig, resolveOutputDir } from "./config/load.js";
 export type { LoadConfigResult } from "./config/load.js";
@@ -52,4 +60,35 @@ export {
   buildStructureFindings,
   parseStructureThresholds,
 } from "./signals/structure/index.js";
+export {
+  scorePlaces,
+  summarizeFindings,
+  placeKey,
+  parseRankingWeights,
+  rankingWeightsFromConfig,
+  DEFAULT_RANKING_WEIGHTS,
+} from "./rank/index.js";
+export type { PlaceScore, RankingWeights } from "./rank/index.js";
+export {
+  DECISIONS_FILE,
+  decisionsPath,
+  loadDecisions,
+  saveDecisions,
+  upsertDecision,
+  mutedFingerprints,
+  applyDecisions,
+} from "./decisions/index.js";
+export {
+  BASELINE_FILE,
+  BASELINE_SCHEMA_ID,
+  baselinePath,
+  loadBaseline,
+  saveBaseline,
+  checkRatchet,
+  checkRatchetAt,
+  updateBaseline,
+  parseRatchetOptions,
+  DEFAULT_RATCHET_OPTIONS,
+} from "./ratchet/index.js";
+export type { RatchetOptions, RatchetResult, BaselineFileType } from "./ratchet/index.js";
 
