@@ -17,6 +17,8 @@ const run = (cmd, cwd = root) => {
 run("node tools/queue/validate.mjs");
 run("node tools/queue/validate.selftest.mjs");
 run("node tools/targets/targets.selftest.mjs");
+run("node tools/verify-isolation.mjs --selftest");
+run("node tools/verify-isolation.mjs");
 
 const pkgRoot = path.join(root, "packages");
 const dirs = existsSync(pkgRoot) ? readdirSync(pkgRoot).map((d) => path.join(pkgRoot, d)) : [];

@@ -73,6 +73,42 @@ Fails with exit **1** when there are **new** findings above the configured confi
 | 1 | Ratchet found new findings |
 | 2 | Usage or config error |
 
+## GitHub Action
+
+Composite action at [`action/`](./action/): PR diff scan → SARIF upload → optional ratchet. It never commits to your repo.
+
+| Input | Default | Meaning |
+|-------|---------|---------|
+| `fail-on` | `new-high` | `none` (never fail), `new-high` (new high-confidence findings), `new-any` (any new finding) |
+| `config` | _(empty)_ | Path to `dustmap.config.json` |
+| `base` | PR base sha | Git ref for `--diff` |
+| `out` | config / `.dustmap` | Output directory |
+
+Example workflow (also linted as `action/example-workflow.yml`):
+
+```yaml
+name: Dustmap
+on: pull_request
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+jobs:
+  dustmap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install -g @dustmap/cli   # or wire your workspace bin
+      - uses: ./packages/cli/action
+        with:
+          fail-on: new-high
+```
+
 ## Report-only rule
 
 Dustmap does not delete, format, or commit your code. The only intentional write into the project tree is `dustmap init` creating `dustmap.config.json`. Everything else goes under the output directory.

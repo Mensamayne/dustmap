@@ -1,0 +1,88 @@
+name: Dustmap
+description: >-
+  Scan a pull-request diff with Dustmap, upload SARIF to code scanning, and
+  optionally fail on new findings. Never commits to the repository.
+author: Dustmap
+
+inputs:
+  config:
+    description: Path to dustmap.config.json (optional)
+    required: false
+    default: ""
+  fail-on:
+    description: "Ratchet policy: none (never fail), new-high (new high-confidence), new-any (any new finding)"
+    required: false
+    default: new-high
+  base:
+    description: Git base ref/sha for diff scan (default pull_request.base.sha)
+    required: false
+    default: ""
+  out:
+    description: Dustmap output directory (default from config / .dustmap)
+    required: false
+    default: ""
+  working-directory:
+    description: Repository directory to scan
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve base ref
+      id: base
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        BASE="${{ inputs.base }}"
+        if [ -z "$BASE" ]; then
+          BASE="${{ github.event.pull_request.base.sha }}"
+        fi
+        if [ -z "$BASE" ]; then
+          BASE="HEAD~1"
+        fi
+        echo "ref=$BASE" >> "$GITHUB_OUTPUT"
+
+    - name: Dustmap scan (diff)
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        ARGS=(scan . --diff "${{ steps.base.outputs.ref }}")
+        if [ -n "${{ inputs.config }}" ]; then
+          ARGS+=(--config "${{ inputs.config }}")
+        fi
+        if [ -n "${{ inputs.out }}" ]; then
+          ARGS+=(--out "${{ inputs.out }}")
+        fi
+        dustmap "${ARGS[@]}"
+
+    - name: Export SARIF
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        ARGS=(export --to sarif --file dustmap.sarif)
+        if [ -n "${{ inputs.out }}" ]; then
+          ARGS+=(--out "${{ inputs.out }}")
+        fi
+        dustmap "${ARGS[@]}"
+
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.working-directory }}/dustmap.sarif
+        wait-for-processing: false
+
+    - name: Ratchet (fail-on)
+      if: inputs.fail-on != 'none'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        ARGS=(--fail-on "${{ inputs.fail-on }}" --cwd "${{ inputs.working-directory }}")
+        if [ -n "${{ inputs.out }}" ]; then
+          ARGS+=(--out "${{ inputs.out }}")
+        fi
+        node "${{ github.action_path }}/fail-on.mjs" "${ARGS[@]}"

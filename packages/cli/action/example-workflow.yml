@@ -1,0 +1,31 @@
+# Example PR workflow — copy into .github/workflows/dustmap.yml of a consumer repo.
+# Requires `dustmap` on PATH (npm install / npx after publishing, or workspace bin).
+name: Dustmap
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+
+jobs:
+  dustmap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Dustmap CLI
+        run: npm install -g @dustmap/cli
+
+      - name: Run Dustmap
+        uses: ./packages/cli/action
+        with:
+          fail-on: new-high

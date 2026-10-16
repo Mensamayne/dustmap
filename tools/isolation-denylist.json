@@ -1,0 +1,15 @@
+{
+  "$comment": "Maintainer project names that must never appear in packages/*/src (Dustmap stays generic).",
+  "names": [
+    "monorepo-a",
+    "monorepo-a",
+    "monorepo-a",
+    "service-b",
+    "project-c",
+    "project-c",
+    "project-d",
+    "project-d",
+    "project-e",
+    "project-f"
+  ]
+}
