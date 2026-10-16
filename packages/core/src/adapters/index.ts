@@ -8,6 +8,7 @@ import type { Adapter } from "../adapter.js";
 import { semanticAdapter } from "../semantic/index.js";
 import { codeSignalsAdapter } from "../signals/code/index.js";
 import { gitSignalsAdapter } from "../signals/git/index.js";
+import { depcruiseAdapter } from "./depcruise/index.js";
 import { jscpdAdapter } from "./jscpd/index.js";
 import { knipAdapter } from "./knip/index.js";
 
@@ -18,5 +19,6 @@ export function builtinAdapters(): Adapter[] {
     semanticAdapter(),
     codeSignalsAdapter(),
     gitSignalsAdapter(),
+    depcruiseAdapter(),
   ];
 }

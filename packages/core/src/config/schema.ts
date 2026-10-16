@@ -3,10 +3,16 @@
  */
 import { z } from "zod";
 
+/**
+ * Declared architecture layer — paths are globs over repo-relative POSIX paths;
+ * `mayImport` lists other layer names this layer is allowed to import (same layer always OK).
+ * Empty `layers` means no layer-violation findings (no defaults baked into packages).
+ */
 export const LayerRule = z
   .object({
     name: z.string().min(1),
-    patterns: z.array(z.string().min(1)).min(1),
+    paths: z.array(z.string().min(1)).min(1),
+    mayImport: z.array(z.string().min(1)).default([]),
   })
   .strict();
 export type LayerRule = z.infer<typeof LayerRule>;

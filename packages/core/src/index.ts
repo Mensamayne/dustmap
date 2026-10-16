@@ -40,4 +40,16 @@ export {
   runGitSignals,
   gitSignalsLastStats,
 } from "./signals/git/index.js";
+export {
+  depcruiseAdapter,
+  runDepcruise,
+  cruiseModuleGraph,
+  buildModuleGraph,
+  graphNeighbors,
+} from "./adapters/depcruise/index.js";
+export type { ModuleGraph, ModuleEdge } from "./adapters/depcruise/index.js";
+export {
+  buildStructureFindings,
+  parseStructureThresholds,
+} from "./signals/structure/index.js";
 
