@@ -1,5 +1,5 @@
 /**
- * Build a Dustmap MCP server with the five agent tools and hard response limits.
+ * Build a Dustmap MCP server with agent tools and hard response limits.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import {
 } from "./limits.js";
 import {
   dustmapDecide,
+  dustmapGuide,
   dustmapList,
   dustmapScan,
   dustmapShow,
@@ -63,6 +64,15 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
     name: "dustmap",
     version: "0.0.0",
   });
+
+  server.registerTool(
+    "dustmap_guide",
+    {
+      description:
+        "Short Dustmap agent playbook (≤ 4 KiB). Start here; follow each reply's next field.",
+    },
+    async () => toCallResult(dustmapGuide(ctx), maxResponseBytes),
+  );
 
   server.registerTool(
     "dustmap_summary",

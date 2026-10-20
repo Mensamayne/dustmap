@@ -17,7 +17,7 @@ import { fingerprint } from "@dustmap/contract";
 import { afterEach, describe, expect, it } from "vitest";
 import { applyResponseLimit, utf8Bytes } from "../src/limits.js";
 import { createDustmapMcpServer } from "../src/server.js";
-import { DUSTMAP_TOOL_NAMES } from "../src/tools.js";
+import { DUSTMAP_TOOL_NAMES, GUIDE_MAX_BYTES } from "../src/tools.js";
 
 type Pair = {
   client: Client;
@@ -157,7 +157,7 @@ describe("Dustmap MCP tools (in-process client)", () => {
     }
   });
 
-  it("lists all five tools", async () => {
+  it("lists all registered tools including dustmap_guide", async () => {
     const { root } = writeFixtureRepo({ reportCommit: "deadbeefdeadbeef" });
     const pair = await connectPair({ cwd: root });
     closers.push(pair.close);
@@ -165,6 +165,94 @@ describe("Dustmap MCP tools (in-process client)", () => {
     const listed = await pair.client.listTools();
     const names = listed.tools.map((t) => t.name).sort();
     expect(names).toEqual([...DUSTMAP_TOOL_NAMES].sort());
+    expect(names).toContain("dustmap_guide");
+  });
+
+  it("dustmap_guide + next fields walk the full agent loop on a fixture", async () => {
+    const staged = writeFixtureRepo({
+      reportCommit: "0000000000000000000000000000000000000000",
+    });
+    const head = git(staged.root, ["rev-parse", "HEAD"]);
+    const reportPath = path.join(staged.outDir, "report.json");
+    const report = JSON.parse(readFileSync(reportPath, "utf8")) as {
+      scan: { commit: string };
+    };
+    report.scan.commit = head;
+    writeFileSync(reportPath, JSON.stringify(report, null, 2));
+
+    const { root, outDir, fingerprints } = staged;
+    const pair = await connectPair({ cwd: root });
+    closers.push(pair.close);
+
+    const seen = new Set<string>();
+    const guideRaw = await pair.client.callTool({ name: "dustmap_guide", arguments: {} });
+    expect(guideRaw.isError).toBeFalsy();
+    const guide = JSON.parse(textPayload(guideRaw));
+    expect(utf8Bytes(guide.guide)).toBeLessThanOrEqual(GUIDE_MAX_BYTES);
+    expect(Array.isArray(guide.next)).toBe(true);
+    expect(guide.next.length).toBeGreaterThan(0);
+    expect(guide.next.length).toBeLessThanOrEqual(3);
+    seen.add("dustmap_guide");
+
+    // Follow next → summary
+    const summaryHint = guide.next.find(
+      (n: { tool: string }) => n.tool === "dustmap_summary",
+    );
+    expect(summaryHint).toBeTruthy();
+    const summaryRaw = await pair.client.callTool({
+      name: "dustmap_summary",
+      arguments: { out: outDir },
+    });
+    const summary = JSON.parse(textPayload(summaryRaw));
+    expect(summary.next?.length).toBeGreaterThan(0);
+    seen.add("dustmap_summary");
+
+    const showHint =
+      summary.next.find((n: { tool: string }) => n.tool === "dustmap_show") ??
+      summary.next.find((n: { tool: string }) => n.tool === "dustmap_list");
+    expect(showHint).toBeTruthy();
+
+    let fingerprint = fingerprints[0]!;
+    if (showHint.tool === "dustmap_list") {
+      const listRaw = await pair.client.callTool({
+        name: "dustmap_list",
+        arguments: { out: outDir, ...(showHint.args ?? {}) },
+      });
+      const list = JSON.parse(textPayload(listRaw));
+      expect(list.next?.length).toBeGreaterThan(0);
+      seen.add("dustmap_list");
+      fingerprint = list.items[0]?.fingerprint ?? fingerprint;
+      const nextShow = list.next.find((n: { tool: string }) => n.tool === "dustmap_show");
+      expect(nextShow).toBeTruthy();
+    }
+
+    const showRaw = await pair.client.callTool({
+      name: "dustmap_show",
+      arguments: { fingerprint, out: outDir },
+    });
+    const show = JSON.parse(textPayload(showRaw));
+    expect(show.finding.verifyHint).toBeTruthy();
+    expect(show.next.some((n: { tool: string }) => n.tool === "dustmap_decide")).toBe(true);
+    seen.add("dustmap_show");
+
+    const decideRaw = await pair.client.callTool({
+      name: "dustmap_decide",
+      arguments: {
+        fingerprint,
+        verdict: "keep",
+        reason: "Intentional export kept for the guide-loop fixture.",
+        out: outDir,
+      },
+    });
+    const decide = JSON.parse(textPayload(decideRaw));
+    expect(decide.recorded).toBe(true);
+    expect(decide.next.some((n: { tool: string }) => n.tool === "dustmap_scan")).toBe(true);
+    seen.add("dustmap_decide");
+
+    expect(seen.has("dustmap_guide")).toBe(true);
+    expect(seen.has("dustmap_summary")).toBe(true);
+    expect(seen.has("dustmap_show")).toBe(true);
+    expect(seen.has("dustmap_decide")).toBe(true);
   });
 
   it("summary / list / show / decide / scan on a fixture", async () => {

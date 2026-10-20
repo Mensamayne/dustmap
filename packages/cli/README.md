@@ -27,9 +27,11 @@ Short human output by default; add `--json` for machines.
 
 ## Commands
 
-### `dustmap init [path] [--json]`
+### `dustmap init [path] [--json] [--agent claude|cursor|codex|all] [--dry]`
 
 Creates `dustmap.config.json` when missing (detects frameworks / entry points). Never overwrites an existing config.
+
+`--agent` wires instruction blocks from `agent/PLAYBOOK.md` (Claude skill, Cursor rule + MCP entry, `AGENTS.md` section, `.mcp.json`). Only text between `<!-- dustmap:begin/end -->` is replaced; everything else stays byte-identical. `--dry` prints the plan without writing.
 
 ### `dustmap scan [path] [--diff <ref>] [--config <file>] [--out <dir>] [--commit <sha>] [--json]`
 

@@ -19,10 +19,15 @@ export type SummaryArgs = {
   json: boolean;
 };
 
+export type AgentTarget = "claude" | "cursor" | "codex" | "all";
+
 export type InitArgs = {
   command: "init";
   repoPath: string;
   json: boolean;
+  /** When set, also wire agent instruction files from the playbook (DUST-17). */
+  agent?: AgentTarget;
+  dry: boolean;
 };
 
 export type ShowArgs = {
@@ -159,15 +164,30 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const h = stripHelp(rest);
     if (h.help) return { command: "help" };
     rest = h.rest;
+    const agent = takeFlag(rest, "--agent");
+    rest = agent.rest;
+    const dry = takeBool(rest, "--dry");
+    rest = dry.rest;
     const json = takeBool(rest, "--json");
     rest = json.rest;
     const unknown = rest.filter((a) => a.startsWith("-"));
     if (unknown.length) throw new UsageError(`Unknown flag: ${unknown[0]}`);
     const positional = rest.filter((a) => !a.startsWith("-"));
+    let agentTarget: AgentTarget | undefined;
+    if (agent.value !== undefined) {
+      if (!["claude", "cursor", "codex", "all"].includes(agent.value)) {
+        throw new UsageError(
+          "Usage: dustmap init [--agent claude|cursor|codex|all] [--dry] [path]",
+        );
+      }
+      agentTarget = agent.value as AgentTarget;
+    }
     return {
       command: "init",
       repoPath: positional[0] ?? ".",
       json: json.on,
+      ...(agentTarget !== undefined ? { agent: agentTarget } : {}),
+      dry: dry.on,
     };
   }
 
@@ -284,7 +304,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
 export const HELP = `dustmap — report-only map of dead code, duplicates and refactor signals
 
 Usage:
-  dustmap init [path] [--json]
+  dustmap init [path] [--json] [--agent claude|cursor|codex|all] [--dry]
   dustmap scan [path] [--diff <ref>] [--config <file>] [--out <dir>] [--commit <sha>] [--json]
   dustmap summary [--out <dir>] [--json]
   dustmap show <fingerprint> [--out <dir>] [--json]

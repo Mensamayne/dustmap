@@ -13,11 +13,14 @@ export {
 } from "./limits.js";
 export {
   DUSTMAP_TOOL_NAMES,
+  GUIDE_MAX_BYTES,
   dustmapDecide,
+  dustmapGuide,
   dustmapList,
   dustmapScan,
   dustmapShow,
   dustmapSummary,
+  suggestNext,
 } from "./tools.js";
 
 export async function startStdioServer(opts: DustmapMcpOptions = {}): Promise<void> {

@@ -1,8 +1,11 @@
 /**
- * Dustmap MCP tool handlers — summary, list, show, decide, scan.
+ * Dustmap MCP tool handlers — summary, list, show, decide, scan, guide.
  * Pure data in / out; the server layer applies size limits and MCP content wrapping.
+ * Every success payload includes `next` (1–3 suggested follow-ups, DUST-17).
  */
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   FindingCategory,
   type FindingCategoryType,
@@ -16,7 +19,7 @@ import {
   runScan,
   upsertDecision,
 } from "@dustmap/core";
-import { reportStaleWarning } from "./limits.js";
+import { reportStaleWarning, utf8Bytes } from "./limits.js";
 import {
   findFinding,
   gitHead,
@@ -27,6 +30,12 @@ import {
 export type McpToolContext = {
   /** Working directory (scanned repo root). */
   cwd: string;
+};
+
+export type NextHint = {
+  tool: string;
+  args?: Record<string, unknown>;
+  reason: string;
 };
 
 export type ToolSuccess = {
@@ -44,14 +53,150 @@ export type ToolFailure = {
 
 export type ToolResult = ToolSuccess | ToolFailure;
 
+/** Hard cap for dustmap_guide body (brief: ≤ 4 KiB). */
+export const GUIDE_MAX_BYTES = 4 * 1024;
+
+export type DustmapToolName =
+  | "dustmap_summary"
+  | "dustmap_list"
+  | "dustmap_show"
+  | "dustmap_decide"
+  | "dustmap_scan"
+  | "dustmap_guide";
+
+function topFingerprint(data: Record<string, unknown>): string | undefined {
+  const places = data.topPlaces;
+  if (!Array.isArray(places) || places.length === 0) return undefined;
+  const first = places[0] as { findingFingerprints?: unknown };
+  const fps = first.findingFingerprints;
+  if (!Array.isArray(fps) || typeof fps[0] !== "string") return undefined;
+  return fps[0];
+}
+
+function firstListFingerprint(data: Record<string, unknown>): string | undefined {
+  const items = data.items;
+  if (!Array.isArray(items) || items.length === 0) return undefined;
+  const fp = (items[0] as { fingerprint?: unknown }).fingerprint;
+  return typeof fp === "string" ? fp : undefined;
+}
+
+/** 1–3 next tool calls an agent can follow without reading docs. */
+export function suggestNext(
+  tool: DustmapToolName,
+  data: Record<string, unknown>,
+): NextHint[] {
+  if (data.stale === true && tool !== "dustmap_scan" && tool !== "dustmap_guide") {
+    return [
+      {
+        tool: "dustmap_scan",
+        args: { mode: "diff" },
+        reason: "Report is stale — refresh with a diff scan before decide/enqueue",
+      },
+    ];
+  }
+
+  switch (tool) {
+    case "dustmap_guide":
+      return [
+        { tool: "dustmap_summary", reason: "See top places and report freshness" },
+        {
+          tool: "dustmap_scan",
+          args: { mode: "diff" },
+          reason: "If there is no report yet, or it is stale",
+        },
+      ];
+    case "dustmap_scan":
+      return [
+        { tool: "dustmap_summary", reason: "Read counts and top places after the scan" },
+      ];
+    case "dustmap_summary": {
+      const fp = topFingerprint(data);
+      const next: NextHint[] = [
+        { tool: "dustmap_list", reason: "Browse findings with filters / pagination" },
+      ];
+      if (fp) {
+        next.push({
+          tool: "dustmap_show",
+          args: { fingerprint: fp },
+          reason: "Inspect evidence for the top place",
+        });
+      }
+      return next.slice(0, 3);
+    }
+    case "dustmap_list": {
+      const fp = firstListFingerprint(data);
+      if (!fp) {
+        return [{ tool: "dustmap_summary", reason: "Return to overview" }];
+      }
+      return [
+        {
+          tool: "dustmap_show",
+          args: { fingerprint: fp },
+          reason: "Open full evidence + verifyHint for the first item",
+        },
+        {
+          tool: "dustmap_list",
+          args: {
+            offset: typeof data.offset === "number" ? data.offset + (typeof data.limit === "number" ? data.limit : 20) : 20,
+            limit: typeof data.limit === "number" ? data.limit : 20,
+          },
+          reason: "Next page if hasMore",
+        },
+      ].slice(0, 3);
+    }
+    case "dustmap_show": {
+      const finding = data.finding as { fingerprint?: string } | undefined;
+      const fp = finding?.fingerprint;
+      if (!fp) {
+        return [{ tool: "dustmap_summary", reason: "Back to overview" }];
+      }
+      return [
+        {
+          tool: "dustmap_decide",
+          args: {
+            fingerprint: fp,
+            verdict: "keep",
+            reason: "Explain why this finding is intentional (min 10 chars)",
+          },
+          reason: "After running verifyHint — record keep/wontfix/fix",
+        },
+        { tool: "dustmap_summary", reason: "Pick another place" },
+      ];
+    }
+    case "dustmap_decide":
+      return [
+        {
+          tool: "dustmap_scan",
+          args: { mode: "diff" },
+          reason: "Re-scan so muted findings drop out of the report",
+        },
+        { tool: "dustmap_summary", reason: "Confirm the new top places" },
+      ];
+    default:
+      return [{ tool: "dustmap_guide", reason: "Re-read the agent loop" }];
+  }
+}
+
+function withNext(tool: DustmapToolName, success: ToolSuccess): ToolSuccess {
+  const next = suggestNext(tool, success.data);
+  return {
+    ...success,
+    data: {
+      ...success.data,
+      next,
+    },
+  };
+}
+
 function withFreshness(
+  tool: DustmapToolName,
   data: Record<string, unknown>,
   report: ReportType,
   cwd: string,
 ): ToolSuccess {
   const head = gitHead(cwd);
   const staleWarning = reportStaleWarning(report.scan.commit, head);
-  return {
+  return withNext(tool, {
     ok: true,
     reportCommit: report.scan.commit,
     data: {
@@ -61,7 +206,44 @@ function withFreshness(
       head: head ?? null,
       reportCommit: report.scan.commit,
     },
-  };
+  });
+}
+
+const EMBEDDED_GUIDE = `Dustmap agent loop (report-only; never edits scanned source).
+1) dustmap_guide → 2) dustmap_summary (or dustmap_scan diff if missing/stale) →
+3) dustmap_list / dustmap_show → 4) run verifyHint → 5) dustmap_decide or enqueue selected fingerprints.
+Rules: no delete without verifyHint; no keep without reason; stale → scan diff first.
+Tell humans places and effects, not fingerprint walls. Follow each reply's next[] field.`;
+
+function loadGuideText(): string {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const playbook = path.join(here, "..", "..", "cli", "agent", "PLAYBOOK.md");
+  if (existsSync(playbook)) {
+    return readFileSync(playbook, "utf8");
+  }
+  return EMBEDDED_GUIDE;
+}
+
+function truncateGuide(text: string, maxBytes: number): { guide: string; truncated: boolean } {
+  if (utf8Bytes(text) <= maxBytes) {
+    return { guide: text, truncated: false };
+  }
+  const marker = "\n…[guide truncated at 4 KiB — follow next[] or read PLAYBOOK.md]";
+  const budget = Math.max(0, maxBytes - utf8Bytes(marker));
+  const sliced = Buffer.from(text, "utf8").subarray(0, budget).toString("utf8");
+  return { guide: `${sliced}${marker}`, truncated: true };
+}
+
+export function dustmapGuide(_ctx: McpToolContext = { cwd: process.cwd() }): ToolResult {
+  const { guide, truncated } = truncateGuide(loadGuideText(), GUIDE_MAX_BYTES);
+  return withNext("dustmap_guide", {
+    ok: true,
+    data: {
+      guide,
+      truncated,
+      bytes: utf8Bytes(guide),
+    },
+  });
 }
 
 export type SummaryArgs = {
@@ -83,6 +265,7 @@ export function dustmapSummary(ctx: McpToolContext, args: SummaryArgs = {}): Too
   }
 
   return withFreshness(
+    "dustmap_summary",
     {
       findingCount: report.findings.length,
       byCategory,
@@ -153,6 +336,7 @@ export function dustmapList(ctx: McpToolContext, args: ListArgs = {}): ToolResul
   const page = filtered.slice(offset, offset + limit);
 
   return withFreshness(
+    "dustmap_list",
     {
       total: filtered.length,
       offset,
@@ -196,6 +380,7 @@ export function dustmapShow(ctx: McpToolContext, args: ShowArgs): ToolResult {
   }
 
   return withFreshness(
+    "dustmap_show",
     {
       finding: {
         fingerprint: finding.fingerprint,
@@ -256,6 +441,7 @@ export function dustmapDecide(ctx: McpToolContext, args: DecideArgs): ToolResult
   const muted = args.verdict === "keep" || args.verdict === "wontfix";
 
   return withFreshness(
+    "dustmap_decide",
     {
       recorded: true,
       decision,
@@ -316,7 +502,7 @@ export async function dustmapScan(
       if (n > 0) byCategory[cat] = n;
     }
 
-    return {
+    return withNext("dustmap_scan", {
       ok: true,
       reportCommit: result.report.scan.commit,
       data: {
@@ -327,25 +513,25 @@ export async function dustmapScan(
           path: p.path,
           score: p.score,
           signalCount: p.findingFingerprints.length,
+          findingFingerprints: p.findingFingerprints.slice(0, 3),
         })),
         reportPath: result.reportPath,
         mode: result.report.scan.mode,
         stale: false,
         reportCommit: result.report.scan.commit,
       },
-    };
+    });
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
-/** Tool names registered on the MCP server (DUST-11). */
+/** Tool names registered on the MCP server (DUST-11 + guide from DUST-17). */
 export const DUSTMAP_TOOL_NAMES = [
   "dustmap_summary",
   "dustmap_list",
   "dustmap_show",
   "dustmap_decide",
   "dustmap_scan",
+  "dustmap_guide",
 ] as const;
-
-export type DustmapToolName = (typeof DUSTMAP_TOOL_NAMES)[number];
