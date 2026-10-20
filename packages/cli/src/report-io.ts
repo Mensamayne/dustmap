@@ -1,10 +1,16 @@
 /**
  * Shared report / outputDir helpers for CLI verbs that read an existing scan.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
-import { Report, type ReportType } from "@dustmap/contract";
-import { defaultConfig, loadConfig, resolveOutputDir } from "@dustmap/core";
+import type { ReportType } from "@dustmap/contract";
+import {
+  defaultConfig,
+  loadConfig,
+  loadReportFile,
+  resolveOutputDir,
+  type ReportKind,
+} from "@dustmap/core";
 
 export function resolveCliOutputDir(cwd: string, out?: string): string {
   if (out) return path.resolve(cwd, out);
@@ -14,12 +20,14 @@ export function resolveCliOutputDir(cwd: string, out?: string): string {
   return resolveOutputDir(cwd, config.outputDir);
 }
 
-export function loadReportOrThrow(outDir: string): ReportType {
-  const reportPath = path.join(outDir, "report.json");
-  if (!existsSync(reportPath)) {
-    throw new Error(`No report.json under ${outDir}. Run: dustmap scan --out ${outDir}`);
-  }
-  return Report.parse(JSON.parse(readFileSync(reportPath, "utf8")));
+/** Full map (`report.json`) by default; `diff` reads `report.diff.json` from `scan --diff`. */
+export function loadReportOrThrow(outDir: string, kind: ReportKind = "full"): ReportType {
+  return loadReportFile(outDir, kind);
+}
+
+/** ` --report diff` for follow-up commands that must keep reading the diff report; empty for the map. */
+export function reportFlag(kind: ReportKind): string {
+  return kind === "diff" ? " --report diff" : "";
 }
 
 export function findFinding(report: ReportType, fingerprint: string) {

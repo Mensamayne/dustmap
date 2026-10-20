@@ -1,6 +1,6 @@
 /**
  * Orchestrate full/diff scans: collect files, classify their roles (DUST-20), run adapters with cache,
- * write report.json under outputDir only.
+ * write the report under outputDir only (full → report.json, diff → report.diff.json).
  */
 import { mkdirSync, readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -24,6 +24,7 @@ import { dedupeSemanticAgainstClones } from "../semantic/dedupe-vs-clones.js";
 import { openAdapterCache } from "./cache.js";
 import { gitHead } from "./git.js";
 import { takeInventory } from "./inventory.js";
+import { reportFilePath } from "./report-file.js";
 
 export type RunScanOptions = {
   repoRoot: string;
@@ -171,7 +172,8 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
     findings: judged.findings,
   });
 
-  const reportPath = path.join(outputDir, "report.json");
+  // diff → report.diff.json: the full map in report.json changes only on a full scan (BUG-03).
+  const reportPath = reportFilePath(outputDir, opts.mode);
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 
   return { report, reportPath, outputDir, adapterRuns, filesScanned: files };

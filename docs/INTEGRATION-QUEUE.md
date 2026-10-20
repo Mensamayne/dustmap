@@ -4,7 +4,7 @@ If your repo already keeps agent work as `queue.json` + one markdown brief per t
 
 ## What you need
 
-1. A Dustmap report (`dustmap scan` → `report.json` under `outputDir`).
+1. A Dustmap report (`dustmap scan` → `report.json` under `outputDir`). Findings from a diff scan (`report.diff.json`) are enqueued with `--report diff`.
 2. `sinks.briefs` in `dustmap.config.json` (paths + id prefix + defaults).
 3. The `@dustmap/sink-briefs` CLI on your PATH (workspace bin or install).
 

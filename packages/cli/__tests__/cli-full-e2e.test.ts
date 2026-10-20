@@ -120,6 +120,53 @@ describe("dustmap CLI full loop (real bin)", () => {
     expect(report2.findings.some((f) => f.fingerprint === fp)).toBe(false);
   });
 
+  it("scan --diff writes report.diff.json; the map and its readers stay full (BUG-03)", () => {
+    const root = miniRepo();
+    const git = (args: string[]) => {
+      const r = spawnSync("git", args, { cwd: root, encoding: "utf8", windowsHide: true });
+      expect(r.status, r.stderr).toBe(0);
+    };
+    git(["init"]);
+    git(["config", "user.email", "cli@dustmap.test"]);
+    git(["config", "user.name", "Dustmap CLI"]);
+    git(["add", "."]);
+    git(["commit", "-m", "init"]);
+    const out = path.join(root, ".dustmap-out");
+    expect(dustmap(["init", root], repoRoot).status).toBe(0);
+    expect(dustmap(["scan", root, "--out", out], repoRoot).status).toBe(0);
+    const mapBytes = readFileSync(path.join(out, "report.json"), "utf8");
+    const mapCount = Report.parse(JSON.parse(mapBytes)).findings.length;
+
+    writeFileSync(path.join(root, "src", "orphan.ts"), "export const orphan = 3;\n");
+    git(["add", "."]);
+    git(["commit", "-m", "orphan"]);
+    const scanDiff = dustmap(["scan", root, "--diff", "HEAD~1", "--out", out], repoRoot);
+    expect(scanDiff.status, scanDiff.stderr || scanDiff.stdout).toBe(0);
+    expect(scanDiff.stdout).toMatch(/full map \(report\.json\) is unchanged/);
+    expect(readFileSync(path.join(out, "report.json"), "utf8")).toBe(mapBytes);
+
+    const summary = dustmap(["summary", "--json", "--out", out], repoRoot);
+    expect(summary.status, summary.stderr).toBe(0);
+    expect((JSON.parse(summary.stdout) as { findingCount: number }).findingCount).toBe(mapCount);
+
+    const diffSummary = dustmap(["summary", "--report", "diff", "--out", out], repoRoot);
+    expect(diffSummary.status, diffSummary.stderr).toBe(0);
+    expect(diffSummary.stdout).toMatch(/^Diff report vs HEAD~1/m);
+
+    const diffList = dustmap(["list", "--report", "diff", "--json", "--out", out], repoRoot);
+    expect(diffList.status, diffList.stderr).toBe(0);
+    const items = (JSON.parse(diffList.stdout) as { items: { path?: string }[] }).items;
+    expect(items.some((i) => i.path === "src/orphan.ts")).toBe(true);
+
+    const sarifFile = path.join(out, "diff.sarif.json");
+    const exp = dustmap(["export", "--to", "sarif", "--report", "diff", "--file", sarifFile, "--out", out], repoRoot);
+    expect(exp.status, exp.stderr).toBe(0);
+    expect(readFileSync(sarifFile, "utf8")).toContain("src/orphan.ts");
+
+    expect(dustmap(["ratchet", "--update-baseline", "--report", "diff", "--out", out], repoRoot).status).toBe(2);
+    expect(dustmap(["summary", "--report", "partial", "--out", out], repoRoot).status).toBe(2);
+  });
+
   it("export markdown has stable sections; SARIF validates", () => {
     const root = miniRepo();
     const out = mkdtempSync(path.join(tmpdir(), "dustmap-export-"));

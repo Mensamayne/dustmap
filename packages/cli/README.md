@@ -35,31 +35,33 @@ Creates `dustmap.config.json` when missing (detects frameworks / entry points). 
 
 ### `dustmap scan [path] [--diff <ref>] [--config <file>] [--out <dir>] [--commit <sha>] [--json]`
 
-Runs all built-in detectors. Writes `report.json` under `--out` / `outputDir` only.
+Runs all built-in detectors and writes only under `--out` / `outputDir`. A full scan writes `report.json` — the map of the whole repo. `--diff <ref>` scans files changed since `<ref>` (plus import neighbours) into a separate `report.diff.json`; the map is never touched by a diff scan.
 
-### `dustmap summary [--out <dir>] [--json]`
+Every command below reads the map by default; add `--report diff` to read the diff report instead.
+
+### `dustmap summary [--report full|diff] [--out <dir>] [--json]`
 
 Category counts, top places, report age vs `HEAD`.
 
-### `dustmap list [--category <c>] [--path <prefix>] [--min-confidence low|medium|high] [--offset <n>] [--limit <n>] [--out <dir>] [--json]`
+### `dustmap list [--report full|diff] [--category <c>] [--path <prefix>] [--min-confidence low|medium|high] [--offset <n>] [--limit <n>] [--out <dir>] [--json]`
 
 Browse findings page by page, highest confidence first (same filter as the MCP tool `dustmap_list`; at most 50 per page). Safest delete candidates: `dustmap list --category dead-code --min-confidence high`.
 
-### `dustmap show <fingerprint> [--out <dir>] [--json]`
+### `dustmap show <fingerprint> [--report full|diff] [--out <dir>] [--json]`
 
 One finding with locations and evidence.
 
-### `dustmap decide <fingerprint> keep|fix|wontfix --reason "…" [--by <who>] [--out <dir>] [--json]`
+### `dustmap decide <fingerprint> keep|fix|wontfix --reason "…" [--by <who>] [--report full|diff] [--out <dir>] [--json]`
 
 Records a decision in `decisions.yml`. `keep` / `wontfix` mute the finding on the next scan until the code fingerprint changes.
 
-### `dustmap export --to markdown|sarif [--out <dir>] [--file <path>]`
+### `dustmap export --to markdown|sarif [--report full|diff] [--out <dir>] [--file <path>]`
 
 Markdown for PRs/issues; SARIF 2.1.0 for GitHub code scanning. Prints to stdout unless `--file` is set.
 
-### `dustmap ratchet [--update-baseline] [--out <dir>] [--json]`
+### `dustmap ratchet [--update-baseline] [--report full|diff] [--out <dir>] [--json]`
 
-Fails with exit **1** when there are **new** findings above the configured confidence floor. `--update-baseline` records the current set (explicit only).
+Fails with exit **1** when there are **new** findings above the configured confidence floor. `--update-baseline` records the current set from the full map (explicit only; not allowed with `--report diff`).
 
 ## Categories
 
@@ -81,7 +83,7 @@ Fails with exit **1** when there are **new** findings above the configured confi
 
 ## GitHub Action
 
-Composite action at [`action/`](./action/): PR diff scan → SARIF upload → optional ratchet. It never commits to your repo.
+Composite action at [`action/`](./action/): PR diff scan (`report.diff.json`) → SARIF upload → optional ratchet on that diff report. It never commits to your repo.
 
 | Input | Default | Meaning |
 |-------|---------|---------|

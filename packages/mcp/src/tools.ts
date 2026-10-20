@@ -3,6 +3,7 @@
  * Pure data in / out; the server layer applies size limits and MCP content wrapping.
  * Every success payload includes `next` (1–3 suggested follow-ups, DUST-17).
  */
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,8 +14,10 @@ import {
   loadConfig,
   resolveOutputDir,
   runScan,
+  reportFilePath,
   upsertDecision,
   type ListFindingsPage,
+  type ReportKind,
 } from "@dustmap/core";
 import { reportFreshness, utf8Bytes } from "./limits.js";
 import {
@@ -77,6 +80,11 @@ function firstListFingerprint(data: Record<string, unknown>): string | undefined
   return typeof fp === "string" ? fp : undefined;
 }
 
+/** `{ report: "diff" }` when the reply came from report.diff.json, so follow-ups keep reading it. */
+function reportArgs(data: Record<string, unknown>): Record<string, unknown> {
+  return data.report === "diff" ? { report: "diff" } : {};
+}
+
 /** 1–3 next tool calls an agent can follow without reading docs. */
 export function suggestNext(
   tool: DustmapToolName,
@@ -87,14 +95,18 @@ export function suggestNext(
     tool !== "dustmap_scan" &&
     tool !== "dustmap_guide"
   ) {
+    // The map (report.json) is refreshed only by a full scan; a diff scan writes report.diff.json (BUG-03).
+    const diff = data.report === "diff";
     return [
       {
         tool: "dustmap_scan",
-        args: { mode: "diff" },
+        args: { mode: diff ? "diff" : "full" },
         reason:
           data.stale === "unknown"
             ? "HEAD unavailable — scan in a repo with commits before decide/enqueue"
-            : "Report is stale — refresh with a diff scan before decide/enqueue",
+            : diff
+              ? "Diff report is stale — re-run the diff scan before decide/enqueue"
+              : "The map is stale — a full scan refreshes it before decide/enqueue",
       },
     ];
   }
@@ -102,26 +114,40 @@ export function suggestNext(
   switch (tool) {
     case "dustmap_guide":
       return [
-        { tool: "dustmap_summary", reason: "See top places and report freshness" },
+        { tool: "dustmap_summary", reason: "See top places and whether the map matches HEAD" },
         {
           tool: "dustmap_scan",
-          args: { mode: "diff" },
-          reason: "If there is no report yet, or it is stale",
+          args: { mode: "full" },
+          reason: "If there is no map yet, or it is stale",
         },
       ];
     case "dustmap_scan":
+      if (data.mode === "diff") {
+        return [
+          {
+            tool: "dustmap_list",
+            args: { report: "diff" },
+            reason: "Findings in the changed files (the full map is unchanged)",
+          },
+          { tool: "dustmap_summary", reason: "Back to the map of the whole repo" },
+        ];
+      }
       return [
         { tool: "dustmap_summary", reason: "Read counts and top places after the scan" },
       ];
     case "dustmap_summary": {
       const fp = topFingerprint(data);
       const next: NextHint[] = [
-        { tool: "dustmap_list", reason: "Browse findings with filters / pagination" },
+        {
+          tool: "dustmap_list",
+          ...(data.report === "diff" ? { args: reportArgs(data) } : {}),
+          reason: "Browse findings with filters / pagination",
+        },
       ];
       if (fp) {
         next.push({
           tool: "dustmap_show",
-          args: { fingerprint: fp },
+          args: { fingerprint: fp, ...reportArgs(data) },
           reason: "Inspect evidence for the top place",
         });
       }
@@ -135,7 +161,7 @@ export function suggestNext(
       return [
         {
           tool: "dustmap_show",
-          args: { fingerprint: fp },
+          args: { fingerprint: fp, ...reportArgs(data) },
           reason: "Open full evidence + verifyHint for the first item",
         },
         {
@@ -143,6 +169,7 @@ export function suggestNext(
           args: {
             offset: typeof data.offset === "number" ? data.offset + (typeof data.limit === "number" ? data.limit : 20) : 20,
             limit: typeof data.limit === "number" ? data.limit : 20,
+            ...reportArgs(data),
           },
           reason: "Next page if hasMore",
         },
@@ -161,6 +188,7 @@ export function suggestNext(
             fingerprint: fp,
             verdict: "keep",
             reason: "Explain why this finding is intentional (min 10 chars)",
+            ...reportArgs(data),
           },
           reason: "After running verifyHint — record keep/wontfix/fix",
         },
@@ -169,12 +197,12 @@ export function suggestNext(
     }
     case "dustmap_decide":
       return [
+        { tool: "dustmap_summary", reason: "Pick the next place (the decision is saved)" },
         {
           tool: "dustmap_scan",
-          args: { mode: "diff" },
-          reason: "Re-scan so muted findings drop out of the report",
+          args: { mode: "full" },
+          reason: "When done deciding: a full scan drops muted findings from the map",
         },
-        { tool: "dustmap_summary", reason: "Confirm the new top places" },
       ];
     default:
       return [{ tool: "dustmap_guide", reason: "Re-read the agent loop" }];
@@ -197,6 +225,7 @@ function withFreshness(
   data: Record<string, unknown>,
   report: ReportType,
   cwd: string,
+  kind: ReportKind,
 ): ToolSuccess {
   const head = gitHead(cwd);
   const freshness = reportFreshness(report.scan.commit, head);
@@ -205,6 +234,7 @@ function withFreshness(
     reportCommit: report.scan.commit,
     data: {
       ...data,
+      report: kind,
       stale: freshness.stale,
       headAvailable: freshness.headAvailable,
       ...(freshness.warning ? { staleWarning: freshness.warning } : {}),
@@ -215,9 +245,10 @@ function withFreshness(
 }
 
 const EMBEDDED_GUIDE = `Dustmap agent loop (report-only; never edits scanned source).
-1) dustmap_guide → 2) dustmap_summary (or dustmap_scan diff if missing/stale) →
+Map = report.json (full scan only); diff scans write report.diff.json (read with report: "diff").
+1) dustmap_guide → 2) dustmap_summary (or dustmap_scan full if the map is missing/stale) →
 3) dustmap_list / dustmap_show → 4) run verifyHint → 5) dustmap_decide or enqueue selected fingerprints.
-Rules: no delete without verifyHint; no keep without reason; stale → scan diff first.
+Rules: no delete without verifyHint; no keep without reason; stale map → full scan first.
 Tell humans places and effects, not fingerprint walls. Follow each reply's next[] field.`;
 
 function loadGuideText(): string {
@@ -252,6 +283,8 @@ export function dustmapGuide(_ctx: McpToolContext = { cwd: process.cwd() }): Too
 }
 
 export type SummaryArgs = {
+  /** full = report.json (the map, default); diff = report.diff.json (BUG-03). */
+  report?: ReportKind;
   out?: string;
 };
 
@@ -259,7 +292,7 @@ export function dustmapSummary(ctx: McpToolContext, args: SummaryArgs = {}): Too
   const outDir = resolveMcpOutputDir(ctx.cwd, args.out);
   let report: ReportType;
   try {
-    report = loadReportOrThrow(outDir);
+    report = loadReportOrThrow(outDir, args.report ?? "full");
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
@@ -285,10 +318,13 @@ export function dustmapSummary(ctx: McpToolContext, args: SummaryArgs = {}): Too
     },
     report,
     ctx.cwd,
+    args.report ?? "full",
   );
 }
 
 export type ListArgs = {
+  /** full = report.json (the map, default); diff = report.diff.json (BUG-03). */
+  report?: ReportKind;
   out?: string;
   category?: string;
   /** Minimum confidence floor: low | medium | high (inclusive). */
@@ -302,7 +338,7 @@ export function dustmapList(ctx: McpToolContext, args: ListArgs = {}): ToolResul
   const outDir = resolveMcpOutputDir(ctx.cwd, args.out);
   let report: ReportType;
   try {
-    report = loadReportOrThrow(outDir);
+    report = loadReportOrThrow(outDir, args.report ?? "full");
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
@@ -333,10 +369,13 @@ export function dustmapList(ctx: McpToolContext, args: ListArgs = {}): ToolResul
     },
     report,
     ctx.cwd,
+    args.report ?? "full",
   );
 }
 
 export type ShowArgs = {
+  /** full = report.json (the map, default); diff = report.diff.json (BUG-03). */
+  report?: ReportKind;
   fingerprint: string;
   out?: string;
 };
@@ -345,7 +384,7 @@ export function dustmapShow(ctx: McpToolContext, args: ShowArgs): ToolResult {
   const outDir = resolveMcpOutputDir(ctx.cwd, args.out);
   let report: ReportType;
   try {
-    report = loadReportOrThrow(outDir);
+    report = loadReportOrThrow(outDir, args.report ?? "full");
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
@@ -376,10 +415,13 @@ export function dustmapShow(ctx: McpToolContext, args: ShowArgs): ToolResult {
     },
     report,
     ctx.cwd,
+    args.report ?? "full",
   );
 }
 
 export type DecideArgs = {
+  /** full = report.json (the map, default); diff = report.diff.json (BUG-03). */
+  report?: ReportKind;
   fingerprint: string;
   verdict: "keep" | "fix" | "wontfix";
   reason: string;
@@ -391,7 +433,7 @@ export function dustmapDecide(ctx: McpToolContext, args: DecideArgs): ToolResult
   const outDir = resolveMcpOutputDir(ctx.cwd, args.out);
   let report: ReportType;
   try {
-    report = loadReportOrThrow(outDir);
+    report = loadReportOrThrow(outDir, args.report ?? "full");
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
@@ -432,6 +474,7 @@ export function dustmapDecide(ctx: McpToolContext, args: DecideArgs): ToolResult
     },
     report,
     ctx.cwd,
+    args.report ?? "full",
   );
 }
 
@@ -439,12 +482,39 @@ export type ScanArgs = {
   /** Repo to scan; defaults to context cwd. */
   repoPath?: string;
   out?: string;
-  /** Default `diff`. */
+  /** Default `diff` (writes report.diff.json; `full` rewrites the map in report.json). */
   mode?: "full" | "diff";
-  /** Base ref for diff mode; default `HEAD~1`. */
+  /** Base ref for diff mode; default = commit of the map (report.json), else `HEAD~1`. */
   baseRef?: string;
   config?: string;
 };
+
+/**
+ * Diff base when the caller gives none: the commit the map was scanned at, so every change since the
+ * map is covered (not just the last commit). Falls back to HEAD~1 without a usable map commit.
+ */
+function defaultDiffBase(repoRoot: string, outputDir: string): { ref: string; from: "map-commit" | "HEAD~1" } {
+  if (existsSync(reportFilePath(outputDir, "full"))) {
+    let commit: string | undefined;
+    try {
+      commit = loadReportOrThrow(outputDir, "full").scan.commit;
+    } catch {
+      commit = undefined;
+    }
+    if (commit) {
+      try {
+        execFileSync("git", ["cat-file", "-e", `${commit}^{commit}`], {
+          cwd: repoRoot,
+          stdio: ["ignore", "ignore", "ignore"],
+        });
+        return { ref: commit, from: "map-commit" };
+      } catch {
+        // map commit unknown to this checkout (e.g. "uncommitted" or a pinned snapshot sha)
+      }
+    }
+  }
+  return { ref: "HEAD~1", from: "HEAD~1" };
+}
 
 export async function dustmapScan(
   ctx: McpToolContext,
@@ -452,7 +522,6 @@ export async function dustmapScan(
 ): Promise<ToolResult> {
   const repoRoot = path.resolve(ctx.cwd, args.repoPath ?? ".");
   const mode = args.mode ?? "diff";
-  const baseRef = mode === "diff" ? (args.baseRef ?? "HEAD~1") : undefined;
 
   const configPath = args.config ? path.resolve(ctx.cwd, args.config) : undefined;
   let loaded: ReturnType<typeof loadConfig>;
@@ -465,6 +534,13 @@ export async function dustmapScan(
   const outputDir = args.out
     ? path.resolve(ctx.cwd, args.out)
     : resolveOutputDir(repoRoot, loaded.config.outputDir);
+  const base =
+    mode === "diff"
+      ? args.baseRef !== undefined
+        ? { ref: args.baseRef, from: "argument" as const }
+        : defaultDiffBase(repoRoot, outputDir)
+      : undefined;
+  const baseRef = base?.ref;
 
   try {
     const result = await runScan({
@@ -496,9 +572,17 @@ export async function dustmapScan(
         })),
         reportPath: result.reportPath,
         mode: result.report.scan.mode,
+        ...(base
+          ? {
+              baseRef: base.ref,
+              baseRefFrom: base.from,
+              note: "Diff report only (report.diff.json); the full map in report.json is unchanged.",
+            }
+          : {}),
       },
       result.report,
       repoRoot,
+      mode,
     );
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };

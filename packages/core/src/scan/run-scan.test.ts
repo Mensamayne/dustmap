@@ -121,6 +121,43 @@ describe("runScan", () => {
     expect(fps).toContain("src/a.ts");
   });
 
+  it("diff scan writes report.diff.json and leaves the full map untouched (BUG-03)", async () => {
+    const root = initGitRepo();
+    const out = mkdtempSync(path.join(tmpdir(), "dustmap-out-"));
+    const base = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    // c.ts is outside any later diff: its finding must survive in the map.
+    writeFileSync(path.join(root, "src", "c.ts"), "export const c = 3;\n", "utf8");
+    git(root, ["add", "src/c.ts"]);
+    git(root, ["commit", "-m", "add c"]);
+    const adapters = () => [
+      singleFileAdapter("only-b", "src/b.ts", "bOnly"),
+      singleFileAdapter("only-c", "src/c.ts", "cOnly"),
+    ];
+    const full = await runScan({ repoRoot: root, mode: "full", adapters: adapters(), outputDir: out });
+    expect(full.reportPath).toBe(path.join(out, "report.json"));
+    const mapBefore = readFileSync(path.join(out, "report.json"), "utf8");
+
+    writeFileSync(path.join(root, "src", "b.ts"), "import { a } from './a';\nexport const b = 22;\n", "utf8");
+    git(root, ["add", "src/b.ts"]);
+    git(root, ["commit", "-m", "change b"]);
+    const diff = await runScan({
+      repoRoot: root,
+      mode: "diff",
+      baseRef: base,
+      adapters: adapters(),
+      outputDir: out,
+    });
+
+    expect(diff.reportPath).toBe(path.join(out, "report.diff.json"));
+    expect(readFileSync(path.join(out, "report.json"), "utf8")).toBe(mapBefore);
+    expect(full.report.findings.map((f) => f.locations[0]?.path)).toContain("src/c.ts");
+    const diffReport = JSON.parse(readFileSync(path.join(out, "report.diff.json"), "utf8")) as {
+      scan: { mode: string; baseRef?: string };
+    };
+    expect(diffReport.scan.mode).toBe("diff");
+    expect(diffReport.scan.baseRef).toBe(base);
+  });
+
   it("init writes config once and never overwrites", () => {
     const root = mkdtempSync(path.join(tmpdir(), "dustmap-init-"));
     writeFileSync(

@@ -21,8 +21,10 @@ Signals are **ranked by place**: where several kinds of signal overlap, that pla
 
 ```bash
 npx dustmap init          # detects your framework and entry points
-npx dustmap scan          # whole repo; --diff main for a pull request
+npx dustmap scan          # whole repo → the map (report.json)
 npx dustmap summary       # short overview for humans and agents
+npx dustmap scan --diff main            # a pull request → report.diff.json; the map stays as is
+npx dustmap list --report diff          # what the pull request added
 ```
 
 - **AI agents** read the report through an MCP server: summary first, details on demand.

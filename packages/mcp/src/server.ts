@@ -83,13 +83,18 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
         out: z
           .string()
           .optional()
-          .describe("outputDir with report.json (default: config or .dustmap)"),
+          .describe("outputDir with the reports (default: config or .dustmap)"),
+        report: z
+          .enum(["full", "diff"])
+          .optional()
+          .describe("full = report.json, the map of the whole repo (default); diff = report.diff.json from a diff scan"),
       },
     },
     async (args) =>
       toCallResult(
         dustmapSummary(ctx, {
           ...(args.out !== undefined ? { out: args.out } : {}),
+          ...(args.report !== undefined ? { report: args.report } : {}),
         }),
         maxResponseBytes,
       ),
@@ -101,7 +106,11 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
       description:
         "List findings with optional category/path/minConfidence filters and pagination (offset/limit). Results are sorted highest confidence first.",
       inputSchema: {
-        out: z.string().optional().describe("outputDir with report.json"),
+        out: z.string().optional().describe("outputDir with the reports"),
+        report: z
+          .enum(["full", "diff"])
+          .optional()
+          .describe("full = report.json, the map of the whole repo (default); diff = report.diff.json from a diff scan"),
         category: z
           .string()
           .optional()
@@ -129,6 +138,7 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
       toCallResult(
         dustmapList(ctx, {
           ...(args.out !== undefined ? { out: args.out } : {}),
+          ...(args.report !== undefined ? { report: args.report } : {}),
           ...(args.category !== undefined ? { category: args.category } : {}),
           ...(args.minConfidence !== undefined
             ? { minConfidence: args.minConfidence }
@@ -151,7 +161,11 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
           .string()
           .regex(/^[a-f0-9]{16}$/)
           .describe("16-char hex fingerprint from summary/list"),
-        out: z.string().optional().describe("outputDir with report.json"),
+        out: z.string().optional().describe("outputDir with the reports"),
+        report: z
+          .enum(["full", "diff"])
+          .optional()
+          .describe("full = report.json, the map of the whole repo (default); diff = report.diff.json from a diff scan"),
       },
     },
     async (args) =>
@@ -159,6 +173,7 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
         dustmapShow(ctx, {
           fingerprint: args.fingerprint,
           ...(args.out !== undefined ? { out: args.out } : {}),
+          ...(args.report !== undefined ? { report: args.report } : {}),
         }),
         maxResponseBytes,
       ),
@@ -174,6 +189,10 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
         verdict: z.enum(["keep", "fix", "wontfix"]),
         reason: z.string().min(10).describe("Why this decision (min 10 chars)"),
         out: z.string().optional(),
+        report: z
+          .enum(["full", "diff"])
+          .optional()
+          .describe("full = report.json, the map of the whole repo (default); diff = report.diff.json from a diff scan"),
         by: z.string().optional().describe("Actor label (default mcp)"),
       },
     },
@@ -184,6 +203,7 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
           verdict: args.verdict,
           reason: args.reason,
           ...(args.out !== undefined ? { out: args.out } : {}),
+          ...(args.report !== undefined ? { report: args.report } : {}),
           ...(args.by !== undefined ? { by: args.by } : {}),
         }),
         maxResponseBytes,
@@ -194,15 +214,15 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
     "dustmap_scan",
     {
       description:
-        "Run a Dustmap scan. Default mode is diff (changed files vs baseRef). Writes only under outputDir.",
+        "Run a Dustmap scan; writes only under outputDir. mode full rewrites the map (report.json). mode diff (default) scans files changed since baseRef into report.diff.json and leaves the map untouched.",
       inputSchema: {
         repoPath: z.string().optional().describe("Repo root (default: server cwd)"),
-        out: z.string().optional().describe("outputDir for report.json"),
+        out: z.string().optional().describe("outputDir for the reports"),
         mode: z.enum(["full", "diff"]).optional().describe("Scan mode (default diff)"),
         baseRef: z
           .string()
           .optional()
-          .describe("Git base ref for diff mode (default HEAD~1)"),
+          .describe("Git base ref for diff mode (default: the commit of the map in report.json, else HEAD~1)"),
         config: z.string().optional().describe("Path to dustmap.config.json"),
       },
     },

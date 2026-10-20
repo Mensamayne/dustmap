@@ -1,28 +1,34 @@
 #!/usr/bin/env node
 /**
  * Map action input fail-on (none|new-high|new-any) onto the Dustmap ratchet.
- * Plain Node — reads report.json + baseline.json under outputDir only. Never commits.
+ * Plain Node — reads a report (report.json, or report.diff.json with --report diff) + baseline.json
+ * under outputDir only. Never commits.
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const CONFIDENCE_RANK = { low: 1, medium: 2, high: 3 };
+// Same names as @dustmap/core REPORT_FILES; this script stays dependency-free inside the action.
+const REPORT_FILES = { full: "report.json", diff: "report.diff.json" };
 
 function usage() {
   console.error(
-    "Usage: node fail-on.mjs --fail-on none|new-high|new-any [--out <dir>] [--cwd <dir>]",
+    "Usage: node fail-on.mjs --fail-on none|new-high|new-any [--report full|diff] [--out <dir>] [--cwd <dir>]",
   );
   process.exit(2);
 }
 
 function parseArgs(argv) {
   let failOn = "new-high";
+  let report = "full";
   let out;
   let cwd = process.cwd();
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--fail-on") {
       failOn = argv[++i];
+    } else if (a === "--report") {
+      report = argv[++i];
     } else if (a === "--out") {
       out = argv[++i];
     } else if (a === "--cwd") {
@@ -38,7 +44,11 @@ function parseArgs(argv) {
     console.error(`Invalid --fail-on: ${failOn}`);
     usage();
   }
-  return { failOn, out, cwd };
+  if (!Object.hasOwn(REPORT_FILES, report)) {
+    console.error(`Invalid --report: ${report}`);
+    usage();
+  }
+  return { failOn, report, out, cwd };
 }
 
 function resolveOutDir(cwd, out) {
@@ -79,9 +89,9 @@ function main() {
   }
 
   const outDir = resolveOutDir(args.cwd, args.out);
-  const reportPath = path.join(outDir, "report.json");
+  const reportPath = path.join(outDir, REPORT_FILES[args.report]);
   if (!existsSync(reportPath)) {
-    console.error(`No report.json under ${outDir}. Run dustmap scan first.`);
+    console.error(`No ${REPORT_FILES[args.report]} under ${outDir}. Run dustmap scan first.`);
     process.exit(2);
   }
 

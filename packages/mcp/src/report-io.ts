@@ -2,10 +2,16 @@
  * Shared report / outputDir / git HEAD helpers for MCP tools (mirrors CLI; no CLI import).
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
-import { Report, type FindingType, type ReportType } from "@dustmap/contract";
-import { defaultConfig, loadConfig, resolveOutputDir } from "@dustmap/core";
+import type { FindingType, ReportType } from "@dustmap/contract";
+import {
+  defaultConfig,
+  loadConfig,
+  loadReportFile,
+  resolveOutputDir,
+  type ReportKind,
+} from "@dustmap/core";
 
 export function resolveMcpOutputDir(cwd: string, out?: string): string {
   if (out) return path.resolve(cwd, out);
@@ -15,12 +21,9 @@ export function resolveMcpOutputDir(cwd: string, out?: string): string {
   return resolveOutputDir(cwd, config.outputDir);
 }
 
-export function loadReportOrThrow(outDir: string): ReportType {
-  const reportPath = path.join(outDir, "report.json");
-  if (!existsSync(reportPath)) {
-    throw new Error(`No report.json under ${outDir}. Run dustmap_scan first.`);
-  }
-  return Report.parse(JSON.parse(readFileSync(reportPath, "utf8")));
+/** Full map (`report.json`) by default; `diff` reads `report.diff.json` (BUG-03). */
+export function loadReportOrThrow(outDir: string, kind: ReportKind = "full"): ReportType {
+  return loadReportFile(outDir, kind);
 }
 
 export function findFinding(

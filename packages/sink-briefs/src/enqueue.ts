@@ -2,14 +2,16 @@
  * Enqueue selected finding fingerprints into a file queue + markdown briefs.
  * Same fingerprint twice → no second brief or queue row. Never overwrites briefs.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { Report, type FindingType, type ReportType } from "@dustmap/contract";
+import type { FindingType, ReportType } from "@dustmap/contract";
 import {
   type BriefsSinkConfigType,
   defaultConfig,
   loadConfig,
+  loadReportFile,
   resolveOutputDir,
+  type ReportKind,
 } from "@dustmap/core";
 import {
   briefFileName,
@@ -25,8 +27,10 @@ import { renderBrief, titleForFinding } from "./template.js";
 export type EnqueueOptions = {
   cwd: string;
   fingerprints: string[];
-  /** Override outputDir that holds report.json. */
+  /** Override outputDir that holds the reports. */
   out?: string;
+  /** full = report.json (default); diff = report.diff.json from a diff scan (BUG-03). */
+  report?: ReportKind;
   configPath?: string;
 };
 
@@ -41,14 +45,6 @@ export type EnqueueResult = {
   stdout: string;
   stderr: string;
 };
-
-function loadReport(outDir: string): ReportType {
-  const reportPath = path.join(outDir, "report.json");
-  if (!existsSync(reportPath)) {
-    throw new Error(`No report.json under ${outDir}. Run dustmap scan first.`);
-  }
-  return Report.parse(JSON.parse(readFileSync(reportPath, "utf8")));
-}
 
 function requireBriefsConfig(cwd: string, configPath?: string): BriefsSinkConfigType {
   const loaded = loadConfig(cwd, configPath);
@@ -84,7 +80,7 @@ export function enqueueFingerprints(opts: EnqueueOptions): EnqueueResult {
 
   let report: ReportType;
   try {
-    report = loadReport(outDir);
+    report = loadReportFile(outDir, opts.report ?? "full");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { exitCode: 2, items: [], stdout: "", stderr: `${msg}\n` };

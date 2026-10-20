@@ -2,6 +2,7 @@
  * CLI argv parsing for all dustmap verbs. Unknown flags → usage error (exit 2).
  */
 import type { DecisionVerdictType } from "@dustmap/contract";
+import { isReportKind, REPORT_KINDS, type ReportKind } from "@dustmap/core";
 
 export type ScanArgs = {
   command: "scan";
@@ -15,6 +16,8 @@ export type ScanArgs = {
 
 export type SummaryArgs = {
   command: "summary";
+  /** full = report.json (the map), diff = report.diff.json (BUG-03). */
+  report: ReportKind;
   out?: string;
   json: boolean;
 };
@@ -32,6 +35,8 @@ export type InitArgs = {
 
 export type ShowArgs = {
   command: "show";
+  /** full = report.json (the map), diff = report.diff.json (BUG-03). */
+  report: ReportKind;
   fingerprint: string;
   out?: string;
   json: boolean;
@@ -39,6 +44,8 @@ export type ShowArgs = {
 
 export type ListArgs = {
   command: "list";
+  /** full = report.json (the map), diff = report.diff.json (BUG-03). */
+  report: ReportKind;
   category?: string;
   minConfidence?: string;
   path?: string;
@@ -50,6 +57,8 @@ export type ListArgs = {
 
 export type DecideArgs = {
   command: "decide";
+  /** full = report.json (the map), diff = report.diff.json (BUG-03). */
+  report: ReportKind;
   fingerprint: string;
   verdict: DecisionVerdictType;
   reason: string;
@@ -60,6 +69,8 @@ export type DecideArgs = {
 
 export type ExportArgs = {
   command: "export";
+  /** full = report.json (the map), diff = report.diff.json (BUG-03). */
+  report: ReportKind;
   to: "markdown" | "sarif";
   out?: string;
   file?: string;
@@ -67,6 +78,8 @@ export type ExportArgs = {
 
 export type RatchetArgs = {
   command: "ratchet";
+  /** full = report.json (the map), diff = report.diff.json (BUG-03). */
+  report: ReportKind;
   out?: string;
   updateBaseline: boolean;
   json: boolean;
@@ -118,6 +131,15 @@ function stripHelp(rest: string[]): { help: boolean; rest: string[] } {
 
 const VERDICTS = new Set(["keep", "fix", "wontfix"]);
 
+function takeReport(argv: string[]): { kind: ReportKind; rest: string[] } {
+  const r = takeFlag(argv, "--report");
+  if (r.value === undefined) return { kind: "full", rest: r.rest };
+  if (!isReportKind(r.value)) {
+    throw new UsageError(`Flag --report must be one of: ${REPORT_KINDS.join(", ")} (got "${r.value}")`);
+  }
+  return { kind: r.value, rest: r.rest };
+}
+
 function parseCount(flag: string, value: string | undefined, min: number): number | undefined {
   if (value === undefined) return undefined;
   if (!/^\d+$/.test(value) || Number(value) < min) {
@@ -167,6 +189,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const h = stripHelp(rest);
     if (h.help) return { command: "help" };
     rest = h.rest;
+    const report = takeReport(rest);
+    rest = report.rest;
     const out = takeFlag(rest, "--out");
     rest = out.rest;
     const json = takeBool(rest, "--json");
@@ -175,6 +199,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     if (unknown.length) throw new UsageError(`Unknown flag: ${unknown[0]}`);
     return {
       command: "summary",
+      report: report.kind,
       ...(out.value !== undefined ? { out: out.value } : {}),
       json: json.on,
     };
@@ -215,6 +240,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const h = stripHelp(rest);
     if (h.help) return { command: "help" };
     rest = h.rest;
+    const report = takeReport(rest);
+    rest = report.rest;
     const out = takeFlag(rest, "--out");
     rest = out.rest;
     const json = takeBool(rest, "--json");
@@ -228,6 +255,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     return {
       command: "show",
+      report: report.kind,
       fingerprint,
       ...(out.value !== undefined ? { out: out.value } : {}),
       json: json.on,
@@ -238,6 +266,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const h = stripHelp(rest);
     if (h.help) return { command: "help" };
     rest = h.rest;
+    const report = takeReport(rest);
+    rest = report.rest;
     const category = takeFlag(rest, "--category");
     rest = category.rest;
     const minConfidence = takeFlag(rest, "--min-confidence");
@@ -259,6 +289,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const limitN = parseCount("--limit", limit.value, 1);
     return {
       command: "list",
+      report: report.kind,
       ...(category.value !== undefined ? { category: category.value } : {}),
       ...(minConfidence.value !== undefined ? { minConfidence: minConfidence.value } : {}),
       ...(pathPrefix.value !== undefined ? { path: pathPrefix.value } : {}),
@@ -273,6 +304,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const h = stripHelp(rest);
     if (h.help) return { command: "help" };
     rest = h.rest;
+    const report = takeReport(rest);
+    rest = report.rest;
     const reason = takeFlag(rest, "--reason");
     rest = reason.rest;
     const by = takeFlag(rest, "--by");
@@ -299,6 +332,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     return {
       command: "decide",
+      report: report.kind,
       fingerprint,
       verdict: verdict as DecisionVerdictType,
       reason: reason.value,
@@ -312,6 +346,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const h = stripHelp(rest);
     if (h.help) return { command: "help" };
     rest = h.rest;
+    const report = takeReport(rest);
+    rest = report.rest;
     const to = takeFlag(rest, "--to");
     rest = to.rest;
     const out = takeFlag(rest, "--out");
@@ -325,6 +361,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     return {
       command: "export",
+      report: report.kind,
       to: to.value,
       ...(out.value !== undefined ? { out: out.value } : {}),
       ...(file.value !== undefined ? { file: file.value } : {}),
@@ -335,6 +372,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const h = stripHelp(rest);
     if (h.help) return { command: "help" };
     rest = h.rest;
+    const report = takeReport(rest);
+    rest = report.rest;
     const out = takeFlag(rest, "--out");
     rest = out.rest;
     const update = takeBool(rest, "--update-baseline");
@@ -343,8 +382,12 @@ export function parseArgs(argv: string[]): ParsedArgs {
     rest = json.rest;
     const unknown = rest.filter((a) => a.startsWith("-"));
     if (unknown.length) throw new UsageError(`Unknown flag: ${unknown[0]}`);
+    if (update.on && report.kind === "diff") {
+      throw new UsageError("--update-baseline reads the full map; drop --report diff");
+    }
     return {
       command: "ratchet",
+      report: report.kind,
       ...(out.value !== undefined ? { out: out.value } : {}),
       updateBaseline: update.on,
       json: json.on,
@@ -361,12 +404,15 @@ export const HELP = `dustmap — report-only map of dead code, duplicates and re
 Usage:
   dustmap init [path] [--json] [--agent claude|cursor|codex|all] [--dry]
   dustmap scan [path] [--diff <ref>] [--config <file>] [--out <dir>] [--commit <sha>] [--json]
-  dustmap summary [--out <dir>] [--json]
-  dustmap list [--category <c>] [--path <prefix>] [--min-confidence low|medium|high] [--offset <n>] [--limit <n>] [--out <dir>] [--json]
-  dustmap show <fingerprint> [--out <dir>] [--json]
-  dustmap decide <fingerprint> keep|fix|wontfix --reason "…" [--by <who>] [--out <dir>] [--json]
-  dustmap export --to markdown|sarif [--out <dir>] [--file <path>]
-  dustmap ratchet [--update-baseline] [--out <dir>] [--json]
+  dustmap summary [--report full|diff] [--out <dir>] [--json]
+  dustmap list [--report full|diff] [--category <c>] [--path <prefix>] [--min-confidence low|medium|high] [--offset <n>] [--limit <n>] [--out <dir>] [--json]
+  dustmap show <fingerprint> [--report full|diff] [--out <dir>] [--json]
+  dustmap decide <fingerprint> keep|fix|wontfix --reason "…" [--by <who>] [--report full|diff] [--out <dir>] [--json]
+  dustmap export --to markdown|sarif [--report full|diff] [--out <dir>] [--file <path>]
+  dustmap ratchet [--update-baseline] [--report full|diff] [--out <dir>] [--json]
+
+Reports: a full scan writes report.json (the map of the whole repo); scan --diff writes
+report.diff.json and never touches the map. Readers use the map unless --report diff.
 
 From this monorepo (npm 11+ eats lone --flags):
   npm run dustmap -- -- scan <path> --out <dir>

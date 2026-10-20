@@ -455,12 +455,12 @@
       "brief": "docs/briefs/BUG-03-diff-scan-overwrites-map.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "high",
       "source": "audyt epiku DUST 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T20:45:35.762Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-04",

@@ -11,7 +11,7 @@ export function runDecideCommand(args: DecideArgs, cwd = process.cwd()): CmdResu
   const outDir = resolveCliOutputDir(cwd, args.out);
   let report;
   try {
-    report = loadReportOrThrow(outDir);
+    report = loadReportOrThrow(outDir, args.report);
   } catch (err) {
     return { exitCode: 2, stdout: "", stderr: `${err instanceof Error ? err.message : String(err)}\n` };
   }
@@ -21,7 +21,7 @@ export function runDecideCommand(args: DecideArgs, cwd = process.cwd()): CmdResu
     return {
       exitCode: 2,
       stdout: "",
-      stderr: `No finding with fingerprint ${args.fingerprint} in ${outDir}\n`,
+      stderr: `No finding with fingerprint ${args.fingerprint} in ${outDir} (${args.report} report)\n`,
     };
   }
 
@@ -55,7 +55,7 @@ export function runDecideCommand(args: DecideArgs, cwd = process.cwd()): CmdResu
     muted
       ? "Next scan will hide this finding from the report (until the code fingerprint changes)."
       : "Verdict is fix — finding stays visible until resolved.",
-    `dalej: dustmap scan --out ${outDir}`,
+    `dalej: dustmap scan --out ${outDir} (a full scan drops muted findings from the map)`,
   ];
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };
 }

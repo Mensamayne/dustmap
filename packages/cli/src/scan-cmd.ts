@@ -1,5 +1,5 @@
 /**
- * `dustmap scan` — run builtin adapters, write report under outputDir only.
+ * `dustmap scan` — run builtin adapters; full → report.json (the map), --diff → report.diff.json.
  */
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -89,7 +89,12 @@ export async function runScanCommand(args: ScanArgs): Promise<ScanCommandResult>
       }
     }
     lines.push(`Report: ${result.reportPath}`);
-    lines.push(`dalej: dustmap summary --out ${outputDir}`);
+    if (mode === "diff") {
+      lines.push(`Diff vs ${args.diff} only — the full map (report.json) is unchanged.`);
+      lines.push(`dalej: dustmap list --report diff --out ${outputDir}`);
+    } else {
+      lines.push(`dalej: dustmap summary --out ${outputDir}`);
+    }
   }
 
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };

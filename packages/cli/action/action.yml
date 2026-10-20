@@ -63,7 +63,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         set -euo pipefail
-        ARGS=(export --to sarif --file dustmap.sarif)
+        ARGS=(export --to sarif --report diff --file dustmap.sarif)
         if [ -n "${{ inputs.out }}" ]; then
           ARGS+=(--out "${{ inputs.out }}")
         fi
@@ -81,7 +81,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         set -euo pipefail
-        ARGS=(--fail-on "${{ inputs.fail-on }}" --cwd "${{ inputs.working-directory }}")
+        ARGS=(--fail-on "${{ inputs.fail-on }}" --report diff --cwd "${{ inputs.working-directory }}")
         if [ -n "${{ inputs.out }}" ]; then
           ARGS+=(--out "${{ inputs.out }}")
         fi

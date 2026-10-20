@@ -28,6 +28,14 @@ export type { DetectedProject, UnresolvedEntryPoint } from "./init/detect.js";
 export { runInit } from "./init/run-init.js";
 export type { InitResult } from "./init/run-init.js";
 export { runScan, snapshotRepoPaths, isOutsideRepo } from "./scan/run-scan.js";
+export {
+  REPORT_FILES,
+  REPORT_KINDS,
+  reportFilePath,
+  isReportKind,
+  loadReportFile,
+} from "./scan/report-file.js";
+export type { ReportKind } from "./scan/report-file.js";
 export { listFindings, DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from "./report/list.js";
 export type { ListFindingsOptions, ListFindingsPage } from "./report/list.js";
 export type { RunScanOptions, RunScanResult } from "./scan/run-scan.js";

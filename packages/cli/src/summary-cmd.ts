@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import type { ReportType } from "@dustmap/contract";
 import type { SummaryArgs } from "./args.js";
-import { loadReportOrThrow, resolveCliOutputDir } from "./report-io.js";
+import { loadReportOrThrow, reportFlag, resolveCliOutputDir } from "./report-io.js";
 
 export type SummaryCommandResult = {
   exitCode: 0 | 2;
@@ -41,7 +41,7 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
 
   let report: ReportType;
   try {
-    report = loadReportOrThrow(outDir);
+    report = loadReportOrThrow(outDir, args.report);
   } catch (err) {
     return {
       exitCode: 2,
@@ -96,6 +96,9 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
         : `Report commit ${report.scan.commit.slice(0, 12)} ≠ HEAD ${head!.slice(0, 12)} · scanned ${ageLabel(report.scan.startedAt)}`;
 
   const lines: string[] = [];
+  if (report.scan.mode === "diff") {
+    lines.push(`Diff report vs ${report.scan.baseRef ?? "?"} (changed files only; the full map is report.json)`);
+  }
   lines.push(commitLine);
   lines.push(`Findings: ${report.findings.length}`);
   for (const [cat, n] of Object.entries(report.summary.byCategory)) {
@@ -115,8 +118,8 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
   const topFp = report.summary.topPlaces[0]?.findingFingerprints[0];
   lines.push(
     topFp
-      ? `dalej: dustmap show ${topFp} --out ${outDir}`
-      : `dalej: dustmap summary --out ${outDir} --json`,
+      ? `dalej: dustmap show ${topFp}${reportFlag(args.report)} --out ${outDir}`
+      : `dalej: dustmap summary${reportFlag(args.report)} --out ${outDir} --json`,
   );
 
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };

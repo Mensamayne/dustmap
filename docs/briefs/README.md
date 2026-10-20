@@ -24,7 +24,7 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | DUST-20 | Rola każdego pliku: co jest naprawdę kodem |
 | DUST-21 | Filtr pewności w `dustmap_list` |
 | BUG-02 | `stale: false` gdy brak HEAD |
-| BUG-03 | Skan diff kasuje całą mapę; odświeżenie od złej bazy (czeka na decyzję) |
+| BUG-03 | Skan diff kasuje całą mapę; odświeżenie od złej bazy |
 | BUG-04 | `dustmap_scan` zawsze odpowiada „aktualny” |
 | BUG-05 | Harness żywego agenta: `--bare`, brak oceny, brudna migawka |
 | DUST-22 | `dustmap list` w CLI — pętla bez MCP |

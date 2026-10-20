@@ -2,7 +2,7 @@
  * `dustmap show <fingerprint>` — one finding with evidence and locations.
  */
 import type { ShowArgs } from "./args.js";
-import { findFinding, loadReportOrThrow, resolveCliOutputDir } from "./report-io.js";
+import { findFinding, loadReportOrThrow, reportFlag, resolveCliOutputDir } from "./report-io.js";
 
 export type CmdResult = { exitCode: 0 | 2; stdout: string; stderr: string };
 
@@ -10,7 +10,7 @@ export function runShowCommand(args: ShowArgs, cwd = process.cwd()): CmdResult {
   const outDir = resolveCliOutputDir(cwd, args.out);
   let report;
   try {
-    report = loadReportOrThrow(outDir);
+    report = loadReportOrThrow(outDir, args.report);
   } catch (err) {
     return { exitCode: 2, stdout: "", stderr: `${err instanceof Error ? err.message : String(err)}\n` };
   }
@@ -20,7 +20,7 @@ export function runShowCommand(args: ShowArgs, cwd = process.cwd()): CmdResult {
     return {
       exitCode: 2,
       stdout: "",
-      stderr: `No finding with fingerprint ${args.fingerprint} in ${outDir}\n`,
+      stderr: `No finding with fingerprint ${args.fingerprint} in ${outDir} (${args.report} report)\n`,
     };
   }
 
@@ -54,6 +54,6 @@ export function runShowCommand(args: ShowArgs, cwd = process.cwd()): CmdResult {
       `  ${finding.judgement.reason}`,
     );
   }
-  lines.push(`dalej: dustmap decide ${finding.fingerprint} keep --reason "…" --out ${outDir}`);
+  lines.push(`dalej: dustmap decide ${finding.fingerprint} keep --reason "…"${reportFlag(args.report)} --out ${outDir}`);
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };
 }

@@ -14,7 +14,7 @@ export function runExportCommand(args: ExportArgs, cwd = process.cwd()): CmdResu
   const outDir = resolveCliOutputDir(cwd, args.out);
   let report;
   try {
-    report = loadReportOrThrow(outDir);
+    report = loadReportOrThrow(outDir, args.report);
   } catch (err) {
     return { exitCode: 2, stdout: "", stderr: `${err instanceof Error ? err.message : String(err)}\n` };
   }

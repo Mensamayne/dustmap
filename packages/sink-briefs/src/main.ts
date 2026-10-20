@@ -1,6 +1,7 @@
 /**
  * dustmap-briefs CLI — enqueue selected Dustmap fingerprints into a file queue.
  */
+import { isReportKind, REPORT_KINDS, type ReportKind } from "@dustmap/core";
 import { enqueueFingerprints } from "./enqueue.js";
 
 export { enqueueFingerprints } from "./enqueue.js";
@@ -15,7 +16,7 @@ export {
 const HELP = `dustmap-briefs — turn selected Dustmap findings into file-queue briefs
 
 Usage:
-  dustmap-briefs enqueue <fingerprint…> [--out <dir>] [--config <file>]
+  dustmap-briefs enqueue <fingerprint…> [--report full|diff] [--out <dir>] [--config <file>]
 
 Only listed fingerprints are enqueued (never the whole report).
 Same fingerprint twice → no second brief or queue row.
@@ -28,6 +29,7 @@ export type Parsed =
       fingerprints: string[];
       out?: string;
       config?: string;
+      report?: ReportKind;
     };
 
 export class UsageError extends Error {
@@ -50,6 +52,7 @@ export function parseArgs(argv: string[]): Parsed {
   let rest = argv.slice(1);
   let out: string | undefined;
   let config: string | undefined;
+  let report: ReportKind | undefined;
   const fingerprints: string[] = [];
 
   while (rest.length > 0) {
@@ -57,6 +60,15 @@ export function parseArgs(argv: string[]): Parsed {
     if (a === "--out") {
       if (!rest[1] || rest[1].startsWith("-")) throw new UsageError("Flag --out requires a value");
       out = rest[1];
+      rest = rest.slice(2);
+      continue;
+    }
+    if (a === "--report") {
+      const v = rest[1];
+      if (!v || !isReportKind(v)) {
+        throw new UsageError(`Flag --report must be one of: ${REPORT_KINDS.join(", ")}`);
+      }
+      report = v;
       rest = rest.slice(2);
       continue;
     }
@@ -78,6 +90,7 @@ export function parseArgs(argv: string[]): Parsed {
     fingerprints,
     ...(out !== undefined ? { out } : {}),
     ...(config !== undefined ? { config } : {}),
+    ...(report !== undefined ? { report } : {}),
   };
 }
 
@@ -103,6 +116,7 @@ async function main(argv = process.argv.slice(2)): Promise<number> {
     fingerprints: parsed.fingerprints,
     ...(parsed.out !== undefined ? { out: parsed.out } : {}),
     ...(parsed.config !== undefined ? { configPath: parsed.config } : {}),
+    ...(parsed.report !== undefined ? { report: parsed.report } : {}),
   });
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);

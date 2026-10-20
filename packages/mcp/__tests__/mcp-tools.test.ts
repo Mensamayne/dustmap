@@ -362,6 +362,70 @@ describe("Dustmap MCP tools (in-process client)", () => {
     expect(existsSync(path.join(outDir, "report.json"))).toBe(true);
   });
 
+  it("diff scan covers every commit since the map and never rewrites the map (BUG-03)", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-diffbase-"));
+    writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "mcp-diffbase", private: true, type: "module" }),
+    );
+    mkdirSync(path.join(root, "src"), { recursive: true });
+    writeFileSync(path.join(root, "src", "a.ts"), "export const a = 1;\n");
+    git(root, ["init"]);
+    git(root, ["config", "user.email", "mcp@dustmap.test"]);
+    git(root, ["config", "user.name", "Dustmap MCP"]);
+    git(root, ["add", "."]);
+    git(root, ["commit", "-m", "a"]);
+    const mapCommit = git(root, ["rev-parse", "HEAD"]);
+    const outDir = path.join(root, ".dustmap");
+
+    const pair = await connectPair({ cwd: root });
+    closers.push(pair.close);
+    const full = JSON.parse(
+      textPayload(await pair.client.callTool({ name: "dustmap_scan", arguments: { mode: "full", out: outDir } })),
+    );
+    expect(full.report).toBe("full");
+    const mapBytes = readFileSync(path.join(outDir, "report.json"), "utf8");
+
+    // Two commits after the map: a HEAD~1 base would miss b.ts.
+    writeFileSync(path.join(root, "src", "b.ts"), "export const b = 2;\n");
+    git(root, ["add", "."]);
+    git(root, ["commit", "-m", "b"]);
+    writeFileSync(path.join(root, "src", "c.ts"), "export const c = 3;\n");
+    git(root, ["add", "."]);
+    git(root, ["commit", "-m", "c"]);
+
+    const summary = JSON.parse(
+      textPayload(await pair.client.callTool({ name: "dustmap_summary", arguments: { out: outDir } })),
+    );
+    expect(summary.stale).toBe(true);
+    expect(summary.next[0]).toMatchObject({ tool: "dustmap_scan", args: { mode: "full" } });
+
+    const diff = JSON.parse(
+      textPayload(await pair.client.callTool({ name: "dustmap_scan", arguments: { out: outDir } })),
+    );
+    expect(diff.mode).toBe("diff");
+    expect(diff.report).toBe("diff");
+    expect(diff.baseRef).toBe(mapCommit);
+    expect(diff.baseRefFrom).toBe("map-commit");
+    expect(diff.filesScanned).toBe(2);
+    expect(diff.next[0]).toMatchObject({ tool: "dustmap_list", args: { report: "diff" } });
+    expect(readFileSync(path.join(outDir, "report.json"), "utf8")).toBe(mapBytes);
+    expect(existsSync(path.join(outDir, "report.diff.json"))).toBe(true);
+
+    const lastOnly = JSON.parse(
+      textPayload(
+        await pair.client.callTool({ name: "dustmap_scan", arguments: { out: outDir, baseRef: "HEAD~1" } }),
+      ),
+    );
+    expect(lastOnly.filesScanned).toBe(1);
+
+    const diffList = JSON.parse(
+      textPayload(await pair.client.callTool({ name: "dustmap_list", arguments: { out: outDir, report: "diff" } })),
+    );
+    expect(diffList.report).toBe("diff");
+    expect(diffList.reportCommit).toBe(git(root, ["rev-parse", "HEAD"]));
+  });
+
   it("scan in a repo without HEAD does not claim a fresh report", async () => {
     const root = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-scan-nohead-"));
     writeFileSync(

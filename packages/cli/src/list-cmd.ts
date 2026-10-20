@@ -3,7 +3,7 @@
  */
 import { listFindings, type ListFindingsPage } from "@dustmap/core";
 import type { ListArgs } from "./args.js";
-import { loadReportOrThrow, resolveCliOutputDir } from "./report-io.js";
+import { loadReportOrThrow, reportFlag, resolveCliOutputDir } from "./report-io.js";
 
 export type CmdResult = { exitCode: 0 | 2; stdout: string; stderr: string };
 
@@ -11,7 +11,7 @@ export function runListCommand(args: ListArgs, cwd = process.cwd()): CmdResult {
   const outDir = resolveCliOutputDir(cwd, args.out);
   let page: ListFindingsPage;
   try {
-    page = listFindings(loadReportOrThrow(outDir), {
+    page = listFindings(loadReportOrThrow(outDir, args.report), {
       ...(args.category !== undefined ? { category: args.category } : {}),
       ...(args.minConfidence !== undefined ? { minConfidence: args.minConfidence } : {}),
       ...(args.path !== undefined ? { pathPrefix: args.path } : {}),
@@ -45,11 +45,11 @@ export function runListCommand(args: ListArgs, cwd = process.cwd()): CmdResult {
   }
   const first = items[0];
   if (page.hasMore) {
-    lines.push(`dalej: dustmap list --offset ${page.offset + page.limit} --limit ${page.limit} --out ${outDir} (albo dustmap show <fingerprint>)`);
+    lines.push(`dalej: dustmap list${reportFlag(args.report)} --offset ${page.offset + page.limit} --limit ${page.limit} --out ${outDir} (albo dustmap show <fingerprint>)`);
   } else if (first) {
-    lines.push(`dalej: dustmap show ${first.fingerprint} --out ${outDir}`);
+    lines.push(`dalej: dustmap show ${first.fingerprint}${reportFlag(args.report)} --out ${outDir}`);
   } else {
-    lines.push(`dalej: dustmap summary --out ${outDir}`);
+    lines.push(`dalej: dustmap summary${reportFlag(args.report)} --out ${outDir}`);
   }
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };
 }
