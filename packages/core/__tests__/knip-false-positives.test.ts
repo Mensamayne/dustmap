@@ -56,6 +56,9 @@ describe("knip false positives on knip-app", () => {
           f.kind === "unused-file" && PROTECTED.some((p) => f.locations[0]?.path === p),
       );
       expect(unusedProtected).toEqual([]);
+      // Test data under fixtures/ is read from disk, never imported — not dead code (BUG-06).
+      const onFixtures = findings.filter((f) => f.locations.some((loc) => loc.path.startsWith("fixtures/")));
+      expect(onFixtures).toEqual([]);
     },
     60_000,
   );

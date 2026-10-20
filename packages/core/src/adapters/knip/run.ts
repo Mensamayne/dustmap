@@ -20,9 +20,9 @@ const BLOCKED_ROLES = new Set(["generated", "vendored", "minified", "oversized"]
 /**
  * Bump whenever this adapter's config building or normalization changes — part of the cache key,
  * so an upgraded Dustmap never serves findings computed by the old logic (2: per-workspace entries;
- * 3: fingerprints hash the code, not the name).
+ * 3: fingerprints hash the code, not the name; 4: no dead-code findings on fixtures).
  */
-const ADAPTER_REV = 3;
+const ADAPTER_REV = 4;
 
 type KnipPkg = { name?: string; version: string; bin?: string | Record<string, string> };
 

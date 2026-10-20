@@ -16,7 +16,11 @@ const SOURCE = "knip";
 const VERIFY_HINT =
   "Remove or wire the symbol, then run the package typecheck and its tests.";
 
-const BLOCKED_ROLES = new Set(["generated", "vendored", "minified", "oversized"]);
+/**
+ * Roles never reported as dead code: machine-made or foreign files, and `fixture` — test data read
+ * from disk by tests, which nothing imports by design (BUG-06).
+ */
+const BLOCKED_ROLES = new Set(["generated", "vendored", "minified", "oversized", "fixture"]);
 
 export type NormalizeKnipOptions = {
   /** Repo-relative POSIX paths Knip reported; used to drop findings outside the scan inventory. */

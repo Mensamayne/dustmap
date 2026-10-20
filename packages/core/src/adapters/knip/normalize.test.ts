@@ -58,6 +58,24 @@ describe("normalizeKnipReport", () => {
     expect(byKind["unused-dependency:left-pad"]?.confidence).toBe("high");
   });
 
+  it("never reports test data (fixture role) as dead code (BUG-06)", () => {
+    const report: KnipJsonReport = {
+      issues: [
+        { file: "fixtures/app/src/leaf.ts", files: [{ name: "fixtures/app/src/leaf.ts" }] },
+        { file: "fixtures/app/src/entry.ts", exports: [{ name: "fixtureEntry", line: 1 }] },
+      ],
+    };
+    const findings = normalizeKnipReport(report, {
+      scannedFiles: new Set(["fixtures/app/src/leaf.ts", "fixtures/app/src/entry.ts"]),
+      roles: new Map([
+        ["fixtures/app/src/leaf.ts", "fixture"],
+        ["fixtures/app/src/entry.ts", "fixture"],
+      ]),
+      fileTexts: new Map(),
+    });
+    expect(findings).toEqual([]);
+  });
+
   it("drops findings for blocked roles", () => {
     const report: KnipJsonReport = {
       issues: [{ file: "dist/out.js", files: [{ name: "dist/out.js" }] }],

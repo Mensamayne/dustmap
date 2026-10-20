@@ -542,12 +542,12 @@
       "brief": "docs/briefs/BUG-06-fixtures-reported-dead.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "medium",
       "source": "lab / poligon / self-scan 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T22:05:01.155Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-07",
@@ -572,12 +572,15 @@
       "brief": "docs/briefs/BUG-08-dead-code-fingerprint-ignores-code.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "high",
       "source": "lab / poligon / self-scan 2026-10-20",
       "startedAt": "2026-10-20T21:48:40.730Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T22:04:49.812Z",
+      "gitProofSha": "465534e9f368d3af6dfc4729ccf3a79a83ac999e",
+      "closureNotes": "code-based dead-code fingerprints (AST declaration / file text), rev +dm3; lab 08 green (move keeps mute, edit brings back); monorepo-a +283 findings previously collapsed by same-name collisions (dead-code 4061->4344); unit tests + lab as regression guard; verify + verify:targets green"
     },
     {
       "id": "BUG-09",
