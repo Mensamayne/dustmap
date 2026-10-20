@@ -3,11 +3,12 @@
  * Tests compare PLAYBOOK.md against these lists.
  */
 
-/** CLI commands shipped for operators/agents (DUST-10). */
+/** CLI commands shipped for operators/agents (DUST-10, `list` from DUST-22). */
 export const CLI_COMMANDS = [
   "init",
   "scan",
   "summary",
+  "list",
   "show",
   "decide",
   "export",

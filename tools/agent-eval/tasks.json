@@ -67,6 +67,7 @@
           "args": {
             "out": "{{out}}",
             "category": "dead-code",
+            "minConfidence": "high",
             "limit": 20,
             "offset": 0
           }
@@ -76,7 +77,8 @@
         "toolsUsed": ["dustmap_list"],
         "everyResponseHasNext": true,
         "maxBytes": 32768,
-        "minHighConfidenceDeadCode": 1,
+        "minHighConfidenceDeadCode": 3,
+        "allItems": { "category": "dead-code", "confidence": "high" },
         "paths": [{ "path": "items", "minLength": 1 }]
       }
     },

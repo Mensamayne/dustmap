@@ -37,6 +37,17 @@ export type ShowArgs = {
   json: boolean;
 };
 
+export type ListArgs = {
+  command: "list";
+  category?: string;
+  minConfidence?: string;
+  path?: string;
+  offset?: number;
+  limit?: number;
+  out?: string;
+  json: boolean;
+};
+
 export type DecideArgs = {
   command: "decide";
   fingerprint: string;
@@ -66,6 +77,7 @@ export type ParsedArgs =
   | SummaryArgs
   | InitArgs
   | ShowArgs
+  | ListArgs
   | DecideArgs
   | ExportArgs
   | RatchetArgs
@@ -105,6 +117,14 @@ function stripHelp(rest: string[]): { help: boolean; rest: string[] } {
 }
 
 const VERDICTS = new Set(["keep", "fix", "wontfix"]);
+
+function parseCount(flag: string, value: string | undefined, min: number): number | undefined {
+  if (value === undefined) return undefined;
+  if (!/^\d+$/.test(value) || Number(value) < min) {
+    throw new UsageError(`Flag ${flag} must be an integer ≥ ${min} (got "${value}")`);
+  }
+  return Number(value);
+}
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const rest0 = argv.filter((a) => a !== "--");
@@ -214,6 +234,41 @@ export function parseArgs(argv: string[]): ParsedArgs {
     };
   }
 
+  if (command === "list") {
+    const h = stripHelp(rest);
+    if (h.help) return { command: "help" };
+    rest = h.rest;
+    const category = takeFlag(rest, "--category");
+    rest = category.rest;
+    const minConfidence = takeFlag(rest, "--min-confidence");
+    rest = minConfidence.rest;
+    const pathPrefix = takeFlag(rest, "--path");
+    rest = pathPrefix.rest;
+    const offset = takeFlag(rest, "--offset");
+    rest = offset.rest;
+    const limit = takeFlag(rest, "--limit");
+    rest = limit.rest;
+    const out = takeFlag(rest, "--out");
+    rest = out.rest;
+    const json = takeBool(rest, "--json");
+    rest = json.rest;
+    const unknown = rest.filter((a) => a.startsWith("-"));
+    if (unknown.length) throw new UsageError(`Unknown flag: ${unknown[0]}`);
+    if (rest.length) throw new UsageError(`Unexpected argument: ${rest[0]}`);
+    const offsetN = parseCount("--offset", offset.value, 0);
+    const limitN = parseCount("--limit", limit.value, 1);
+    return {
+      command: "list",
+      ...(category.value !== undefined ? { category: category.value } : {}),
+      ...(minConfidence.value !== undefined ? { minConfidence: minConfidence.value } : {}),
+      ...(pathPrefix.value !== undefined ? { path: pathPrefix.value } : {}),
+      ...(offsetN !== undefined ? { offset: offsetN } : {}),
+      ...(limitN !== undefined ? { limit: limitN } : {}),
+      ...(out.value !== undefined ? { out: out.value } : {}),
+      json: json.on,
+    };
+  }
+
   if (command === "decide") {
     const h = stripHelp(rest);
     if (h.help) return { command: "help" };
@@ -297,7 +352,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   }
 
   throw new UsageError(
-    `Unknown command: ${command}. Try: dustmap init|scan|summary|show|decide|export|ratchet`,
+    `Unknown command: ${command}. Try: dustmap init|scan|summary|list|show|decide|export|ratchet`,
   );
 }
 
@@ -307,6 +362,7 @@ Usage:
   dustmap init [path] [--json] [--agent claude|cursor|codex|all] [--dry]
   dustmap scan [path] [--diff <ref>] [--config <file>] [--out <dir>] [--commit <sha>] [--json]
   dustmap summary [--out <dir>] [--json]
+  dustmap list [--category <c>] [--path <prefix>] [--min-confidence low|medium|high] [--offset <n>] [--limit <n>] [--out <dir>] [--json]
   dustmap show <fingerprint> [--out <dir>] [--json]
   dustmap decide <fingerprint> keep|fix|wontfix --reason "…" [--by <who>] [--out <dir>] [--json]
   dustmap export --to markdown|sarif [--out <dir>] [--file <path>]

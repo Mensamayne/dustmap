@@ -6,20 +6,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  Confidence,
-  FindingCategory,
-  type ConfidenceType,
-  type FindingCategoryType,
-  type FindingType,
-  type ReportType,
-} from "@dustmap/contract";
+import type { ReportType } from "@dustmap/contract";
 import {
   builtinAdapters,
+  listFindings,
   loadConfig,
   resolveOutputDir,
   runScan,
   upsertDecision,
+  type ListFindingsPage,
 } from "@dustmap/core";
 import { reportFreshness, utf8Bytes } from "./limits.js";
 import {
@@ -303,51 +298,6 @@ export type ListArgs = {
   limit?: number;
 };
 
-const DEFAULT_LIST_LIMIT = 20;
-const MAX_LIST_LIMIT = 50;
-
-const CONFIDENCE_RANK: Record<ConfidenceType, number> = {
-  low: 1,
-  medium: 2,
-  high: 3,
-};
-
-function filterFindings(report: ReportType, args: ListArgs): FindingType[] {
-  let items = report.findings;
-  if (args.category !== undefined) {
-    const parsed = FindingCategory.safeParse(args.category);
-    if (!parsed.success) {
-      throw new Error(
-        `Invalid category "${args.category}". Expected one of: ${FindingCategory.options.join(", ")}`,
-      );
-    }
-    const cat: FindingCategoryType = parsed.data;
-    items = items.filter((f) => f.category === cat);
-  }
-  if (args.minConfidence !== undefined) {
-    const parsed = Confidence.safeParse(args.minConfidence);
-    if (!parsed.success) {
-      throw new Error(
-        `Invalid minConfidence "${args.minConfidence}". Expected one of: ${Confidence.options.join(", ")}`,
-      );
-    }
-    const floor = CONFIDENCE_RANK[parsed.data];
-    items = items.filter((f) => CONFIDENCE_RANK[f.confidence] >= floor);
-  }
-  if (args.pathPrefix !== undefined && args.pathPrefix.length > 0) {
-    const prefix = args.pathPrefix.replace(/\\/g, "/").replace(/\/+$/, "");
-    items = items.filter((f) =>
-      f.locations.some((l) => l.path === prefix || l.path.startsWith(`${prefix}/`)),
-    );
-  }
-  // Highest confidence first so "safest deletes" land on page 1 without scanning.
-  return [...items].sort((a, b) => {
-    const byConf = CONFIDENCE_RANK[b.confidence] - CONFIDENCE_RANK[a.confidence];
-    if (byConf !== 0) return byConf;
-    return a.fingerprint.localeCompare(b.fingerprint);
-  });
-}
-
 export function dustmapList(ctx: McpToolContext, args: ListArgs = {}): ToolResult {
   const outDir = resolveMcpOutputDir(ctx.cwd, args.out);
   let report: ReportType;
@@ -357,25 +307,21 @@ export function dustmapList(ctx: McpToolContext, args: ListArgs = {}): ToolResul
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 
-  let filtered: FindingType[];
+  let page: ListFindingsPage;
   try {
-    filtered = filterFindings(report, args);
+    page = listFindings(report, args);
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 
-  const offset = Math.max(0, args.offset ?? 0);
-  const limit = Math.min(MAX_LIST_LIMIT, Math.max(1, args.limit ?? DEFAULT_LIST_LIMIT));
-  const page = filtered.slice(offset, offset + limit);
-
   return withFreshness(
     "dustmap_list",
     {
-      total: filtered.length,
-      offset,
-      limit,
-      hasMore: offset + page.length < filtered.length,
-      items: page.map((f) => ({
+      total: page.total,
+      offset: page.offset,
+      limit: page.limit,
+      hasMore: page.hasMore,
+      items: page.items.map((f) => ({
         fingerprint: f.fingerprint,
         kind: f.kind,
         category: f.category,

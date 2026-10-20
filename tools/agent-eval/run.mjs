@@ -244,6 +244,16 @@ function checkExpect(expect, calls, ctx) {
     }
   }
 
+  if (expect.allItems) {
+    for (const item of last.items ?? []) {
+      for (const [key, want] of Object.entries(expect.allItems)) {
+        if (item[key] !== want) {
+          errors.push(`item ${item.fingerprint}: ${key}=${JSON.stringify(item[key])}, expected ${JSON.stringify(want)}`);
+        }
+      }
+    }
+  }
+
   if (expect.decisionOnlyUnderOut) {
     const decisions = path.join(ctx.out, "decisions.yml");
     if (!existsSync(decisions)) errors.push("decisions.yml missing under outputDir");

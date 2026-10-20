@@ -488,12 +488,15 @@
       "brief": "docs/briefs/BUG-05-live-agent-eval-bare.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "medium",
       "source": "audyt epiku DUST 2026-10-20",
       "startedAt": "2026-10-20T20:24:38.823Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T20:24:48.994Z",
+      "gitProofSha": "6530e2333e71f3c564db89288be037e65d452dff",
+      "closureNotes": "harness: --bare only with API key, auth precheck, stream-json scoring, stale task on stale report, eval copy of report (snapshot decisions.yml removed); scripted 8/8; live blocked: claude CLI not logged in -> DUST-23"
     },
     {
       "id": "DUST-22",
@@ -505,10 +508,10 @@
         "DUST-21"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T20:24:57.629Z",
+      "startedBy": "agent"
     },
     {
       "id": "DUST-23",

@@ -11,7 +11,7 @@ Primary user: an AI agent. Humans use the same CLI.
 | Onboard / refresh instructions | _(install)_ | `dustmap init` · `dustmap init --agent <claude\|cursor\|codex\|all>` |
 | Scan | `dustmap_scan` (default `diff`) | `dustmap scan [path] [--diff <ref>]` |
 | Short overview | `dustmap_summary` | `dustmap summary` |
-| Browse findings | `dustmap_list` | _(use summary --json / show)_ |
+| Browse findings | `dustmap_list` | `dustmap list [--category c] [--path p] [--min-confidence high]` |
 | One finding + evidence | `dustmap_show` | `dustmap show <fingerprint>` |
 | Record decision | `dustmap_decide` | `dustmap decide <fp> keep\|fix\|wontfix --reason "…"` |
 | Export | _(via CLI)_ | `dustmap export --to markdown\|sarif` |
@@ -25,7 +25,7 @@ Every MCP reply includes `next`: 1–3 suggested follow-up tool calls. Prefer th
 
 1. **Orient** — Call `dustmap_guide` (or read this playbook). If there is no report, or `stale: true`, run `dustmap_scan` with `mode: "diff"` (CLI: `dustmap scan --diff <base>`). Full scan only when the user asks or the repo has no useful base ref.
 2. **Summary** — `dustmap_summary` / `dustmap summary`. Note category counts and **top places** (paths that hurt), not a wall of fingerprints.
-3. **Pick a place** — From top places, take one path or fingerprint. Optionally `dustmap_list` with `category` / `pathPrefix` / `minConfidence` and pagination (sorted high → low confidence). For safest delete candidates: `category: "dead-code"` and `minConfidence: "high"`.
+3. **Pick a place** — From top places, take one path or fingerprint. Optionally `dustmap_list` / `dustmap list` with `category` / `pathPrefix` (CLI `--path`) / `minConfidence` (CLI `--min-confidence`) and pagination (sorted high → low confidence). For safest delete candidates: `category: "dead-code"` and `minConfidence: "high"`.
 4. **Evidence** — `dustmap_show` / `dustmap show <fingerprint>`. Read `verifyHint`, locations, evidence.
 5. **Safety** — Before deleting or large edits, **run the verifyHint** (typecheck / tests / the command it names). Do not skip this.
 6. **Decide or queue** —
@@ -46,3 +46,5 @@ Every MCP reply includes `next`: 1–3 suggested follow-up tool calls. Prefer th
 ## Freshness
 
 If any tool returns `stale: true` / `staleWarning`, refresh with `dustmap_scan` (`diff` by default) or `dustmap scan --diff <base>`, then resume from summary.
+
+`stale: "unknown"` (with `headAvailable: false`) means git `HEAD` could not be read — an empty repo or not a git checkout. Freshness cannot be confirmed: tell the human, treat findings as unverified, and do not decide or enqueue until a scan runs in a repo with commits.

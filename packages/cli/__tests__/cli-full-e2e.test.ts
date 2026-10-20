@@ -1,5 +1,5 @@
 /**
- * Real-bin e2e: init → scan → summary → decide → scan (muted finding gone).
+ * Real-bin e2e: init → scan → summary → list → decide → scan (muted finding gone).
  * Also markdown snapshot shape + SARIF schema validation.
  */
 import { spawnSync } from "node:child_process";
@@ -73,6 +73,27 @@ describe("dustmap CLI full loop (real bin)", () => {
 
     const summary = dustmap(["summary", "--out", out], repoRoot);
     expect(summary.status, summary.stderr || summary.stdout).toBe(0);
+
+    const list = dustmap(["list", "--category", "dead-code", "--min-confidence", "high", "--json", "--out", out], repoRoot);
+    expect(list.status, list.stderr || list.stdout).toBe(0);
+    const page = JSON.parse(list.stdout) as {
+      total: number;
+      items: { category: string; confidence: string; fingerprint: string }[];
+    };
+    const expectedHigh = report1.findings.filter(
+      (f) => f.category === "dead-code" && f.confidence === "high",
+    );
+    expect(expectedHigh.length).toBeGreaterThan(0);
+    expect(page.total).toBe(expectedHigh.length);
+    expect(page.items.every((i) => i.category === "dead-code" && i.confidence === "high")).toBe(true);
+
+    const listText = dustmap(["list", "--limit", "1", "--out", out], repoRoot);
+    expect(listText.status, listText.stderr || listText.stdout).toBe(0);
+    expect(listText.stdout).toMatch(/^dalej: /m);
+
+    const badList = dustmap(["list", "--min-confidence", "certain", "--out", out], repoRoot);
+    expect(badList.status).toBe(2);
+    expect(badList.stderr).toMatch(/low, medium, high/);
 
     const show = dustmap(["show", fp, "--out", out], repoRoot);
     expect(show.status, show.stderr || show.stdout).toBe(0);

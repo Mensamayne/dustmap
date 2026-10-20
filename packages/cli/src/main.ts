@@ -5,6 +5,7 @@ import { HELP, parseArgs, UsageError } from "./args.js";
 import { runDecideCommand } from "./decide-cmd.js";
 import { runExportCommand } from "./export/export-cmd.js";
 import { runInitCommand } from "./init-cmd.js";
+import { runListCommand } from "./list-cmd.js";
 import { runRatchetCommand } from "./ratchet-cmd.js";
 import { runScanCommand } from "./scan-cmd.js";
 import { runShowCommand } from "./show-cmd.js";
@@ -39,6 +40,8 @@ async function main(argv: string[]): Promise<number> {
         return write(await runScanCommand(parsed));
       case "summary":
         return write(runSummaryCommand(parsed));
+      case "list":
+        return write(runListCommand(parsed));
       case "show":
         return write(runShowCommand(parsed));
       case "decide":

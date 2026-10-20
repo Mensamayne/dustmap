@@ -17,6 +17,10 @@ describe("agent playbook coverage", () => {
     }
   });
 
+  it("fits the 4 KiB dustmap_guide body, so agents get it untruncated", () => {
+    expect(Buffer.byteLength(playbook, "utf8")).toBeLessThanOrEqual(4 * 1024);
+  });
+
   it("mentions every MCP tool from DUST-11/17", () => {
     for (const tool of MCP_TOOLS) {
       expect(playbook, `missing MCP tool ${tool}`).toContain(tool);

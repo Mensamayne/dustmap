@@ -41,6 +41,10 @@ Runs all built-in detectors. Writes `report.json` under `--out` / `outputDir` on
 
 Category counts, top places, report age vs `HEAD`.
 
+### `dustmap list [--category <c>] [--path <prefix>] [--min-confidence low|medium|high] [--offset <n>] [--limit <n>] [--out <dir>] [--json]`
+
+Browse findings page by page, highest confidence first (same filter as the MCP tool `dustmap_list`; at most 50 per page). Safest delete candidates: `dustmap list --category dead-code --min-confidence high`.
+
 ### `dustmap show <fingerprint> [--out <dir>] [--json]`
 
 One finding with locations and evidence.
