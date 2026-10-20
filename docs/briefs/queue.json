@@ -684,10 +684,13 @@
       "brief": "docs/briefs/EMB-00-overview.md",
       "gates": [],
       "epic": "EMB",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-20T23:28:25.145Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T23:28:25.944Z",
+      "gitProofSha": "5d152aa4f4ff38000bffbffd895136e378fff68a",
+      "closureNotes": "overview + plan (a3e1bf5) + measured starting point; disks C 67/D 151/E 413 GB free; jina on disk 310 MB"
     },
     {
       "id": "EMB-01",
@@ -699,10 +702,10 @@
         "EMB-00"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T23:28:26.143Z",
+      "startedBy": "agent"
     },
     {
       "id": "EMB-02",
@@ -714,10 +717,10 @@
         "EMB-00"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T23:28:26.143Z",
+      "startedBy": "agent"
     },
     {
       "id": "EMB-03",

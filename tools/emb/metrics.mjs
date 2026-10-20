@@ -1,0 +1,84 @@
+/**
+ * Metrics for the EMB meter, pure functions over scored pairs {score, label}. `same` is the positive
+ * class; `pattern` and `different` are negatives. A missing score (provider produced no link) counts
+ * as 0 — "not reported" is exactly what a user would see.
+ */
+
+const scoreOf = (p) => (typeof p.score === "number" && Number.isFinite(p.score) ? p.score : 0);
+const positive = (p) => p.label === "same";
+
+/** Average precision of ranking pairs by score (higher = more likely `same`). Ties keep input order. */
+export function averagePrecision(pairs) {
+  const ranked = pairs.map((p, i) => ({ s: scoreOf(p), pos: positive(p), i })).sort((a, b) => b.s - a.s || a.i - b.i);
+  const totalPos = ranked.filter((r) => r.pos).length;
+  if (totalPos === 0) return 0;
+  let hits = 0;
+  let sum = 0;
+  ranked.forEach((r, k) => {
+    if (r.pos) {
+      hits += 1;
+      sum += hits / (k + 1);
+    }
+  });
+  return sum / totalPos;
+}
+
+/** Precision / recall of "report when score ≥ t", and how many `pattern` pairs stay below t. */
+export function atThreshold(pairs, t) {
+  let tp = 0;
+  let fp = 0;
+  let fn = 0;
+  let patternBelow = 0;
+  let patterns = 0;
+  for (const p of pairs) {
+    const hit = scoreOf(p) >= t;
+    if (positive(p)) hit ? tp++ : fn++;
+    else if (hit) fp++;
+    if (p.label === "pattern") {
+      patterns++;
+      if (!hit) patternBelow++;
+    }
+  }
+  return {
+    threshold: t,
+    precision: tp + fp === 0 ? null : tp / (tp + fp),
+    recall: tp + fn === 0 ? null : tp / (tp + fn),
+    patternBelow: patterns === 0 ? null : patternBelow / patterns,
+    tp,
+    fp,
+    fn,
+  };
+}
+
+/** Threshold (from the observed scores) with the best F1 for `same`. */
+export function bestF1(pairs) {
+  let best = { threshold: null, f1: 0, precision: null, recall: null };
+  for (const t of [...new Set(pairs.map(scoreOf))].filter((s) => s > 0)) {
+    const r = atThreshold(pairs, t);
+    if (r.precision === null || r.recall === null) continue;
+    const f1 = r.precision + r.recall === 0 ? 0 : (2 * r.precision * r.recall) / (r.precision + r.recall);
+    if (f1 > best.f1) best = { threshold: t, f1, precision: r.precision, recall: r.recall };
+  }
+  return best;
+}
+
+export function meanByLabel(pairs) {
+  const out = {};
+  for (const label of ["same", "pattern", "different"]) {
+    const xs = pairs.filter((p) => p.label === label).map(scoreOf);
+    out[label] = xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+  }
+  return out;
+}
+
+export function summarize(pairs, threshold) {
+  return {
+    pairs: pairs.length,
+    positives: pairs.filter(positive).length,
+    noScore: pairs.filter((p) => typeof p.score !== "number").length,
+    ap: averagePrecision(pairs),
+    at: atThreshold(pairs, threshold),
+    best: bestF1(pairs),
+    mean: meanByLabel(pairs),
+  };
+}

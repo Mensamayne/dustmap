@@ -39,7 +39,8 @@ Jedna komenda mówi, jak dobry jest dowolny model „po sensie”: precyzja, wyk
 
 ## Pliki (scope)
 
-- `tools/emb/**`, `docs/experiments/emb-results.md`, `package.json`
+- `tools/emb/**`, `docs/experiments/emb-results.md`, `package.json`, `tools/verify.mjs` (bramki zbioru i miernika)
+- `packages/core/src/index.ts`, `packages/core/src/semantic/index.ts` (eksport ścieżki jscpd i dostawcy HTTP dla miernika — bez zmian zachowania)
 
 ## Weryfikacja
 

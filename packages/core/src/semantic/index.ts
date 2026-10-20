@@ -20,6 +20,7 @@ export {
   type SemanticFunctionRef,
 } from "./cluster.js";
 export { extractFunctions, type ExtractedFunction } from "./extract.js";
+export { runJscpdSemanticPairs, type JscpdSemanticOptions } from "./jscpd-semantic.js";
 export { dedupeSemanticAgainstClones, isFullyCoveredByClone } from "./dedupe-vs-clones.js";
 export {
   runSemanticAnalysis,

@@ -19,6 +19,9 @@ run("node tools/queue/validate.selftest.mjs");
 run("node tools/targets/targets.selftest.mjs");
 run("node tools/verify-isolation.mjs --selftest");
 run("node tools/verify-isolation.mjs");
+run("node tools/emb/gold/validate.mjs --selftest");
+run("node tools/emb/gold/validate.mjs");
+run("node node_modules/tsx/dist/cli.mjs tools/emb/eval.mts --selftest");
 
 const pkgRoot = path.join(root, "packages");
 const dirs = existsSync(pkgRoot) ? readdirSync(pkgRoot).map((d) => path.join(pkgRoot, d)) : [];

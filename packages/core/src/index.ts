@@ -57,8 +57,11 @@ export {
   assertHttpProviderAllowed,
   isLoopbackUrl,
   RemoteEmbeddingsForbiddenError,
+  createOpenAiCompatibleProvider,
+  cosineSimilarity,
+  runJscpdSemanticPairs,
 } from "./semantic/index.js";
-export type { EmbeddingProvider, SemanticRunResult } from "./semantic/index.js";
+export type { EmbeddingProvider, SemanticRunResult, JscpdSemanticOptions } from "./semantic/index.js";
 export {
   codeSignalsAdapter,
   runCodeSignals,

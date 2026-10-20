@@ -23,7 +23,9 @@
     "target:compare": "tsx tools/targets/compare.mts",
     "verify:targets": "node tools/targets/verify-targets.mjs",
     "agent-eval": "tsx tools/agent-eval/run.mjs",
-    "agent-eval:live": "tsx tools/agent-eval/run.mjs --live"
+    "agent-eval:live": "tsx tools/agent-eval/run.mjs --live",
+    "emb:eval": "tsx tools/emb/eval.mts",
+    "emb:gold": "node tools/emb/gold/validate.mjs"
   },
   "engines": {
     "node": ">=20"
