@@ -1,0 +1,176 @@
+{
+  "$comment": "Scripted MCP dogfood tasks on the pinned monorepo-a snapshot (DUST-18). Prompts mirror what a real agent would be asked.",
+  "snapshot": {
+    "target": "monorepo-a",
+    "sha": "dbe35aa00cd63fecf779ad4d48de922de45ce0f5"
+  },
+  "maxResponseBytes": 32768,
+  "tasks": [
+    {
+      "id": "T01-guide",
+      "prompt": "Jak zacząć pracę z Dustmapem w tym repo?",
+      "maxCalls": 2,
+      "script": [{ "tool": "dustmap_guide", "args": {} }],
+      "expect": {
+        "toolsUsed": ["dustmap_guide"],
+        "everyResponseHasNext": true,
+        "maxBytes": 32768,
+        "guideMaxBytes": 4096,
+        "paths": [{ "path": "guide", "minLength": 40 }]
+      }
+    },
+    {
+      "id": "T02-freshness",
+      "prompt": "Czy raport jest aktualny względem HEAD?",
+      "maxCalls": 3,
+      "script": [
+        { "tool": "dustmap_summary", "args": { "out": "{{out}}" } }
+      ],
+      "expect": {
+        "toolsUsed": ["dustmap_summary"],
+        "everyResponseHasNext": true,
+        "maxBytes": 32768,
+        "paths": [
+          { "path": "stale", "type": "boolean" },
+          { "path": "reportCommit", "minLength": 7 }
+        ]
+      }
+    },
+    {
+      "id": "T03-top-place",
+      "prompt": "Dlaczego miejsce nr 1 jest na górze listy?",
+      "maxCalls": 4,
+      "script": [
+        { "tool": "dustmap_summary", "args": { "out": "{{out}}" } },
+        {
+          "tool": "dustmap_show",
+          "args": { "fingerprint": "{{topFingerprint}}", "out": "{{out}}" }
+        }
+      ],
+      "expect": {
+        "toolsUsed": ["dustmap_summary", "dustmap_show"],
+        "everyResponseHasNext": true,
+        "maxBytes": 32768,
+        "paths": [
+          { "path": "finding.verifyHint", "minLength": 5 },
+          { "path": "finding.fingerprint", "minLength": 16 }
+        ]
+      }
+    },
+    {
+      "id": "T04-safe-deletes",
+      "prompt": "Pokaż 3 najbezpieczniejsze usunięcia (martwy kod, wysoka pewność).",
+      "maxCalls": 4,
+      "script": [
+        {
+          "tool": "dustmap_list",
+          "args": {
+            "out": "{{out}}",
+            "category": "dead-code",
+            "limit": 20,
+            "offset": 0
+          }
+        }
+      ],
+      "expect": {
+        "toolsUsed": ["dustmap_list"],
+        "everyResponseHasNext": true,
+        "maxBytes": 32768,
+        "minHighConfidenceDeadCode": 1,
+        "paths": [{ "path": "items", "minLength": 1 }]
+      }
+    },
+    {
+      "id": "T05-decide-keep",
+      "prompt": "Oznacz wybrane znalezisko jako celowe (keep) z powodem.",
+      "maxCalls": 4,
+      "script": [
+        {
+          "tool": "dustmap_list",
+          "args": { "out": "{{out}}", "category": "dead-code", "limit": 5 }
+        },
+        {
+          "tool": "dustmap_decide",
+          "args": {
+            "fingerprint": "{{listFingerprint}}",
+            "verdict": "keep",
+            "reason": "Dogfood: intentional pattern kept for agent-eval T05.",
+            "out": "{{out}}",
+            "by": "agent-eval"
+          }
+        }
+      ],
+      "expect": {
+        "toolsUsed": ["dustmap_decide"],
+        "everyResponseHasNext": true,
+        "maxBytes": 32768,
+        "decisionOnlyUnderOut": true,
+        "paths": [
+          { "path": "recorded", "equals": true },
+          { "path": "muted", "equals": true }
+        ]
+      }
+    },
+    {
+      "id": "T06-stale-warning",
+      "prompt": "Wykryj nieaktualny raport (commit ≠ HEAD).",
+      "maxCalls": 2,
+      "script": [
+        { "tool": "dustmap_summary", "args": { "out": "{{staleOut}}" } }
+      ],
+      "expect": {
+        "toolsUsed": ["dustmap_summary"],
+        "everyResponseHasNext": true,
+        "maxBytes": 32768,
+        "paths": [
+          { "path": "stale", "equals": true },
+          { "path": "staleWarning", "minLength": 10 }
+        ]
+      }
+    },
+    {
+      "id": "T07-paginate",
+      "prompt": "Przejrzyj drugą stronę listy znalezisk bez ściany JSON.",
+      "maxCalls": 3,
+      "script": [
+        {
+          "tool": "dustmap_list",
+          "args": { "out": "{{out}}", "limit": 10, "offset": 10 }
+        }
+      ],
+      "expect": {
+        "toolsUsed": ["dustmap_list"],
+        "everyResponseHasNext": true,
+        "maxBytes": 32768,
+        "paths": [
+          { "path": "offset", "equals": 10 },
+          { "path": "items", "minLength": 1 }
+        ]
+      }
+    },
+    {
+      "id": "T08-enqueue-two",
+      "prompt": "Zamień 2 znaleziska w zadania do kolejki plikowej.",
+      "maxCalls": 6,
+      "script": [
+        {
+          "tool": "dustmap_list",
+          "args": { "out": "{{out}}", "category": "dead-code", "limit": 5 }
+        },
+        {
+          "tool": "dustmap_show",
+          "args": { "fingerprint": "{{listFingerprint}}", "out": "{{out}}" }
+        }
+      ],
+      "post": {
+        "enqueueFingerprints": ["{{listFingerprint}}", "{{listFingerprint2}}"]
+      },
+      "expect": {
+        "toolsUsed": ["dustmap_list", "dustmap_show"],
+        "everyResponseHasNext": true,
+        "maxBytes": 32768,
+        "enqueueCount": 2
+      }
+    }
+  ]
+}

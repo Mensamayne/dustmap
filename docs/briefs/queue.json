@@ -122,10 +122,13 @@
         "DUST-16"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-15T23:44:39.188Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-15T23:51:41.581Z",
+      "gitProofSha": "adb10c94bf873c97f26a1d8aa7ff91958a2536db",
+      "closureNotes": "signals: service-b 28 refactor (0.8s) e.g. long ‹private›, severity===critical/high repeated; monorepo-a 3603 refactor / 25s e.g. ‹private› cyclomatic 20, main 385 lines. Hints are review-only."
     },
     {
       "id": "DUST-07",
@@ -137,10 +140,13 @@
         "DUST-06"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-15T23:52:44.878Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-16T00:16:22.742Z",
+      "gitProofSha": "a2408823f60f4fe59b85e530f0d81d17ee8eb513",
+      "closureNotes": "git-signals: snapshots 0 (no history); live service-b 5 hotspot / 259s; live monorepo-a 571 (419 hotspot, 114 co-change, 38 fix-density) / 741s e.g. ‹private› hotspot 1730, i18n co-change 100%, ‹private› fix 0.80"
     },
     {
       "id": "DUST-08",
@@ -153,10 +159,13 @@
         "DUST-16"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-16T00:18:36.629Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-16T00:29:29.549Z",
+      "gitProofSha": "f5bad999b96c54800f0cb174750a983b403322e2",
+      "closureNotes": "structure: service-b 10 (1 cycle ‹private›, hubs types fan-in 11 / engine fan-out 16) 2.2s; monorepo-a 443 (65 cycles e.g. ‹private› modal, 378 hubs) 88s; layer-violation 0 without layers[] in target config"
     },
     {
       "id": "DUST-09",
@@ -171,10 +180,13 @@
         "DUST-08"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-16T00:32:45.330Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-16T00:37:58.613Z",
+      "gitProofSha": "ef0f0995404ea6debbccbc0f9068e9f1d15bacb5",
+      "closureNotes": "ranking: service-b top ‹private› (clone+large+god) 0.4s; monorepo-a top ‹private› (clone+large+god+cycle, score~86) 9s cache; decisions keep mutes until fingerprint changes; ratchet exit 1 on new fps"
     },
     {
       "id": "DUST-10",
@@ -187,10 +199,13 @@
         "DUST-19"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-16T00:56:21.462Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-16T01:08:03.163Z",
+      "gitProofSha": "b815571e54ffb0a77e9c1c9fdde21776d0b4e48a",
+      "closureNotes": "CLI full: init→scan→decide→scan mutes finding; markdown snapshot + SARIF schema OK; ratchet exit 1 then 0 after --update-baseline; README lists every command"
     },
     {
       "id": "DUST-11",
@@ -202,10 +217,13 @@
         "DUST-10"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-16T01:16:30.846Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-16T01:24:02.114Z",
+      "gitProofSha": "5452a1691fef5e51a7c0d34cabeb9898e9d4ed7b",
+      "closureNotes": "MCP server: summary/list/show/decide/scan; 32 KiB hard cap; stale vs HEAD; in-process client tests on fixture"
     },
     {
       "id": "DUST-12",
@@ -217,10 +235,13 @@
         "DUST-10"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-16T01:40:50.964Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-16T01:49:27.466Z",
+      "gitProofSha": "d065e2a1007c5081f27999e7d7c5bcf55ed0baf1",
+      "closureNotes": "composite Action (diff→SARIF→ratchet fail-on); isolation+license+actionlint gate with negative selftest; npm-pack foreign Next fixture scan"
     },
     {
       "id": "DUST-13",
@@ -233,10 +254,13 @@
         "DUST-12"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T18:49:40.505Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T18:53:24.198Z",
+      "gitProofSha": "0b8d35640debb13f78faac550226e1286a0cd006",
+      "closureNotes": "dustmap-briefs enqueue; sinks.briefs config; idempotent by source; queue schema + validate.mjs compat; INTEGRATION-QUEUE.md"
     },
     {
       "id": "DUST-14",
@@ -248,10 +272,13 @@
         "DUST-09"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-16T00:41:18.769Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-16T00:45:20.690Z",
+      "gitProofSha": "5b92ff6bd8beb77daa996e61871e37dd1271027c",
+      "closureNotes": "judge default off: service-b/monorepo-a unchanged (121 / 10364, 0 judgements); enabled+no key errors clearly; recorded intentional-pattern attaches without changing confidence; cache skips second call"
     },
     {
       "id": "DUST-15",
@@ -303,10 +330,13 @@
         "DUST-13"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T18:53:47.337Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T18:58:16.272Z",
+      "gitProofSha": "71441881d9fd1725ce20276707c58cda660a9a03",
+      "closureNotes": "PLAYBOOK + init --agent marked blocks; dustmap_guide ≤4KiB; every MCP reply has next[]; AGENTS.md user prose preserved"
     },
     {
       "id": "DUST-18",
@@ -319,10 +349,10 @@
         "DUST-17"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T19:42:27.350Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-01",
@@ -343,6 +373,36 @@
       "closureNotes": "Monorepo-A: 32587->10973 plikow, skan 96s->6s, detect 172s->0.5s; 0 wejsc z dist/node_modules; 6 nierozwiazanych (skrypty wskazujace nieistniejace pliki)"
     },
     {
+      "id": "BUG-02",
+      "title": "stale: false gdy brak HEAD w git",
+      "layer": 100,
+      "segment": "agent",
+      "brief": "docs/briefs/BUG-02-stale-false-without-head.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "medium",
+      "source": "DUST-18 dogfood 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-21",
+      "title": "Filtr pewności w dustmap_list",
+      "layer": 21,
+      "segment": "agent",
+      "brief": "docs/briefs/DUST-21-list-confidence-filter.md",
+      "gates": [
+        "DUST-17"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
       "id": "DUST-19",
       "title": "Pierwsza komenda: dustmap scan + summary",
       "layer": 19,
@@ -352,10 +412,13 @@
         "DUST-03"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-16T00:46:46.597Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-16T00:54:35.709Z",
+      "gitProofSha": "097e6102abb4f4ca7b791818471883bf80b4f215",
+      "closureNotes": "CLI scan+summary: knip-app e2e dead-code via real bin; npm run dustmap -- -- …; targets use bin; service-b 121 / monorepo-a 10364 via CLI; judge left off"
     },
     {
       "id": "DUST-20",

@@ -21,7 +21,9 @@
     "tkr:status": "node tools/tkr/tkr-status.mjs",
     "target": "tsx tools/targets/run.mts",
     "target:compare": "tsx tools/targets/compare.mts",
-    "verify:targets": "node tools/targets/verify-targets.mjs"
+    "verify:targets": "node tools/targets/verify-targets.mjs",
+    "agent-eval": "tsx tools/agent-eval/run.mjs",
+    "agent-eval:live": "tsx tools/agent-eval/run.mjs --live"
   },
   "engines": {
     "node": ">=20"
