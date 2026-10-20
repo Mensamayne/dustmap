@@ -508,14 +508,14 @@ export async function dustmapScan(
   const mode = args.mode ?? "diff";
   const baseRef = mode === "diff" ? (args.baseRef ?? "HEAD~1") : undefined;
 
-  let configPath = args.config ? path.resolve(ctx.cwd, args.config) : undefined;
+  const configPath = args.config ? path.resolve(ctx.cwd, args.config) : undefined;
+  let loaded: ReturnType<typeof loadConfig>;
   try {
-    loadConfig(repoRoot, configPath);
+    loaded = loadConfig(repoRoot, configPath);
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 
-  const loaded = loadConfig(repoRoot, configPath);
   const outputDir = args.out
     ? path.resolve(ctx.cwd, args.out)
     : resolveOutputDir(repoRoot, loaded.config.outputDir);
@@ -535,10 +535,10 @@ export async function dustmapScan(
       if (n > 0) byCategory[cat] = n;
     }
 
-    return withNext("dustmap_scan", {
-      ok: true,
-      reportCommit: result.report.scan.commit,
-      data: {
+    // Same freshness contract as the read tools (BUG-04): a repo without HEAD is never "fresh".
+    return withFreshness(
+      "dustmap_scan",
+      {
         findingCount: result.report.findings.length,
         filesScanned: result.filesScanned.length,
         byCategory,
@@ -550,10 +550,10 @@ export async function dustmapScan(
         })),
         reportPath: result.reportPath,
         mode: result.report.scan.mode,
-        stale: false,
-        reportCommit: result.report.scan.commit,
       },
-    });
+      result.report,
+      repoRoot,
+    );
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }

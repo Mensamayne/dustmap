@@ -356,7 +356,35 @@ describe("Dustmap MCP tools (in-process client)", () => {
     expect(scanRaw.isError).toBeFalsy();
     const scan = JSON.parse(textPayload(scanRaw));
     expect(typeof scan.findingCount).toBe("number");
+    expect(scan.stale).toBe(false);
+    expect(scan.headAvailable).toBe(true);
+    expect(scan.reportCommit).toBe(head);
     expect(existsSync(path.join(outDir, "report.json"))).toBe(true);
+  });
+
+  it("scan in a repo without HEAD does not claim a fresh report", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-scan-nohead-"));
+    writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "mcp-scan-nohead", private: true, type: "module" }),
+    );
+    mkdirSync(path.join(root, "src"), { recursive: true });
+    writeFileSync(path.join(root, "src", "index.ts"), "export const answer = 42;\n");
+    git(root, ["init"]);
+    const outDir = path.join(root, ".dustmap");
+
+    const pair = await connectPair({ cwd: root });
+    closers.push(pair.close);
+
+    const scanRaw = await pair.client.callTool({
+      name: "dustmap_scan",
+      arguments: { mode: "full", out: outDir },
+    });
+    expect(scanRaw.isError).toBeFalsy();
+    const scan = JSON.parse(textPayload(scanRaw));
+    expect(scan.stale).toBe("unknown");
+    expect(scan.headAvailable).toBe(false);
+    expect(scan.staleWarning).toMatch(/HEAD is unavailable/i);
   });
 
   it("stale report carries a warning on every read tool", async () => {

@@ -470,12 +470,12 @@
       "brief": "docs/briefs/BUG-04-scan-reply-claims-fresh.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "low",
       "source": "audyt epiku DUST 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T20:18:41.261Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-05",
