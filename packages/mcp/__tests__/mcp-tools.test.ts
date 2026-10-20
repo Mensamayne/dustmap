@@ -426,6 +426,32 @@ describe("Dustmap MCP tools (in-process client)", () => {
     expect(diffList.reportCommit).toBe(git(root, ["rev-parse", "HEAD"]));
   });
 
+  it("read tools judge freshness against the scanned repo, not the server cwd (BUG-09)", async () => {
+    const scanned = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-scanned-"));
+    mkdirSync(path.join(scanned, "src"), { recursive: true });
+    writeFileSync(path.join(scanned, "package.json"), JSON.stringify({ name: "scanned", private: true, type: "module" }));
+    writeFileSync(path.join(scanned, "src", "index.ts"), "export const scanned = 1;\n");
+    git(scanned, ["init"]);
+    git(scanned, ["config", "user.email", "mcp@dustmap.test"]);
+    git(scanned, ["config", "user.name", "Dustmap MCP"]);
+    git(scanned, ["add", "."]);
+    git(scanned, ["commit", "-m", "init"]);
+    const outDir = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-scanned-out-"));
+    // The server runs in another git repo (e.g. the tool's own checkout).
+    const { root: elsewhere } = writeFixtureRepo({ reportCommit: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" });
+
+    const scanPair = await connectPair({ cwd: scanned });
+    closers.push(scanPair.close);
+    const scan = await scanPair.client.callTool({ name: "dustmap_scan", arguments: { mode: "full", out: outDir } });
+    expect(scan.isError).toBeFalsy();
+
+    const pair = await connectPair({ cwd: elsewhere });
+    closers.push(pair.close);
+    const summary = JSON.parse(textPayload(await pair.client.callTool({ name: "dustmap_summary", arguments: { out: outDir } })));
+    expect(summary.stale).toBe(false);
+    expect(summary.head).toBe(git(scanned, ["rev-parse", "HEAD"]));
+  });
+
   it("scan in a repo without HEAD does not claim a fresh report", async () => {
     const root = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-scan-nohead-"));
     writeFileSync(

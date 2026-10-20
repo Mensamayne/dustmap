@@ -3,6 +3,7 @@
  */
 import { execFileSync } from "node:child_process";
 import type { ReportType } from "@dustmap/contract";
+import { readScanTarget } from "@dustmap/core";
 import type { SummaryArgs } from "./args.js";
 import { loadReportOrThrow, reportFlag, resolveCliOutputDir } from "./report-io.js";
 
@@ -50,7 +51,8 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
     };
   }
 
-  const head = gitHead(cwd);
+  // Freshness against the repo that was scanned, not wherever the command runs (BUG-09).
+  const head = gitHead(readScanTarget(outDir) ?? cwd);
   const freshness =
     head === null
       ? ({

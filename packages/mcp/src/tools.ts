@@ -11,6 +11,7 @@ import type { ReportType } from "@dustmap/contract";
 import {
   builtinAdapters,
   listFindings,
+  readScanTarget,
   loadConfig,
   resolveOutputDir,
   runScan,
@@ -317,7 +318,8 @@ export function dustmapSummary(ctx: McpToolContext, args: SummaryArgs = {}): Too
       mode: report.scan.mode,
     },
     report,
-    ctx.cwd,
+    // Freshness against the repo that was scanned, not the server's cwd (BUG-09).
+    readScanTarget(outDir) ?? ctx.cwd,
     args.report ?? "full",
   );
 }
@@ -368,7 +370,8 @@ export function dustmapList(ctx: McpToolContext, args: ListArgs = {}): ToolResul
       })),
     },
     report,
-    ctx.cwd,
+    // Freshness against the repo that was scanned, not the server's cwd (BUG-09).
+    readScanTarget(outDir) ?? ctx.cwd,
     args.report ?? "full",
   );
 }
@@ -414,7 +417,8 @@ export function dustmapShow(ctx: McpToolContext, args: ShowArgs): ToolResult {
       },
     },
     report,
-    ctx.cwd,
+    // Freshness against the repo that was scanned, not the server's cwd (BUG-09).
+    readScanTarget(outDir) ?? ctx.cwd,
     args.report ?? "full",
   );
 }
@@ -473,7 +477,8 @@ export function dustmapDecide(ctx: McpToolContext, args: DecideArgs): ToolResult
         : "Verdict is fix — finding stays visible until resolved.",
     },
     report,
-    ctx.cwd,
+    // Freshness against the repo that was scanned, not the server's cwd (BUG-09).
+    readScanTarget(outDir) ?? ctx.cwd,
     args.report ?? "full",
   );
 }

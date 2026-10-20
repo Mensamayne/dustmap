@@ -3,7 +3,7 @@
  * repo); a diff scan writes `report.diff.json` and never touches the map (BUG-03). Every reader goes
  * through {@link loadReportFile} so CLI, MCP and sinks agree on names and errors.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Report, type ReportType } from "@dustmap/contract";
 
@@ -22,6 +22,26 @@ export function reportFilePath(outputDir: string, kind: ReportKind): string {
 
 export function isReportKind(value: string): value is ReportKind {
   return (REPORT_KINDS as readonly string[]).includes(value);
+}
+
+/**
+ * Local note of which repo the reports in `outputDir` describe (absolute path, this machine only —
+ * never inside the portable report.json). Freshness checks compare against that repo's HEAD (BUG-09).
+ */
+export const SCAN_TARGET_FILE = "scan-target.json";
+
+export function writeScanTarget(outputDir: string, repoRoot: string): void {
+  writeFileSync(path.join(outputDir, SCAN_TARGET_FILE), `${JSON.stringify({ repoRoot }, null, 2)}\n`, "utf8");
+}
+
+/** Repo the reports were scanned from, when this machine still has it; otherwise null. */
+export function readScanTarget(outputDir: string): string | null {
+  try {
+    const { repoRoot } = JSON.parse(readFileSync(path.join(outputDir, SCAN_TARGET_FILE), "utf8")) as { repoRoot?: unknown };
+    return typeof repoRoot === "string" && existsSync(repoRoot) ? repoRoot : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Parse the report of `kind`; a missing file names the scan that would create it. */

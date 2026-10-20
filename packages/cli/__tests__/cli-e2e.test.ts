@@ -98,4 +98,26 @@ describe("dustmap CLI e2e (real bin)", () => {
     expect(body.headAvailable).toBe(false);
     expect(body.staleWarning).toMatch(/HEAD is unavailable/i);
   });
+
+  it("summary from another repo judges freshness against the scanned repo (BUG-09)", () => {
+    const gitRepo = (name: string) => {
+      const root = mkdtempSync(path.join(tmpdir(), `dustmap-cli-${name}-`));
+      mkdirSync(path.join(root, "src"), { recursive: true });
+      writeFileSync(path.join(root, "package.json"), JSON.stringify({ name, private: true, type: "module" }));
+      writeFileSync(path.join(root, "src", "index.ts"), `export const ${name} = 1;\n`);
+      for (const args of [["init"], ["add", "."], ["-c", "user.email=t@d.test", "-c", "user.name=t", "commit", "-m", "init"]]) {
+        const r = spawnSync("git", args, { cwd: root, encoding: "utf8", windowsHide: true });
+        expect(r.status, r.stderr).toBe(0);
+      }
+      return root;
+    };
+    const scanned = gitRepo("scanned");
+    const elsewhere = gitRepo("elsewhere");
+    const out = mkdtempSync(path.join(tmpdir(), "dustmap-cli-target-out-"));
+    expect(dustmap(["scan", scanned, "--out", out]).status).toBe(0);
+
+    const json = dustmap(["summary", "--out", out, "--json"], elsewhere);
+    expect(json.status, json.stderr || json.stdout).toBe(0);
+    expect(JSON.parse(json.stdout).stale).toBe(false);
+  });
 });

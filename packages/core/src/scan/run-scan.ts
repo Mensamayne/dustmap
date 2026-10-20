@@ -24,7 +24,7 @@ import { dedupeSemanticAgainstClones } from "../semantic/dedupe-vs-clones.js";
 import { openAdapterCache } from "./cache.js";
 import { gitHead } from "./git.js";
 import { takeInventory } from "./inventory.js";
-import { reportFilePath } from "./report-file.js";
+import { reportFilePath, writeScanTarget } from "./report-file.js";
 
 export type RunScanOptions = {
   repoRoot: string;
@@ -175,6 +175,7 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
   // diff → report.diff.json: the full map in report.json changes only on a full scan (BUG-03).
   const reportPath = reportFilePath(outputDir, opts.mode);
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  writeScanTarget(outputDir, repoRoot);
 
   return { report, reportPath, outputDir, adapterRuns, filesScanned: files };
 }

@@ -596,12 +596,12 @@
       "brief": "docs/briefs/BUG-09-cli-freshness-from-cwd.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "low",
       "source": "lab / poligon / self-scan 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T22:35:14.134Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-10",
@@ -611,12 +611,15 @@
       "brief": "docs/briefs/BUG-10-unused-deps-without-node-modules.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "medium",
       "source": "lab / poligon / self-scan 2026-10-20",
       "startedAt": "2026-10-20T22:21:26.542Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T22:35:13.969Z",
+      "gitProofSha": "b823edbb0af1ed52baaef2e58a85e8b6b5418605",
+      "closureNotes": "dep verdicts capped low without node_modules + script-mentions evidence; workspace manifests kept, manifest path in dep fingerprint; rev +dm5; lab 06 green; monorepo-a high unchanged 2303, deps all low (unlisted 721, unused 33 from workspace manifests); verify + verify:targets green"
     },
     {
       "id": "BUG-11",

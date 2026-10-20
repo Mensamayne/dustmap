@@ -34,6 +34,8 @@ export {
   reportFilePath,
   isReportKind,
   loadReportFile,
+  readScanTarget,
+  SCAN_TARGET_FILE,
 } from "./scan/report-file.js";
 export type { ReportKind } from "./scan/report-file.js";
 export { listFindings, DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from "./report/list.js";
