@@ -455,12 +455,15 @@
       "brief": "docs/briefs/BUG-03-diff-scan-overwrites-map.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "high",
       "source": "audyt epiku DUST 2026-10-20",
       "startedAt": "2026-10-20T20:45:35.762Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T20:45:36.530Z",
+      "gitProofSha": "919c550dfcf54a39436c83eb538939360d419a8c",
+      "closureNotes": "variant B: diff -> report.diff.json, map untouched (self repo: map 224 before/after diff vs HEAD~3, diff 48); MCP diff base = map commit (test: 2 commits behind -> 2 files, HEAD~1 -> 1); --report full|diff on CLI/MCP/sink/action; verify + agent-eval green"
     },
     {
       "id": "BUG-04",
