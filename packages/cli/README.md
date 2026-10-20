@@ -55,6 +55,8 @@ One finding with locations and evidence.
 
 Records a decision in `decisions.yml`. `keep` / `wontfix` mute the finding on the next scan until the code fingerprint changes.
 
+> **Upgrade note (BUG-08):** dead-code fingerprints now hash the code of the unused file or declaration instead of its name, so editing a muted symbol brings it back for review. After upgrading, dead-code findings get new fingerprints once: re-record their decisions and run `dustmap ratchet --update-baseline`.
+
 ### `dustmap export --to markdown|sarif [--report full|diff] [--out <dir>] [--file <path>]`
 
 Markdown for PRs/issues; SARIF 2.1.0 for GitHub code scanning. Prints to stdout unless `--file` is set.

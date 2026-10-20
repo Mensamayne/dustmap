@@ -36,7 +36,7 @@ Naprawić bug: znaleziska Knip mają odcisk z `export <nazwa>` (eksport) albo `f
 
 - `packages/core/src/adapters/knip/**`
 - `packages/core/__tests__/**` (tylko test tego buga)
-- `packages/cli/README.md` (uwaga o jednorazowej zmianie odcisków)
+- `packages/cli/README.md` (uwaga o jednorazowej zmianie odcisków), `packages/cli/__tests__/__snapshots__/**` (nowy odcisk w migawce)
 
 ## Weryfikacja
 

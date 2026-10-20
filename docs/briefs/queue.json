@@ -572,12 +572,12 @@
       "brief": "docs/briefs/BUG-08-dead-code-fingerprint-ignores-code.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "high",
       "source": "lab / poligon / self-scan 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T21:48:40.730Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-09",
@@ -632,12 +632,15 @@
       "brief": "docs/briefs/BUG-12-workspace-entries-ignored.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "high",
       "source": "lab / poligon / self-scan 2026-10-20",
       "startedAt": "2026-10-20T21:29:52.917Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T21:48:33.587Z",
+      "gitProofSha": "27b568e1ce2956564f684ccdc276535514a5e3e0",
+      "closureNotes": "per-workspace knip entries (+pnpm), knip adapter rev +dm2 for cache; monorepo-a unused-file high 404->263, dead-code 4444->4061; self after init high 83->40; Service-B high 42->17; lab 10 green, verify + verify:targets green"
     },
     {
       "id": "DUST-24",

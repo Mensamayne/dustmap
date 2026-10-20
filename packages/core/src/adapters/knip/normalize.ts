@@ -8,6 +8,7 @@ import {
   type FindingKind,
   type FindingType,
 } from "@dustmap/contract";
+import { declarationText } from "./declaration-text.js";
 import { countNameMentions, fileStem } from "./name-mentions.js";
 import type { KnipJsonFileIssues, KnipJsonIssueItem, KnipJsonReport } from "./types.js";
 
@@ -21,8 +22,11 @@ export type NormalizeKnipOptions = {
   /** Repo-relative POSIX paths Knip reported; used to drop findings outside the scan inventory. */
   scannedFiles: ReadonlySet<string>;
   roles: ReadonlyMap<string, string>;
-  /** File texts used to count string-literal name mentions (source + test). */
-  mentionTexts: readonly string[];
+  /**
+   * Text of readable files (source + test + fixture): hashed into fingerprints (BUG-08) and searched
+   * for string-literal name mentions.
+   */
+  fileTexts: ReadonlyMap<string, string>;
 };
 
 type KindSpec = {
@@ -48,6 +52,18 @@ function isAllowedFile(path: string, opts: NormalizeKnipOptions): boolean {
   return true;
 }
 
+/**
+ * What the fingerprint hashes (BUG-08): the code itself, so an edit brings a muted finding back and a
+ * move does not. Files → whole text; exports / types → their declaration; dependencies have no code.
+ * Only a re-export without a local body (or an unreadable file) falls back to the name.
+ */
+function codeSnippet(kind: FindingKind, path: string, name: string, opts: NormalizeKnipOptions): string {
+  if (kind === "unused-dependency" || kind === "unlisted-dependency") return `dep:${name}`;
+  const text = opts.fileTexts.get(path);
+  if (kind === "unused-file") return text ?? `file:${path}`;
+  return (text === undefined ? null : declarationText(path, text, name)) ?? `export ${name}`;
+}
+
 function buildFinding(
   kind: FindingKind,
   filePath: string,
@@ -58,17 +74,10 @@ function buildFinding(
   const path = toPosixPath(filePath);
   const symbol = symbolFromName ? item.name : fileStem(path);
   const mentionNeedle = symbolFromName ? item.name : fileStem(path);
-  const mentions = countNameMentions(mentionNeedle, opts.mentionTexts);
+  const mentions = countNameMentions(mentionNeedle, opts.fileTexts.values());
   const confidence = confidenceForMentions(mentions);
 
-  const snippet =
-    kind === "unused-file"
-      ? `file:${path}`
-      : kind === "unused-dependency" || kind === "unlisted-dependency"
-        ? `dep:${item.name}`
-        : `export ${item.name}`;
-
-  const fp = fingerprint(kind, [snippet], [symbolFromName ? item.name : path]);
+  const fp = fingerprint(kind, [codeSnippet(kind, path, item.name, opts)], [symbolFromName ? item.name : path]);
 
   const location: FindingType["locations"][number] = {
     path,

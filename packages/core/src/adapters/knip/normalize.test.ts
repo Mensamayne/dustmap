@@ -15,7 +15,7 @@ describe("normalizeKnipReport", () => {
     const findings = normalizeKnipReport(report, {
       scannedFiles: new Set(["src/loaded-by-name.ts", "src/index.ts"]),
       roles: new Map([["src/loaded-by-name.ts", "source"], ["src/index.ts", "source"]]),
-      mentionTexts: [`const plugin = "loaded-by-name";`],
+      fileTexts: new Map([["src/index.ts", `const plugin = "loaded-by-name";`]]),
     });
     expect(findings).toHaveLength(1);
     expect(findings[0]?.kind).toBe("unused-file");
@@ -49,7 +49,7 @@ describe("normalizeKnipReport", () => {
         ["src/dead.ts", "source"],
         ["src/used.ts", "source"],
       ]),
-      mentionTexts: [`export const used = 1;`],
+      fileTexts: new Map([["src/used.ts", `export const used = 1;`]]),
     });
     const byKind = Object.fromEntries(findings.map((f) => [f.kind + ":" + (f.locations[0]?.symbol ?? f.locations[0]?.path), f]));
     expect(byKind["unused-file:dead"]?.confidence).toBe("high");
@@ -65,8 +65,46 @@ describe("normalizeKnipReport", () => {
     const findings = normalizeKnipReport(report, {
       scannedFiles: new Set(["dist/out.js"]),
       roles: new Map([["dist/out.js", "generated"]]),
-      mentionTexts: [],
+      fileTexts: new Map(),
     });
     expect(findings).toEqual([]);
+  });
+});
+
+describe("dead-code fingerprints follow the code (BUG-08)", () => {
+  const helper = (pad: string, body: string) =>
+    `${pad}export function used(): number {\n  return 1;\n}\n\nexport function legacyFormatter(v: number): string {\n  return v.${body};\n}\n`;
+  const fpOf = (text: string, kind: "unused-export" | "unused-file") => {
+    const report: KnipJsonReport = {
+      issues: [
+        kind === "unused-export"
+          ? { file: "src/helpers.ts", exports: [{ name: "legacyFormatter", line: 5 }] }
+          : { file: "src/helpers.ts", files: [{ name: "src/helpers.ts" }] },
+      ],
+    };
+    const [f] = normalizeKnipReport(report, {
+      scannedFiles: new Set(["src/helpers.ts"]),
+      roles: new Map([["src/helpers.ts", "source"]]),
+      fileTexts: new Map([["src/helpers.ts", text]]),
+    });
+    return f!.fingerprint;
+  };
+
+  it("export: moving the code keeps the fingerprint, editing the body changes it", () => {
+    const base = fpOf(helper("", "toFixed(3)"), "unused-export");
+    expect(fpOf(helper("// note\n".repeat(10), "toFixed(3)"), "unused-export")).toBe(base);
+    expect(fpOf(helper("", "toFixed(4)"), "unused-export")).not.toBe(base);
+  });
+
+  it("export: editing another symbol in the same file does not touch this fingerprint", () => {
+    const base = fpOf(helper("", "toFixed(3)"), "unused-export");
+    const otherEdited = helper("", "toFixed(3)").replace("return 1;", "return 2;");
+    expect(fpOf(otherEdited, "unused-export")).toBe(base);
+  });
+
+  it("file: editing the file changes the fingerprint, reformatting does not", () => {
+    const base = fpOf(helper("", "toFixed(3)"), "unused-file");
+    expect(fpOf(helper("", "toFixed(3)").replace(/\n/g, "\n\n"), "unused-file")).toBe(base);
+    expect(fpOf(helper("", "toFixed(4)"), "unused-file")).not.toBe(base);
   });
 });

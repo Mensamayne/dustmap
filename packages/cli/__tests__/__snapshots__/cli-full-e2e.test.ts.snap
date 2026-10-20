@@ -17,7 +17,7 @@ Scan: **full** · commit \`uncommitted\` · <timestamp>
 
 ### dead-code
 
-- **unused-file** (\`90b09a8daa2d061e\`, high) — \`src/dead.ts\`
+- **unused-file** (\`3293ca90dbacab34\`, high) — \`src/dead.ts\`
   - knip: unused-file; name-mentions: 0
 
 ---

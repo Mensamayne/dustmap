@@ -19,9 +19,10 @@ const BLOCKED_ROLES = new Set(["generated", "vendored", "minified", "oversized"]
 
 /**
  * Bump whenever this adapter's config building or normalization changes — part of the cache key,
- * so an upgraded Dustmap never serves findings computed by the old logic (2: per-workspace entries).
+ * so an upgraded Dustmap never serves findings computed by the old logic (2: per-workspace entries;
+ * 3: fingerprints hash the code, not the name).
  */
-const ADAPTER_REV = 2;
+const ADAPTER_REV = 3;
 
 type KnipPkg = { name?: string; version: string; bin?: string | Record<string, string> };
 
@@ -201,16 +202,15 @@ export async function runKnipAdapter(ctx: AdapterContext) {
   const knipConfig = buildKnipConfig(ctx);
   const report = await runKnipJson(ctx.repoRoot, knipConfig);
 
-  const mentionFiles = ctx.filesWithRole("source", "test", "fixture");
-  const mentionTexts: string[] = [];
-  for (const f of mentionFiles) {
-    mentionTexts.push(await ctx.readFile(f));
+  const fileTexts = new Map<string, string>();
+  for (const f of ctx.filesWithRole("source", "test", "fixture")) {
+    fileTexts.set(f, await ctx.readFile(f));
   }
 
   return normalizeKnipReport(report, {
     scannedFiles: new Set(ctx.files),
     roles: ctx.roles,
-    mentionTexts,
+    fileTexts,
   });
 }
 
