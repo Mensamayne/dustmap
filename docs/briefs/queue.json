@@ -508,10 +508,13 @@
         "DUST-21"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-20T20:24:57.629Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T20:28:42.977Z",
+      "gitProofSha": "54a6e0617ed607fdbcff77c9b29b99923ee618de",
+      "closureNotes": "core listFindings shared by MCP+CLI; dustmap list e2e (high-only, bad value exit 2, dalej line); playbook <=4KiB test; agent-eval 8/8 with T04 minConfidence high; self repo: 19 high dead-code of 147"
     },
     {
       "id": "DUST-23",
