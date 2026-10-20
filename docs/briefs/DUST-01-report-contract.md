@@ -52,6 +52,6 @@ npm run verify
 
 ## Wyjście (acceptance)
 
-- [ ] Schemy parse/reject z testami
-- [ ] Fingerprint stabilny przy przesunięciu kodu
-- [ ] SARIF 2.1.0 zgodny ze schematem
+- [x] Schemy parse/reject z testami
+- [x] Fingerprint stabilny przy przesunięciu kodu
+- [x] SARIF 2.1.0 zgodny ze schematem

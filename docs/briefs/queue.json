@@ -349,10 +349,13 @@
         "DUST-17"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-20T19:42:27.350Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T19:47:50.873Z",
+      "gitProofSha": "b69499e99b8e6949693d28ba49aafac68b2809b8",
+      "closureNotes": "8/8 scripted MCP tasks on monorepo-a@dbe35aa; oversize selftest; live claude blocked (not logged in); filed BUG-02 + DUST-21"
     },
     {
       "id": "BUG-01",
@@ -380,12 +383,15 @@
       "brief": "docs/briefs/BUG-02-stale-false-without-head.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "done",
       "kind": "bug",
       "severity": "medium",
       "source": "DUST-18 dogfood 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T19:51:29.898Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T19:54:39.102Z",
+      "gitProofSha": "51e6fc79b0ca34c62c5e96501fe4de79e541cc6e",
+      "closureNotes": "stale: unknown + headAvailable false when HEAD missing; CLI summary text/json; MCP+CLI regression"
     },
     {
       "id": "DUST-21",
@@ -397,10 +403,13 @@
         "DUST-17"
       ],
       "epic": "DUST",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T19:48:12.463Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T19:50:38.062Z",
+      "gitProofSha": "21b6d0077beb6e320dd35d540db799d31004d589",
+      "closureNotes": "minConfidence floor + high-first sort on list; playbook safest-deletes step; MCP test high-only + invalid arg"
     },
     {
       "id": "DUST-19",
@@ -437,6 +446,66 @@
       "completedAt": "2026-10-15T21:20:55.772Z",
       "gitProofSha": "64e547176be479721a6c81b958d62301b2b3ac99",
       "closureNotes": "Monorepo-A: 7647 source / 3207 test / 53 generated+minified+vendored+oversized (~10MB); skan 4.4s; Service-B 117 source / 36 test"
+    },
+    {
+      "id": "BUG-03",
+      "title": "Skan diff kasuje całą mapę; odświeżenie od złej bazy",
+      "layer": 100,
+      "segment": "core",
+      "brief": "docs/briefs/BUG-03-diff-scan-overwrites-map.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "high",
+      "source": "audyt epiku DUST 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-04",
+      "title": "dustmap_scan zawsze odpowiada stale: false",
+      "layer": 100,
+      "segment": "agent",
+      "brief": "docs/briefs/BUG-04-scan-reply-claims-fresh.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "low",
+      "source": "audyt epiku DUST 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-05",
+      "title": "Żywy agent-eval wymusza klucz API (--bare) i nie ocenia przebiegu",
+      "layer": 100,
+      "segment": "agent",
+      "brief": "docs/briefs/BUG-05-live-agent-eval-bare.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "medium",
+      "source": "audyt epiku DUST 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-22",
+      "title": "dustmap list w CLI: ta sama pętla bez MCP",
+      "layer": 22,
+      "segment": "agent",
+      "brief": "docs/briefs/DUST-22-cli-list-parity.md",
+      "gates": [
+        "DUST-21"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
     }
   ]
 }

@@ -56,8 +56,8 @@ npm run agent-eval
 
 ## Wyjście (acceptance)
 
-- [ ] Bug naprawiony minimalnym diffem w plikach z listy
-- [ ] Weryfikacja zielona
+- [x] Bug naprawiony minimalnym diffem w plikach z listy
+- [x] Weryfikacja zielona
 
 ## Po zakończeniu
 

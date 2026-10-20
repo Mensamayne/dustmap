@@ -42,6 +42,10 @@ Wizja: [docs/VISION.md](../VISION.md).
 | DUST-16 | Cele testowe: runner Monorepo-A / Service-B / self, migawki, zbiór prawdy, `verify:targets` |
 | DUST-17 | Agent wpięty: playbook, `init --agent` (Claude / Cursor / Codex), `dustmap_guide`, pole `next` |
 | DUST-18 | Próba prawdziwego agenta na migawce Monorepo-A; usterki → briefy |
+| DUST-19 | Pierwsza komenda CLI: `scan` + `summary` (dopisane po DUST-03) |
+| DUST-20 | Rola każdego pliku (źródło / test / generowany …) — dopisane po BUG-01 |
+| DUST-21 | Filtr pewności w `dustmap_list` (z DUST-18) |
+| DUST-22 | `dustmap list` w CLI — ta sama pętla bez MCP (z audytu) |
 
 Kolejność startu: DUST-00 → DUST-01 i **równolegle DUST-15** (sam pomiar, bez kodu) → DUST-02 → DUST-16 → reszta.
 

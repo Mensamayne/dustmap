@@ -14,7 +14,7 @@ Agent piszący Dustmap jedną komendą skanuje prawdziwe repo maintainera i dost
 
 ### Step 1 — Rejestr i runner
 
-- **Plik:** `tools/targets/targets.json`, `tools/targets/run.mjs`
+- **Plik:** `tools/targets/targets.json`, `tools/targets/run.mts`
 - **Zmiana:** cele `monorepo-a`, `service-b`, `self` (ścieżka względna + nadpisanie env `DUSTMAP_TARGET_<NAZWA>`); `npm run target -- <cel> [--snapshot <sha>]` woła rdzeń z `outputDir: .tmp/targets/<cel>[@sha]/`. Snapshot = `git archive <sha>` z celu do `.tmp/` (żadnego zapisu w celu). Brak katalogu celu = czytelny komunikat, kod 2.
 - **Done when:** test: runner na celu-atrapie nie tworzy ani jednego pliku w katalogu celu (porównanie listy plików i `git status` celu przed/po).
 
@@ -26,7 +26,7 @@ Agent piszący Dustmap jedną komendą skanuje prawdziwe repo maintainera i dost
 
 ### Step 3 — Zbiór prawdy i porównanie
 
-- **Plik:** `tools/targets/ground-truth/`, `tools/targets/compare.mjs`
+- **Plik:** `tools/targets/ground-truth/`, `tools/targets/compare.mts`
 - **Zmiana:** format `{ target, sha, entries: [{ fingerprint, verdict: real|false-positive|intended-pattern, why }], forbidden: [{ glob, kind, maxConfidence }] }`; `npm run target:compare -- monorepo-a` → trafność `high` na próbce, naruszenia zakazów, nowe znaleziska bez werdyktu. Start: zakaz „`**/app/**/page.tsx` i `route.ts` nie mogą być `unused-file` z `high`”.
 - **Done when:** test negatywny: wstrzyknięte naruszenie zakazu → kod 1.
 
