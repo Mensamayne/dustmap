@@ -684,10 +684,10 @@
       "brief": "docs/briefs/EMB-00-overview.md",
       "gates": [],
       "epic": "EMB",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T23:28:25.145Z",
+      "startedBy": "agent"
     },
     {
       "id": "EMB-01",

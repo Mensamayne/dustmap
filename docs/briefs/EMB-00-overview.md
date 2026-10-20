@@ -16,7 +16,9 @@ Dustmap ma znajdować funkcje, które robią to samo, choć są napisane inaczej
 | jscpd zwraca tylko część par (3 te same pętle → 1 para) | — | lab `03` |
 | Trafność ≥ 0,85 na Monorepo-A (głównie kopie z innymi literałami) | 6/8 | DUST-15 |
 | Szybkość na CPU (16 wątków) | 1,3–2,1 funkcji/s → pełny Monorepo-A ~2 h | DUST-15 |
-| Sprzęt | RTX 4070 Ti 12 GB; PyTorch zainstalowany tylko CPU; **69 GB wolne na C:** (97% zajęte) | 20.10.2026 |
+| Sprzęt | RTX 4070 Ti 12 GB; PyTorch zainstalowany tylko CPU; wolne: C: 67 GB (97% zajęte), D: 151 GB, **E: 413 GB** | 21.10.2026 |
+| Obecny model na dysku | `jina-embeddings-v2-base-code`, `model.safetensors` 310 MB w pamięci jscpd (`%LOCALAPPDATA%/jscpd/cache/models`) | 21.10.2026 |
+| Po naprawie BUG-07 | etykiety i odciski grup „po sensie” poprawne; luka modelu bez zmian (lab `03`: 6 × 🟡 EMB) | 21.10.2026 |
 
 ## Binding (decyzje epiku)
 
@@ -27,7 +29,7 @@ Dustmap ma znajdować funkcje, które robią to samo, choć są napisane inaczej
 - **Cele jakości (zbiór wzorcowy, odłożony):** precyzja ≥ 0,90 dla `real` nad progiem raportu; ≥ 70% par „ten sam sens” wykrytych; ≥ 80% par `pattern` poniżej progu; lab `03` cały zielony.
 - **Licencja:** model bazowy i zależności tylko MIT / Apache-2.0 / BSD (bramka licencji z DUST-12 obejmuje nowe paczki).
 - **Prywatność zbioru wzorcowego:** pary z prywatnych repo zapisane jako odnośniki (repo, commit, plik, linie) + etykieta; treść kodu czytana lokalnie w chwili pomiaru, nigdy nie w gicie.
-- **Gdzie co leży:** pomiar i integracja w tym repo (`tools/emb/`, `packages/core/src/semantic/`); trening (Python) w osobnym repo `../dustmap-emb` (artefakty poza gitem); limit dysku epiku ≤ 25 GB.
+- **Gdzie co leży:** pomiar i integracja w tym repo (`tools/emb/`, `packages/core/src/semantic/`); trening (Python) w osobnym repo `../dustmap-emb` (artefakty poza gitem, ciężkie na dysku wskazanym w EMB-02 — propozycja E:); limit dysku epiku ≤ 25 GB.
 - **Lista do usunięcia:** gdy EMB-10 uzna nowy dostawcę za domyślny — `packages/core/src/semantic/jscpd-semantic.ts` i ścieżka `provider: local` przez jscpd znikają w tym samym epiku.
 
 ## Epic plan
