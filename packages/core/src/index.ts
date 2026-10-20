@@ -29,6 +29,7 @@ export { runInit } from "./init/run-init.js";
 export type { InitResult } from "./init/run-init.js";
 export { runScan, snapshotRepoPaths, isOutsideRepo } from "./scan/run-scan.js";
 export { UnknownBaseRefError } from "./scan/git.js";
+export { UserInputError } from "./user-input-error.js";
 export {
   REPORT_FILES,
   REPORT_KINDS,

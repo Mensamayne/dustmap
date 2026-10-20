@@ -12,6 +12,7 @@ import {
   type FindingType,
 } from "@dustmap/contract";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { UserInputError } from "../user-input-error.js";
 
 export const DECISIONS_FILE = "decisions.yml";
 
@@ -32,11 +33,11 @@ export function loadDecisions(outputDir: string): DecisionFile {
   try {
     parsed = parseYaml(raw);
   } catch (err) {
-    throw new Error(`Invalid decisions.yml (${file}): ${String(err)}`);
+    throw new UserInputError(`Invalid decisions.yml (${file}): ${String(err)}`);
   }
   const result = DecisionFile.safeParse(parsed);
   if (!result.success) {
-    throw new Error(`Invalid decisions.yml (${file}): ${result.error.message}`);
+    throw new UserInputError(`Invalid decisions.yml (${file}): ${result.error.message}`);
   }
   return result.data;
 }

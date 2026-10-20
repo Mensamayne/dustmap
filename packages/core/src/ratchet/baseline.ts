@@ -4,6 +4,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { UserInputError } from "../user-input-error.js";
 
 export const BASELINE_FILE = "baseline.json";
 export const BASELINE_SCHEMA_ID = "dustmap.baseline/v1" as const;
@@ -30,8 +31,15 @@ export function loadBaseline(outputDir: string): BaselineFile {
       updatedAt: new Date(0).toISOString(),
     };
   }
-  const raw = JSON.parse(readFileSync(file, "utf8")) as unknown;
-  return BaselineFile.parse(raw);
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(file, "utf8"));
+  } catch (err) {
+    throw new UserInputError(`Invalid baseline.json (${file}): ${String(err)}`);
+  }
+  const result = BaselineFile.safeParse(raw);
+  if (!result.success) throw new UserInputError(`Invalid baseline.json (${file}): ${result.error.message}`);
+  return result.data;
 }
 
 export function saveBaseline(outputDir: string, file: BaselineFile): string {

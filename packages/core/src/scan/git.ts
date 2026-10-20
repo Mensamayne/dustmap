@@ -5,6 +5,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { toPosix } from "../posix.js";
+import { UserInputError } from "../user-input-error.js";
 
 function git(repoRoot: string, args: string[]): string {
   return execFileSync("git", args, {
@@ -39,7 +40,7 @@ export function gitListFiles(repoRoot: string): string[] {
 }
 
 /** The diff base does not name a commit in this repository (typo, branch not fetched). */
-export class UnknownBaseRefError extends Error {
+export class UnknownBaseRefError extends UserInputError {
   readonly code = "unknown_base_ref";
   constructor(readonly baseRef: string) {
     super(`Unknown diff base "${baseRef}": no such commit, branch or tag in this repository (fetched?).`);

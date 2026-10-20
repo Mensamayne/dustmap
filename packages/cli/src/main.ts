@@ -1,6 +1,7 @@
 /**
  * Dustmap CLI main — dispatches all verbs. Writes only under outputDir (and init config); never edits scan target.
  */
+import { UserInputError } from "@dustmap/core";
 import { HELP, parseArgs, UsageError } from "./args.js";
 import { runDecideCommand } from "./decide-cmd.js";
 import { runExportCommand } from "./export/export-cmd.js";
@@ -57,6 +58,10 @@ async function main(argv: string[]): Promise<number> {
   } catch (err) {
     if (err instanceof UsageError) {
       process.stderr.write(`${err.message}\n\n${HELP}`);
+      return 2;
+    }
+    if (err instanceof UserInputError) {
+      process.stderr.write(`${err.message}\n`);
       return 2;
     }
     // Never 1: scripts and the GitHub Action read 1 as "ratchet found new findings" (BUG-11).

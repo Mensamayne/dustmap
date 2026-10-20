@@ -110,6 +110,12 @@ describe("dustmap CLI e2e (real bin)", () => {
     expect(scan.status, scan.stderr).toBe(2);
     expect(scan.stderr).toMatch(/Unknown diff base "origin\/no-such-branch"/);
     expect(scan.stderr).not.toMatch(/\n\s+at /);
+
+    // A damaged decisions.yml is the user's file, not a Dustmap bug: exit 2 with the file named.
+    writeFileSync(path.join(out, "decisions.yml"), "::: not yaml [\n- {");
+    const damaged = dustmap(["scan", root, "--out", out]);
+    expect(damaged.status, damaged.stderr).toBe(2);
+    expect(damaged.stderr).toMatch(/Invalid decisions\.yml/);
   });
 
   it("summary from another repo judges freshness against the scanned repo (BUG-09)", () => {
