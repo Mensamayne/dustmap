@@ -720,10 +720,13 @@
         "EMB-00"
       ],
       "epic": "EMB",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-20T23:28:26.143Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T23:55:35.728Z",
+      "gitProofSha": "d35c6a47f7985d1e481edb436875c68ceb562a85",
+      "closureNotes": "venv E: py3.11 torch 2.11 cu128 GPU ok; W2-W4 safetensors 1.4 GB (W3/W4 via SFconvertbot PRs), licences MIT/BSD-3/Apache-2.0; remote-code review: W4 none, W3 safe (rebuild without remote code), W2 safe offline+local but needs einops (not yet approved); smoke 0.167 s/step 2.75 GB"
     },
     {
       "id": "EMB-03",
