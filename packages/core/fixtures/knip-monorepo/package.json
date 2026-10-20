@@ -1,0 +1,7 @@
+{
+  "name": "knip-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "devDependencies": { "vitest": "3.0.0" }
+}

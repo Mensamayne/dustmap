@@ -260,12 +260,45 @@ function detectPackage(repoRoot: string, dirRel: string, pkg: Pkg, acc: Acc): vo
   if (hasDep(pkg, "jest") || hasDep(pkg, "@jest/core")) acc.testRunners.add("jest");
 }
 
+/** `packages:` globs from pnpm-workspace.yaml (plain list form, the only one pnpm documents). */
+function pnpmWorkspaceGlobs(repoRoot: string): string[] {
+  let text: string;
+  try {
+    text = readFileSync(path.join(repoRoot, "pnpm-workspace.yaml"), "utf8");
+  } catch {
+    return [];
+  }
+  const globs: string[] = [];
+  let inPackages = false;
+  for (const line of text.split(/\r?\n/)) {
+    if (/^packages\s*:/.test(line)) {
+      inPackages = true;
+      continue;
+    }
+    if (inPackages && /^\S/.test(line)) break;
+    const m = inPackages ? /^\s*-\s*['"]?([^'"#\s]+)['"]?/.exec(line) : null;
+    if (m?.[1] && !m[1].startsWith("!")) globs.push(m[1]);
+  }
+  return globs;
+}
+
+/** Workspace globs of the root package: npm / yarn `workspaces` plus pnpm-workspace.yaml. */
+function workspaceGlobsOf(repoRoot: string, pkg: Pkg): string[] {
+  const npm = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces?.packages ?? [];
+  return [...npm, ...pnpmWorkspaceGlobs(repoRoot)];
+}
+
+/** Workspace package directories (relative, POSIX, sorted) — the packages Knip treats separately. */
+export function listWorkspaceDirs(repoRoot: string): string[] {
+  return workspaceDirs(repoRoot, workspaceGlobsOf(repoRoot, readPkg(repoRoot) ?? {}));
+}
+
 /**
  * Inspect a repository root and propose entry points for dustmap.config.json.
  */
 export function detectProject(repoRoot: string): DetectedProject {
   const pkg = readPkg(repoRoot) ?? {};
-  const workspaceGlobs = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces?.packages ?? [];
+  const workspaceGlobs = workspaceGlobsOf(repoRoot, pkg);
   const workspaces = workspaceGlobs.length > 0 || existsSync(path.join(repoRoot, "pnpm-workspace.yaml"));
   const packageDirs = workspaceDirs(repoRoot, workspaceGlobs);
 

@@ -41,7 +41,7 @@ Naprawić bug: `buildKnipConfig` wpisuje punkty wejścia (z configu użytkownika
 
 ## Pliki (zamknięta lista)
 
-- `packages/core/src/adapters/knip/**`
+- `packages/core/src/adapters/knip/**`, `packages/core/src/init/detect.ts` (lista paczek workspace, także pnpm)
 - `packages/core/__tests__/knip-false-positives.test.ts`, `packages/core/fixtures/**`
 
 ## Weryfikacja

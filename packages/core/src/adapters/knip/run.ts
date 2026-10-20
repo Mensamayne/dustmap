@@ -9,12 +9,19 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Adapter, AdapterContext } from "../../adapter.js";
+import { listWorkspaceDirs } from "../../init/detect.js";
 import { normalizeKnipReport } from "./normalize.js";
 import type { KnipJsonReport } from "./types.js";
 
 const require = createRequire(import.meta.url);
 
 const BLOCKED_ROLES = new Set(["generated", "vendored", "minified", "oversized"]);
+
+/**
+ * Bump whenever this adapter's config building or normalization changes — part of the cache key,
+ * so an upgraded Dustmap never serves findings computed by the old logic (2: per-workspace entries).
+ */
+const ADAPTER_REV = 2;
 
 type KnipPkg = { name?: string; version: string; bin?: string | Record<string, string> };
 
@@ -52,26 +59,72 @@ function knipBinPath(): string {
 }
 
 /**
- * Build a knip.json body: Dustmap entryPoints + test-role files as graph entries; ignore blocked
- * roles and Dustmap exclude globs. Empty entry list is omitted so Knip plugins still auto-discover
- * framework routes and package.bin.
+ * Knip's own default entry patterns. A workspace `entry` list replaces them, so Dustmap repeats them
+ * to add its entries on top instead of silently dropping `index.ts` / `src/main.ts` (knip.dev → entry).
+ */
+const KNIP_DEFAULT_ENTRY = [
+  "{index,cli,main}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+  "src/{index,cli,main}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+];
+
+/** A glob that starts with a wildcard segment matches anywhere — it belongs to every workspace. */
+function isLocationFree(pattern: string): boolean {
+  return /^(\*\*?|\{)/.test(pattern);
+}
+
+/** Longest workspace dir that contains `pattern`'s literal prefix, or "." for the root workspace. */
+function ownerWorkspace(pattern: string, workspaces: readonly string[]): string {
+  let best = ".";
+  for (const ws of workspaces) {
+    if (pattern.startsWith(`${ws}/`) && ws.length > (best === "." ? 0 : best.length)) best = ws;
+  }
+  return best;
+}
+
+type KnipWorkspace = { entry: string[]; project: string[] };
+
+/**
+ * Build a knip.json body. Dustmap entryPoints + test-role files are graph entries; blocked roles and
+ * exclude globs are ignored. Knip evaluates every workspace package separately and reads root-level
+ * `entry` / `project` for the root package only, so each pattern goes to the workspace that owns it
+ * (path relative to that package); location-free globs go to every workspace (BUG-12).
  */
 export function buildKnipConfig(ctx: AdapterContext): Record<string, unknown> {
-  const entries = new Set<string>([
-    ...ctx.config.entryPoints,
-    ...ctx.filesWithRole("test"),
-  ]);
-
   const ignore = new Set<string>(ctx.config.exclude);
   for (const f of ctx.files) {
     const role = ctx.roles.get(f);
     if (role && BLOCKED_ROLES.has(role)) ignore.add(f);
   }
 
+  const workspaceDirs = listWorkspaceDirs(ctx.repoRoot);
+  const all = [".", ...workspaceDirs];
+  const ws = new Map<string, KnipWorkspace>(all.map((w) => [w, { entry: [], project: [] }]));
+  const place = (pattern: string, key: keyof KnipWorkspace) => {
+    if (isLocationFree(pattern)) {
+      for (const w of all) ws.get(w)![key].push(pattern);
+      return;
+    }
+    const owner = ownerWorkspace(pattern, workspaceDirs);
+    ws.get(owner)![key].push(owner === "." ? pattern : pattern.slice(owner.length + 1));
+  };
+  for (const e of new Set([...ctx.config.entryPoints, ...ctx.filesWithRole("test")])) place(e, "entry");
+  for (const p of ctx.config.include) place(p, "project");
+
   const config: Record<string, unknown> = {};
-  if (entries.size > 0) config.entry = [...entries].sort();
   if (ignore.size > 0) config.ignore = [...ignore].sort();
-  if (ctx.config.include.length > 0) config.project = [...ctx.config.include];
+  const workspaces: Record<string, Record<string, string[]>> = {};
+  for (const [dir, { entry, project }] of ws) {
+    const body: Record<string, string[]> = {};
+    // Empty entry stays omitted so Knip plugins still auto-discover framework routes and package.bin.
+    if (entry.length > 0) body.entry = [...KNIP_DEFAULT_ENTRY, ...new Set(entry)].sort();
+    if (project.length > 0) body.project = [...new Set(project)];
+    if (Object.keys(body).length > 0) workspaces[dir] = body;
+  }
+  if (workspaceDirs.length === 0) {
+    Object.assign(config, workspaces["."] ?? {});
+  } else if (Object.keys(workspaces).length > 0) {
+    config.workspaces = workspaces;
+  }
   return config;
 }
 
@@ -164,7 +217,7 @@ export async function runKnipAdapter(ctx: AdapterContext) {
 export function knipAdapter(): Adapter {
   return {
     name: "knip",
-    version: knipVersion,
+    version: () => `${knipVersion()}+dm${ADAPTER_REV}`,
     run: runKnipAdapter,
   };
 }
