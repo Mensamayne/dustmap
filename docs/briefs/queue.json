@@ -632,12 +632,15 @@
       "brief": "docs/briefs/BUG-11-bad-diff-ref-exit-1.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "low",
       "source": "lab / poligon / self-scan 2026-10-20",
       "startedAt": "2026-10-20T22:39:25.917Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T22:43:34.740Z",
+      "gitProofSha": "473542b3867cd817c3db4c36abdd87eab737479c",
+      "closureNotes": "base verified before diff (UnknownBaseRefError -> exit 2 with ref name), unexpected errors exit 3 not 1, documented; CLI regression test; torture T20 green; verify green"
     },
     {
       "id": "BUG-12",
