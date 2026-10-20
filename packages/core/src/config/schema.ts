@@ -116,6 +116,42 @@ export const JudgeConfig = z
   .strict();
 export type JudgeConfig = z.infer<typeof JudgeConfig>;
 
+/**
+ * File-queue briefs sink (DUST-13) — paths and id prefix live in config so any
+ * repo with a compatible queue.json can wire the sink without package changes.
+ */
+export const BriefsSinkDefaults = z
+  .object({
+    segment: z.string().min(1),
+    kind: z.enum(["feature", "bug"]).default("feature"),
+    /** Queue layer for ordering; default high so hygiene tasks sort after product work. */
+    layer: z.number().int().default(100),
+    epic: z.string().min(1).optional(),
+    severity: z.enum(["critical", "high", "medium", "low"]).optional(),
+  })
+  .strict();
+export type BriefsSinkDefaults = z.infer<typeof BriefsSinkDefaults>;
+
+export const BriefsSinkConfig = z
+  .object({
+    queuePath: z.string().min(1),
+    briefsDir: z.string().min(1),
+    /** Optional path to a markdown template; omit to use the built-in Dustmap template. */
+    template: z.string().min(1).optional(),
+    idPrefix: z.string().min(1),
+    defaults: BriefsSinkDefaults,
+  })
+  .strict();
+export type BriefsSinkConfig = z.infer<typeof BriefsSinkConfig>;
+
+export const SinksConfig = z
+  .object({
+    briefs: BriefsSinkConfig.optional(),
+  })
+  .strict()
+  .default({});
+export type SinksConfig = z.infer<typeof SinksConfig>;
+
 export const DustmapConfig = z
   .object({
     include: z.array(z.string().min(1)).default([
@@ -136,6 +172,7 @@ export const DustmapConfig = z
     ranking: RankingConfig.default({}),
     ratchet: RatchetConfig.default({}),
     judge: JudgeConfig.default({}),
+    sinks: SinksConfig,
     /** Relative to scanned repo, or absolute path (may lie outside the repo). */
     outputDir: z.string().min(1).default(".dustmap"),
   })

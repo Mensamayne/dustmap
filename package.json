@@ -10,6 +10,7 @@
     "verify": "node tools/verify.mjs",
     "verify:isolation": "node tools/verify-isolation.mjs",
     "dustmap": "node packages/cli/bin/dustmap.mjs",
+    "dustmap-briefs": "node packages/sink-briefs/bin/dustmap-briefs.mjs",
     "queue:next": "node tools/queue/next.mjs",
     "queue:next-bug": "node tools/queue/next.mjs --bug",
     "queue:next-epic": "node tools/queue/next-epic.mjs",

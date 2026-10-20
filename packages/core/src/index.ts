@@ -11,9 +11,16 @@ export {
   RankingConfig,
   RatchetConfig,
   JudgeConfig,
+  BriefsSinkConfig,
+  BriefsSinkDefaults,
+  SinksConfig,
   formatConfigError,
 } from "./config/schema.js";
-export type { DustmapConfig as DustmapConfigType } from "./config/schema.js";
+export type {
+  DustmapConfig as DustmapConfigType,
+  BriefsSinkConfig as BriefsSinkConfigType,
+  SinksConfig as SinksConfigType,
+} from "./config/schema.js";
 export { defaultConfig, loadConfig, resolveOutputDir } from "./config/load.js";
 export type { LoadConfigResult } from "./config/load.js";
 export { detectProject } from "./init/detect.js";
