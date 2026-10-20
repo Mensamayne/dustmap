@@ -9,7 +9,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { toPosix } from "../posix.js";
-import type { SemanticPair } from "./cluster.js";
+import type { SemanticFunctionRef, SemanticPair } from "./cluster.js";
 
 const require = createRequire(import.meta.url);
 
@@ -97,6 +97,35 @@ function guessName(fragment: string | undefined, fallback: string): string {
   return m?.[1] ?? m?.[2] ?? fallback;
 }
 
+export type JscpdSemanticReport = { duplicates?: JscpdDup[] };
+
+/**
+ * Turn jscpd's semantic report into function pairs. jscpd's `fragment` is the first file's text only,
+ * so each side's name and body are read from its own file under `scanRoot` (BUG-07).
+ */
+export function pairsFromJscpdReport(report: JscpdSemanticReport, scanRoot: string): SemanticPair[] {
+  const scanPosix = toPosix(scanRoot);
+  const lines = new Map<string, string[]>();
+  const side = (f: JscpdDup["firstFile"]): SemanticFunctionRef => {
+    const rel = resolveName(f.name, scanPosix);
+    const start = f.startLoc?.line ?? f.start;
+    const end = f.endLoc?.line ?? f.end;
+    let fileLines = lines.get(rel);
+    if (!fileLines) {
+      fileLines = readFileSync(path.join(scanRoot, ...rel.split("/")), "utf8").split(/\r?\n/);
+      lines.set(rel, fileLines);
+    }
+    const body = fileLines.slice(Math.max(0, start - 1), end).join("\n");
+    return { path: rel, name: guessName(body, path.basename(rel)), startLine: start, endLine: end, body };
+  };
+  const pairs: SemanticPair[] = [];
+  for (const d of report.duplicates ?? []) {
+    if (d.kind && d.kind !== "semantic") continue;
+    pairs.push({ a: side(d.firstFile), b: side(d.secondFile), similarity: d.similarity ?? 0 });
+  }
+  return pairs;
+}
+
 export type JscpdSemanticOptions = {
   model: string;
   /** Similarity floor passed to jscpd (slightly below report threshold so we can filter). */
@@ -153,38 +182,7 @@ export async function runJscpdSemanticPairs(
     } catch {
       return [];
     }
-    const report = JSON.parse(raw) as { duplicates?: JscpdDup[] };
-    const scanPosix = toPosix(scanRoot);
-    const pairs: SemanticPair[] = [];
-    for (const d of report.duplicates ?? []) {
-      if (d.kind && d.kind !== "semantic") continue;
-      const sim = d.similarity ?? 0;
-      const aPath = resolveName(d.firstFile.name, scanPosix);
-      const bPath = resolveName(d.secondFile.name, scanPosix);
-      const aStart = d.firstFile.startLoc?.line ?? d.firstFile.start;
-      const aEnd = d.firstFile.endLoc?.line ?? d.firstFile.end;
-      const bStart = d.secondFile.startLoc?.line ?? d.secondFile.start;
-      const bEnd = d.secondFile.endLoc?.line ?? d.secondFile.end;
-      const fragment = d.fragment ?? "";
-      pairs.push({
-        a: {
-          path: aPath,
-          name: guessName(fragment, path.basename(aPath)),
-          startLine: aStart,
-          endLine: aEnd,
-          body: fragment || `${aPath}:${aStart}`,
-        },
-        b: {
-          path: bPath,
-          name: guessName(fragment, path.basename(bPath)),
-          startLine: bStart,
-          endLine: bEnd,
-          body: fragment || `${bPath}:${bStart}`,
-        },
-        similarity: sim,
-      });
-    }
-    return pairs;
+    return pairsFromJscpdReport(JSON.parse(raw) as JscpdSemanticReport, scanRoot);
   } finally {
     await rm(work, { recursive: true, force: true });
   }

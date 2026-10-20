@@ -542,12 +542,15 @@
       "brief": "docs/briefs/BUG-06-fixtures-reported-dead.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "medium",
       "source": "lab / poligon / self-scan 2026-10-20",
       "startedAt": "2026-10-20T22:05:01.155Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T22:15:36.279Z",
+      "gitProofSha": "c5f4349319a1f7bb026d9a5e7477ce85a71edbfe",
+      "closureNotes": "fixture role blocked for dead-code, rev +dm4; self-scan dead-code high 19->6, 0 on fixtures; monorepo-a 4344->4334, 0 on fixture paths; lab 06 green; verify + verify:targets green"
     },
     {
       "id": "BUG-07",
@@ -557,12 +560,12 @@
       "brief": "docs/briefs/BUG-07-semantic-pair-second-side.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "medium",
       "source": "lab / poligon / self-scan 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T22:15:36.453Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-08",

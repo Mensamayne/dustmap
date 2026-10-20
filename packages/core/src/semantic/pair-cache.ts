@@ -7,6 +7,8 @@ import path from "node:path";
 import type { SemanticPair } from "./cluster.js";
 
 export type PairCacheFile = {
+  /** Semantic adapter revision that produced the pairs; a mismatch means recompute. */
+  rev: string;
   modelId: string;
   threshold: number;
   functionHashes: string[];

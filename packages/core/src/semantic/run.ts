@@ -26,7 +26,8 @@ import {
 } from "./provider.js";
 import { openVectorCache } from "./vector-cache.js";
 
-const ADAPTER_REV = "1";
+/** Bump when pair extraction or clustering changes; also keys pairs.json (2: per-side bodies, BUG-07). */
+const ADAPTER_REV = "2";
 
 export type SemanticRunStats = {
   newEmbeddings: number;
@@ -103,6 +104,7 @@ async function runViaJscpd(
   const cached = readPairCache(cacheDir);
   if (
     cached &&
+    cached.rev === ADAPTER_REV &&
     cached.modelId === cfg.model &&
     cached.threshold === cfg.threshold &&
     hashesMatch(cached.functionHashes, hashes)
@@ -121,6 +123,7 @@ async function runViaJscpd(
   });
   const pairs = rawPairs.filter((p) => p.similarity >= cfg.threshold);
   writePairCache(cacheDir, {
+    rev: ADAPTER_REV,
     modelId: cfg.model,
     threshold: cfg.threshold,
     functionHashes: hashes,
@@ -152,6 +155,7 @@ async function runViaEmbed(
 
   const pairs: SemanticPair[] = pairsAboveThreshold(fns, vectors, cfg.threshold);
   writePairCache(cacheDir, {
+    rev: ADAPTER_REV,
     modelId: provider.modelId,
     threshold: cfg.threshold,
     functionHashes: embedItems.map((i) => i.contentHash).sort(),

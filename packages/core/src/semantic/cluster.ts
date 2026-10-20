@@ -137,8 +137,9 @@ export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: 
 
     const paths = [...new Set(fns.map((f) => f.path))].sort();
     const names = [...new Set(fns.map((f) => f.name))].sort();
+    // Every member's code: editing any function of the group yields a new fingerprint (BUG-07).
     const bodies = fns.map((f) => f.body).sort();
-    const fp = fingerprint("semantic-cluster", bodies.slice(0, 4), names);
+    const fp = fingerprint("semantic-cluster", bodies, names);
 
     const allFactory = fns.every((f) => looksLikeConfigFactory(f.body));
     let confidence: "low" | "medium" = maxSim >= 0.85 ? "medium" : "low";
