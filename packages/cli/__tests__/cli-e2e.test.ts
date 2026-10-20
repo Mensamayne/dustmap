@@ -99,6 +99,19 @@ describe("dustmap CLI e2e (real bin)", () => {
     expect(body.staleWarning).toMatch(/HEAD is unavailable/i);
   });
 
+  it("scan --diff with an unknown base is a usage error (2), never the ratchet's 1 (BUG-11)", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dustmap-cli-badbase-"));
+    writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "badbase", private: true }));
+    for (const args of [["init"], ["add", "."], ["-c", "user.email=t@d.test", "-c", "user.name=t", "commit", "-m", "init"]]) {
+      expect(spawnSync("git", args, { cwd: root, encoding: "utf8", windowsHide: true }).status).toBe(0);
+    }
+    const out = mkdtempSync(path.join(tmpdir(), "dustmap-cli-badbase-out-"));
+    const scan = dustmap(["scan", root, "--diff", "origin/no-such-branch", "--out", out]);
+    expect(scan.status, scan.stderr).toBe(2);
+    expect(scan.stderr).toMatch(/Unknown diff base "origin\/no-such-branch"/);
+    expect(scan.stderr).not.toMatch(/\n\s+at /);
+  });
+
   it("summary from another repo judges freshness against the scanned repo (BUG-09)", () => {
     const gitRepo = (name: string) => {
       const root = mkdtempSync(path.join(tmpdir(), `dustmap-cli-${name}-`));

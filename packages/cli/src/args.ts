@@ -418,6 +418,6 @@ From this monorepo (npm 11+ eats lone --flags):
   npm run dustmap -- -- scan <path> --out <dir>
   node packages/cli/bin/dustmap.mjs scan <path> --out <dir>
 
-Exit codes: 0 OK, 1 ratchet found new findings, 2 usage or config error.
+Exit codes: 0 OK, 1 ratchet found new findings, 2 usage or config error, 3 internal error.
 Never edits scanned source (writes only under --out / outputDir, plus init's config file).
 `;

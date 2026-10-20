@@ -38,7 +38,21 @@ export function gitListFiles(repoRoot: string): string[] {
   return out.split("\0").filter(Boolean).map(toPosix);
 }
 
+/** The diff base does not name a commit in this repository (typo, branch not fetched). */
+export class UnknownBaseRefError extends Error {
+  readonly code = "unknown_base_ref";
+  constructor(readonly baseRef: string) {
+    super(`Unknown diff base "${baseRef}": no such commit, branch or tag in this repository (fetched?).`);
+    this.name = "UnknownBaseRefError";
+  }
+}
+
 export function gitDiffNameOnly(repoRoot: string, baseRef: string): string[] {
+  try {
+    git(repoRoot, ["rev-parse", "--verify", "--quiet", `${baseRef}^{commit}`]);
+  } catch {
+    throw new UnknownBaseRefError(baseRef);
+  }
   let mergeBase: string;
   try {
     mergeBase = git(repoRoot, ["merge-base", baseRef, "HEAD"]);

@@ -8,6 +8,7 @@ import {
   loadConfig,
   resolveOutputDir,
   runScan,
+  UnknownBaseRefError,
 } from "@dustmap/core";
 import type { ScanArgs } from "./args.js";
 import { UsageError } from "./args.js";
@@ -56,15 +57,22 @@ export async function runScanCommand(args: ScanArgs): Promise<ScanCommandResult>
     : resolveOutputDir(repoRoot, loaded.config.outputDir);
 
   const mode = args.diff ? "diff" : "full";
-  const result = await runScan({
-    repoRoot,
-    mode,
-    adapters: builtinAdapters(),
-    outputDir,
-    ...(args.diff ? { baseRef: args.diff } : {}),
-    ...(configPath ? { configPath } : {}),
-    ...(args.commit ? { commit: args.commit } : {}),
-  });
+  let result: Awaited<ReturnType<typeof runScan>>;
+  try {
+    result = await runScan({
+      repoRoot,
+      mode,
+      adapters: builtinAdapters(),
+      outputDir,
+      ...(args.diff ? { baseRef: args.diff } : {}),
+      ...(configPath ? { configPath } : {}),
+      ...(args.commit ? { commit: args.commit } : {}),
+    });
+  } catch (err) {
+    // A wrong base is a usage error (exit 2) — exit 1 is reserved for the ratchet (BUG-11).
+    if (err instanceof UnknownBaseRefError) return { exitCode: 2, stdout: "", stderr: `${err.message}\n` };
+    throw err;
+  }
 
   const { byCategory, topPlaces } = result.report.summary;
   const cats = Object.entries(byCategory)

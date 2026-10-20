@@ -59,8 +59,9 @@ async function main(argv: string[]): Promise<number> {
       process.stderr.write(`${err.message}\n\n${HELP}`);
       return 2;
     }
-    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
-    return 1;
+    // Never 1: scripts and the GitHub Action read 1 as "ratchet found new findings" (BUG-11).
+    process.stderr.write(`dustmap: internal error: ${err instanceof Error ? err.message : String(err)}\n`);
+    return 3;
   }
 }
 

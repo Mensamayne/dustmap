@@ -596,12 +596,15 @@
       "brief": "docs/briefs/BUG-09-cli-freshness-from-cwd.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "low",
       "source": "lab / poligon / self-scan 2026-10-20",
       "startedAt": "2026-10-20T22:35:14.134Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T22:39:25.688Z",
+      "gitProofSha": "29a57b8fc9b9881ff3070db8d2a89608a0a38366",
+      "closureNotes": "scan writes outputDir/scan-target.json; CLI summary + MCP read tools use its HEAD, fallback cwd; CLI + MCP regression tests (scan A, ask from B -> stale false); lab 01 green; verify green"
     },
     {
       "id": "BUG-10",
@@ -629,12 +632,12 @@
       "brief": "docs/briefs/BUG-11-bad-diff-ref-exit-1.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "low",
       "source": "lab / poligon / self-scan 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T22:39:25.917Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-12",

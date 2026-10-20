@@ -81,7 +81,8 @@ Fails with exit **1** when there are **new** findings above the configured confi
 |------|---------|
 | 0 | OK |
 | 1 | Ratchet found new findings |
-| 2 | Usage or config error |
+| 2 | Usage or config error (including an unknown `--diff` base) |
+| 3 | Internal error — a Dustmap bug; please report it |
 
 ## GitHub Action
 
