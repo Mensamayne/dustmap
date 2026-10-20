@@ -1,4 +1,4 @@
-# BUG-05 — Próba żywego agenta nie mogła się udać (`--bare` wymusza klucz API)
+# BUG-05 — Harness żywego agenta: `--bare`, brak oceny, brudna migawka
 
 **Queue:** `BUG-05` | **Kind:** bug | **Warstwa:** 100 | **Segment:** agent | **Severity:** medium | **Epik:** BUG
 
@@ -6,47 +6,51 @@
 
 ## Overview
 
-Naprawić bug: `npm run agent-eval:live` woła `claude -p --bare`. Tryb `--bare` z definicji nie czyta logowania (OAuth), tylko `ANTHROPIC_API_KEY` — stąd „Not logged in” na wszystkich 8 zadaniach. DUST-18 uznał to za problem środowiska, więc dowód „prawdziwy agent umie użyć Dustmapa” nigdy nie powstał. Dodatkowo tryb żywy ocenia zadanie tylko po kodzie wyjścia — nie sprawdza, czy agent użył wymaganych narzędzi i zmieścił się w limicie wywołań. Zadanie o nieaktualnym raporcie dostaje świeży raport.
+Naprawić bug: `npm run agent-eval:live` woła `claude -p --bare`. Tryb `--bare` z definicji nie czyta logowania (OAuth), tylko `ANTHROPIC_API_KEY` — więc nawet zalogowany maintainer dostałby „Not logged in”. Tryb żywy ocenia zadanie tylko po kodzie wyjścia (nie sprawdza użytych narzędzi ani limitu wywołań), a zadanie o nieaktualnym raporcie dostaje świeży raport. Harness zapisuje też decyzje „keep” z T05 do wyjścia przypiętej migawki Monorepo-A — kolejne `verify:targets` liczą wtedy na raporcie z wyciszonymi znaleziskami. Sam przebieg z prawdziwym agentem to osobne zadanie (DUST-23), bo wymaga zalogowanego `claude`.
 
 ## Read first
 
-1. `tools/agent-eval/run.mjs` — `runLiveAgent`
-2. `claude --help` — opis `--bare`, `--strict-mcp-config`, `--output-format stream-json`
+1. `tools/agent-eval/run.mjs` — `runLiveAgent`, `main`
+2. `claude --help` — `--bare`, `--strict-mcp-config`, `--output-format stream-json`
 
 ## Plan
 
 ### Step 1 — fix at source
 
 - **Plik:** `tools/agent-eval/run.mjs`
-- **Zmiana:** `--bare` tylko gdy jest `ANTHROPIC_API_KEY`; zawsze `--strict-mcp-config` (tylko serwer Dustmap); wyjście `stream-json`, z którego liczone są wywołania narzędzi; sukces = kod 0 + wymagane narzędzia z `expect.toolsUsed` + liczba wywołań ≤ `maxCalls`; zadanie ze skryptem na `{{staleOut}}` dostaje katalog nieaktualnego raportu
+- **Zmiana:** `--bare` tylko gdy jest `ANTHROPIC_API_KEY`; brak logowania wykryty przed startem (`claude auth status`) z komunikatem, co zrobić; zawsze `--strict-mcp-config`; wyjście `stream-json`, z którego liczone są wywołania narzędzi; sukces = kod 0 + wymagane narzędzia z `expect.toolsUsed` + wywołania ≤ `maxCalls`; zadanie na `{{staleOut}}` dostaje katalog nieaktualnego raportu; porażka żywego przebiegu = kod 1
 - **Done when:** wynik każdego zadania ma listę użytych narzędzi i powód porażki
 
-### Step 2 — Przebieg i raport
+### Step 2 — Czysta migawka
+
+- **Plik:** `tools/agent-eval/run.mjs`
+- **Zmiana:** decyzje i kolejka trafiają do kopii raportu w `.tmp/agent-eval/out`, nie do wyjścia migawki
+- **Done when:** po `npm run agent-eval` w wyjściu migawki nie ma `decisions.yml`
+
+### Step 3 — Raport bez błędnej diagnozy
 
 - **Plik:** `docs/experiments/agent-dogfood.md`
-- **Zmiana:** tabela żywego przebiegu z prawdziwymi liczbami; usterki narzędzia → nowe briefy
-- **Done when:** każde zadanie: sukces / porażka + przyczyna
+- **Zmiana:** sekcja żywego przebiegu mówi prawdziwą przyczynę i wskazuje DUST-23
+- **Done when:** brak zdania „to nie wina narzędzia” bez dowodu
 
 ## Constraints
 
 - **Scope:** zero plików poza listą w `## Pliki`
-- Agent pracuje tylko na migawce w `.tmp/`; transkrypty tylko w `.tmp/agent-eval/`
 - Tryb skryptowany (`npm run agent-eval`) bez zmian w wyniku
 
 ## Pliki (zamknięta lista)
 
 - `tools/agent-eval/run.mjs`
 - `docs/experiments/agent-dogfood.md`
-- `docs/briefs/**` (tylko nowe briefy usterek z przebiegu)
 
 ## Weryfikacja
 
 ```bash
 npm run agent-eval
-npm run agent-eval:live
+npm run agent-eval:live   # bez logowania: jeden czytelny błąd i kod 1
 ```
 
 ## Po zakończeniu
 
 1. Commit `Fixes BUG-05: …`
-2. `node tools/queue/close.mjs --id BUG-05 --note "…"` + wynik żywego przebiegu (x/8)
+2. `node tools/queue/close.mjs --id BUG-05 --note "…"`

@@ -32,14 +32,18 @@
 |------|--------|----------------:|-----------------|
 | T01–T08 | fail | 0 | `claude -p` exit 1: **Not logged in · Please run /login** |
 
-Transcripts: `.tmp/agent-eval/live/T0*.txt` (not committed).
+**Verdict (corrected 2026-10-20, BUG-05):** no live result exists yet, so DUST-18 did not prove that a real agent can use Dustmap. Two causes, both outside Dustmap's product code:
 
-**Verdict:** live failure is **not a Dustmap defect** — the operator environment has no Claude Code session. Re-run after `/login`:
+1. The harness passed `--bare`, which by definition ignores the OAuth login and accepts only `ANTHROPIC_API_KEY` — it would have failed for a logged-in maintainer too. Fixed in BUG-05: `--bare` only with an API key, `--strict-mcp-config`, `stream-json` transcripts scored per task (required tools used, call budget kept), stale task gets the stale report.
+2. On this machine the standalone `claude` CLI is not logged in (`claude auth status` → `loggedIn: false`; the desktop app keeps its own session). The harness now checks this first and stops with one actionable error.
+
+The live run is tracked as [DUST-23](../briefs/DUST-23-live-agent-dogfood.md). After `claude auth login`:
 
 ```bash
-npx tsx tools/agent-eval/run.mjs --live
-# or: npm run agent-eval:live
+npm run agent-eval:live
 ```
+
+Scripted runs and decisions now use a throwaway copy of the report (`.tmp/agent-eval/out`); earlier runs had written two agent-eval `keep` decisions into the pinned snapshot output, muting real findings in `verify:targets` (removed).
 
 ## Tool issues filed from this run
 

@@ -26,5 +26,6 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | BUG-02 | `stale: false` gdy brak HEAD |
 | BUG-03 | Skan diff kasuje całą mapę; odświeżenie od złej bazy (czeka na decyzję) |
 | BUG-04 | `dustmap_scan` zawsze odpowiada „aktualny” |
-| BUG-05 | Żywy agent-eval wymusza klucz API |
+| BUG-05 | Harness żywego agenta: `--bare`, brak oceny, brudna migawka |
 | DUST-22 | `dustmap list` w CLI — pętla bez MCP |
+| DUST-23 | Żywy agent na migawce Monorepo-A (wymaga `claude auth login`) |

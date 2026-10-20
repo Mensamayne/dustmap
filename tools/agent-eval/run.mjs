@@ -5,10 +5,12 @@
  *   npm run agent-eval              scripted tasks + oversize selftest (must exit 0)
  *   npm run agent-eval -- --live    also run Claude Code -p on each task prompt (optional)
  *
- * Never writes into ../monorepo-a. Transcripts and queues stay under .tmp/agent-eval/.
+ * Never writes into ../monorepo-a, nor into the pinned snapshot output: decisions, queues and
+ * transcripts stay under .tmp/agent-eval/.
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -100,6 +102,14 @@ function ensureSnapshotHead(src) {
       { cwd: src, stdio: ["ignore", "pipe", "pipe"] },
     );
   }
+}
+
+function prepareEvalOut(snapshotOut) {
+  const evalOut = path.join(evalDir, "out");
+  rmSync(evalOut, { recursive: true, force: true });
+  mkdirSync(evalOut, { recursive: true });
+  copyFileSync(path.join(snapshotOut, "report.json"), path.join(evalOut, "report.json"));
+  return evalOut;
 }
 
 function prepareStaleOut(liveOut, staleOut) {
@@ -345,7 +355,74 @@ function runOversizeSelftest(maxBytes) {
   console.log("PASS: oversize response turns agent-eval expectations red");
 }
 
+/** Outputs a task works on: the stale copy when its script reads `{{staleOut}}`, else the eval copy. */
+function taskOutDir(task, env) {
+  return JSON.stringify(task.script ?? []).includes("{{staleOut}}") ? env.staleOut : env.out;
+}
+
+/**
+ * Read a `claude -p --output-format stream-json` transcript: Dustmap MCP tool calls in order,
+ * plus the final result record (error flag, cost, answer text).
+ */
+export function parseLiveTranscript(stdout) {
+  const toolCalls = [];
+  let result = null;
+  for (const line of stdout.split(/\r?\n/)) {
+    if (!line.trim().startsWith("{")) continue;
+    let event;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (event.type === "assistant" && Array.isArray(event.message?.content)) {
+      for (const block of event.message.content) {
+        if (block.type === "tool_use") toolCalls.push(String(block.name));
+      }
+    }
+    if (event.type === "result") result = event;
+  }
+  return { toolCalls, result };
+}
+
+/** Success = clean exit, required Dustmap tools used, call budget kept. Returns reasons when not. */
+export function judgeLiveRun(task, exitCode, parsed) {
+  const errors = [];
+  if (exitCode !== 0) errors.push(`claude exit ${exitCode}`);
+  if (!parsed.result) errors.push("no result record in transcript");
+  else if (parsed.result.is_error) {
+    errors.push(`agent error: ${String(parsed.result.result ?? parsed.result.subtype ?? "unknown").slice(0, 200)}`);
+  }
+  const used = new Set(parsed.toolCalls);
+  for (const t of task.expect?.toolsUsed ?? []) {
+    if (!used.has(`mcp__dustmap__${t}`)) errors.push(`required tool not used: ${t}`);
+  }
+  const max = task.maxCalls ?? 10;
+  if (parsed.toolCalls.length > max) errors.push(`too many tool calls: ${parsed.toolCalls.length} > ${max}`);
+  return errors;
+}
+
+/** Fail fast with a fix instead of eight identical "Not logged in" transcripts. */
+function assertClaudeAuth() {
+  if (process.env.ANTHROPIC_API_KEY) return;
+  const r = spawnSync("claude", ["auth", "status"], { encoding: "utf8", windowsHide: true });
+  if (r.error) throw new Error(`claude CLI not found on PATH (${r.error.message})`);
+  let status;
+  try {
+    status = JSON.parse(r.stdout ?? "");
+  } catch {
+    throw new Error(`claude auth status returned no JSON (exit ${r.status}): ${(r.stdout ?? "").slice(0, 200)}`);
+  }
+  if (!status.loggedIn) {
+    throw new Error(
+      "claude CLI is not logged in (claude auth status → loggedIn: false). " +
+        "Run `claude auth login` or set ANTHROPIC_API_KEY, then npm run agent-eval:live.",
+    );
+  }
+}
+
 async function runLiveAgent(tasks, env) {
+  assertClaudeAuth();
   const mcpConfig = {
     mcpServers: {
       dustmap: {
@@ -359,16 +436,19 @@ async function runLiveAgent(tasks, env) {
   };
   const mcpConfigPath = path.join(evalDir, "mcp-live.json");
   writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2));
+  // `--bare` reads only ANTHROPIC_API_KEY (never the OAuth login), so it is used only when a key is set.
+  const bare = process.env.ANTHROPIC_API_KEY ? ["--bare"] : [];
 
   const liveResults = [];
   for (const task of tasks) {
-    const transcriptPath = path.join(evalDir, "live", `${task.id}.txt`);
+    const transcriptPath = path.join(evalDir, "live", `${task.id}.jsonl`);
     mkdirSync(path.dirname(transcriptPath), { recursive: true });
+    const out = taskOutDir(task, env);
     const prompt =
       `${task.prompt}\n\n` +
-      `Working directory is a Dustmap snapshot. Report outputDir is:\n${env.out}\n` +
+      `Working directory is a Dustmap snapshot. Report outputDir is:\n${out}\n` +
       `Use Dustmap MCP tools only. Prefer dustmap_guide then follow next[]. ` +
-      `Do not modify files outside ${env.out} except via dustmap_decide / documented sinks. ` +
+      `Do not modify files outside ${out} except via dustmap_decide / documented sinks. ` +
       `Stop after you answered. Max ${task.maxCalls} tool calls.`;
 
     const r = spawnSync(
@@ -376,36 +456,39 @@ async function runLiveAgent(tasks, env) {
       [
         "-p",
         prompt,
-        "--bare",
+        ...bare,
         "--mcp-config",
         mcpConfigPath,
+        "--strict-mcp-config",
         "--allowedTools",
         "mcp__dustmap__*",
         "--max-budget-usd",
         "0.5",
         "--output-format",
-        "text",
+        "stream-json",
+        "--verbose",
       ],
       {
         cwd: env.src,
         encoding: "utf8",
         windowsHide: true,
-        maxBuffer: 16 * 1024 * 1024,
-        timeout: 180_000,
+        maxBuffer: 64 * 1024 * 1024,
+        timeout: 300_000,
         env: { ...process.env, DUSTMAP_CWD: env.src },
       },
     );
-    const transcript = `exit=${r.status}\n\nSTDOUT:\n${r.stdout ?? ""}\n\nSTDERR:\n${r.stderr ?? ""}\n`;
-    writeFileSync(transcriptPath, transcript);
+    writeFileSync(transcriptPath, `${r.stdout ?? ""}\n${r.stderr ? `STDERR:\n${r.stderr}\n` : ""}`);
+    const parsed = parseLiveTranscript(r.stdout ?? "");
+    const errors = judgeLiveRun(task, r.status, parsed);
     liveResults.push({
       id: task.id,
-      ok: r.status === 0 && !(r.stderr ?? "").includes("error"),
+      ok: errors.length === 0,
       exit: r.status,
+      errors,
+      toolCalls: parsed.toolCalls,
+      costUsd: parsed.result?.total_cost_usd ?? null,
+      answer: typeof parsed.result?.result === "string" ? parsed.result.result : null,
       transcriptPath: path.relative(root, transcriptPath).replace(/\\/g, "/"),
-      note:
-        r.status === 0
-          ? "claude -p finished; review transcript for tool quality"
-          : `claude -p failed (exit ${r.status}) — see transcript`,
     });
   }
   return liveResults;
@@ -420,12 +503,14 @@ async function main() {
 
   const snap = resolveSnapshot(spec.snapshot);
   ensureSnapshotHead(snap.src);
+  // Decisions and enqueues land in a throwaway copy: the pinned snapshot output stays a clean measurement.
+  const evalOut = prepareEvalOut(snap.out);
   const staleOut = path.join(evalDir, "stale-out");
   prepareStaleOut(snap.out, staleOut);
 
   const queueDir = path.join(evalDir, "queue");
   const briefsDir = path.join(evalDir, "briefs");
-  const enqueueCwd = ensureEnqueueWorkspace(queueDir, briefsDir, snap.out);
+  const enqueueCwd = ensureEnqueueWorkspace(queueDir, briefsDir, evalOut);
 
   const report = JSON.parse(readFileSync(snap.report, "utf8"));
   const topFingerprint = report.summary?.topPlaces?.[0]?.findingFingerprints?.[0] ?? null;
@@ -433,7 +518,7 @@ async function main() {
   const pair = await connectMcp(snap.src, spec.maxResponseBytes ?? 32768);
   const env = {
     src: snap.src,
-    out: snap.out,
+    out: evalOut,
     staleOut,
     queueDir,
     enqueueCwd,
@@ -459,7 +544,9 @@ async function main() {
     try {
       liveResults = await runLiveAgent(spec.tasks, env);
       for (const r of liveResults) {
-        console.log(`${r.id}: ${r.ok ? "OK" : "FAIL"} → ${r.transcriptPath}`);
+        console.log(
+          `${r.id}: ${r.ok ? "OK" : `FAIL (${r.errors.join("; ")})`} · ${r.toolCalls.length} calls → ${r.transcriptPath}`,
+        );
       }
     } catch (err) {
       liveResults = [
@@ -488,7 +575,14 @@ async function main() {
     console.error(`\nagent-eval: ${failed.length}/${scripted.length} scripted tasks failed`);
     process.exit(1);
   }
-  console.log(`\nagent-eval: OK (${scripted.length} scripted tasks, oversize selftest)`);
+  const liveFailed = (liveResults ?? []).filter((t) => !t.ok);
+  if (live && liveFailed.length) {
+    console.error(`\nagent-eval: live agent failed ${liveFailed.length} task(s) — see .tmp/agent-eval/results.json`);
+    process.exit(1);
+  }
+  console.log(
+    `\nagent-eval: OK (${scripted.length} scripted tasks, oversize selftest${live ? `, ${liveResults.length} live tasks` : ""})`,
+  );
 }
 
 main().catch((err) => {

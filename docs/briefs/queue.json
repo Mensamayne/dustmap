@@ -470,27 +470,30 @@
       "brief": "docs/briefs/BUG-04-scan-reply-claims-fresh.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "low",
       "source": "audyt epiku DUST 2026-10-20",
       "startedAt": "2026-10-20T20:18:41.261Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T20:21:25.377Z",
+      "gitProofSha": "f716815b4cd09928dd9fbaea7cb5a2766d2b10dc",
+      "closureNotes": "scan reply via reportFreshness: no-HEAD repo -> stale unknown + warning; HEAD repo -> stale false; MCP 12/12, verify green"
     },
     {
       "id": "BUG-05",
-      "title": "Żywy agent-eval wymusza klucz API (--bare) i nie ocenia przebiegu",
+      "title": "Harness żywego agenta: --bare, brak oceny, brudna migawka",
       "layer": 100,
       "segment": "agent",
       "brief": "docs/briefs/BUG-05-live-agent-eval-bare.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "medium",
       "source": "audyt epiku DUST 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T20:24:38.823Z",
+      "startedBy": "agent"
     },
     {
       "id": "DUST-22",
@@ -500,6 +503,21 @@
       "brief": "docs/briefs/DUST-22-cli-list-parity.md",
       "gates": [
         "DUST-21"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-23",
+      "title": "Żywy agent na migawce Monorepo-A (dokończenie DUST-18)",
+      "layer": 23,
+      "segment": "agent",
+      "brief": "docs/briefs/DUST-23-live-agent-dogfood.md",
+      "gates": [
+        "BUG-05"
       ],
       "epic": "DUST",
       "status": "todo",
