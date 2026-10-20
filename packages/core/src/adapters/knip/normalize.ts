@@ -9,7 +9,7 @@ import {
   type FindingType,
 } from "@dustmap/contract";
 import { declarationText } from "./declaration-text.js";
-import { countNameMentions, fileStem } from "./name-mentions.js";
+import { countNameMentions, countScriptMentions, fileStem } from "./name-mentions.js";
 import type { KnipJsonFileIssues, KnipJsonIssueItem, KnipJsonReport } from "./types.js";
 
 const SOURCE = "knip";
@@ -31,7 +31,16 @@ export type NormalizeKnipOptions = {
    * for string-literal name mentions.
    */
   fileTexts: ReadonlyMap<string, string>;
+  /**
+   * Facts about the package.json that declares a dependency: are its dependencies installed, and the
+   * text of its scripts (a dependency may be used only as a command there).
+   */
+  dependencyFacts: (packageJsonPath: string) => DependencyFacts;
 };
+
+export type DependencyFacts = { installed: boolean; scripts: string };
+
+const DEPENDENCY_KINDS = new Set<FindingKind>(["unused-dependency", "unlisted-dependency"]);
 
 type KindSpec = {
   kind: FindingKind;
@@ -49,7 +58,8 @@ function toPosixPath(p: string): string {
 }
 
 function isAllowedFile(path: string, opts: NormalizeKnipOptions): boolean {
-  if (path === "package.json") return true;
+  // Root and workspace manifests carry dependency findings (workspace ones exist since BUG-12).
+  if (path === "package.json" || path.endsWith("/package.json")) return !path.includes("node_modules/");
   if (!opts.scannedFiles.has(path)) return false;
   const role = opts.roles.get(path);
   if (role && BLOCKED_ROLES.has(role)) return false;
@@ -79,9 +89,17 @@ function buildFinding(
   const symbol = symbolFromName ? item.name : fileStem(path);
   const mentionNeedle = symbolFromName ? item.name : fileStem(path);
   const mentions = countNameMentions(mentionNeedle, opts.fileTexts.values());
-  const confidence = confidenceForMentions(mentions);
+  const isDependency = DEPENDENCY_KINDS.has(kind);
+  const facts = isDependency ? opts.dependencyFacts(path) : null;
+  const inScripts = facts ? countScriptMentions(item.name, facts.scripts) : 0;
+  // Without installed dependencies Knip cannot resolve commands in scripts or config-loading plugins,
+  // so a dependency verdict is a guess at best (BUG-10).
+  const confidence: Confidence =
+    facts && (!facts.installed || inScripts > 0) ? "low" : confidenceForMentions(mentions);
 
-  const fp = fingerprint(kind, [codeSnippet(kind, path, item.name, opts)], [symbolFromName ? item.name : path]);
+  // A dependency has no code; its manifest path keeps two packages' findings apart.
+  const symbols = isDependency ? [item.name, path] : [symbolFromName ? item.name : path];
+  const fp = fingerprint(kind, [codeSnippet(kind, path, item.name, opts)], symbols);
 
   const location: FindingType["locations"][number] = {
     path,
@@ -100,6 +118,14 @@ function buildFinding(
         label: "name-mentions",
         value: String(mentions),
       },
+      ...(facts
+        ? [
+            { label: "script-mentions", value: String(inScripts) },
+            ...(facts.installed
+              ? []
+              : [{ label: "dependencies-installed", value: "no — scripts and plugin configs could not be checked" }]),
+          ]
+        : []),
     ],
     confidence,
     suggestedAction: confidence === "low" ? "review" : "verify",

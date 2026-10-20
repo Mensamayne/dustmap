@@ -4,13 +4,13 @@
  */
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Adapter, AdapterContext } from "../../adapter.js";
 import { listWorkspaceDirs } from "../../init/detect.js";
-import { normalizeKnipReport } from "./normalize.js";
+import { normalizeKnipReport, type DependencyFacts } from "./normalize.js";
 import type { KnipJsonReport } from "./types.js";
 
 const require = createRequire(import.meta.url);
@@ -20,9 +20,10 @@ const BLOCKED_ROLES = new Set(["generated", "vendored", "minified", "oversized"]
 /**
  * Bump whenever this adapter's config building or normalization changes — part of the cache key,
  * so an upgraded Dustmap never serves findings computed by the old logic (2: per-workspace entries;
- * 3: fingerprints hash the code, not the name; 4: no dead-code findings on fixtures).
+ * 3: fingerprints hash the code, not the name; 4: no dead-code findings on fixtures;
+ * 5: dependency verdicts capped without installed dependencies, workspace manifests).
  */
-const ADAPTER_REV = 4;
+const ADAPTER_REV = 5;
 
 type KnipPkg = { name?: string; version: string; bin?: string | Record<string, string> };
 
@@ -198,6 +199,23 @@ export async function runKnipJson(
   }
 }
 
+/**
+ * Installed = a node_modules next to the manifest or at the scan root (hoisted). Scripts text is
+ * read from the manifest; an unreadable manifest counts as "not installed, no scripts".
+ */
+function dependencyFacts(repoRoot: string, packageJsonPath: string): DependencyFacts {
+  const pkgDir = path.join(repoRoot, path.dirname(packageJsonPath));
+  const installed = existsSync(path.join(pkgDir, "node_modules")) || existsSync(path.join(repoRoot, "node_modules"));
+  let scripts = "";
+  try {
+    const pkg = JSON.parse(readFileSync(path.join(repoRoot, packageJsonPath), "utf8")) as { scripts?: Record<string, string> };
+    scripts = Object.values(pkg.scripts ?? {}).join("\n");
+  } catch {
+    return { installed: false, scripts: "" };
+  }
+  return { installed, scripts };
+}
+
 export async function runKnipAdapter(ctx: AdapterContext) {
   const knipConfig = buildKnipConfig(ctx);
   const report = await runKnipJson(ctx.repoRoot, knipConfig);
@@ -211,6 +229,7 @@ export async function runKnipAdapter(ctx: AdapterContext) {
     scannedFiles: new Set(ctx.files),
     roles: ctx.roles,
     fileTexts,
+    dependencyFacts: (packageJsonPath) => dependencyFacts(ctx.repoRoot, packageJsonPath),
   });
 }
 

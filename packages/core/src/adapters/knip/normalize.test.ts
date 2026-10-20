@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { normalizeKnipReport } from "./normalize.js";
 import type { KnipJsonReport } from "./types.js";
 
+const installed = () => ({ installed: true, scripts: "" });
+
 describe("normalizeKnipReport", () => {
   it("marks a name mentioned in a string as low confidence", () => {
     const report: KnipJsonReport = {
@@ -16,6 +18,7 @@ describe("normalizeKnipReport", () => {
       scannedFiles: new Set(["src/loaded-by-name.ts", "src/index.ts"]),
       roles: new Map([["src/loaded-by-name.ts", "source"], ["src/index.ts", "source"]]),
       fileTexts: new Map([["src/index.ts", `const plugin = "loaded-by-name";`]]),
+      dependencyFacts: installed,
     });
     expect(findings).toHaveLength(1);
     expect(findings[0]?.kind).toBe("unused-file");
@@ -50,6 +53,7 @@ describe("normalizeKnipReport", () => {
         ["src/used.ts", "source"],
       ]),
       fileTexts: new Map([["src/used.ts", `export const used = 1;`]]),
+      dependencyFacts: installed,
     });
     const byKind = Object.fromEntries(findings.map((f) => [f.kind + ":" + (f.locations[0]?.symbol ?? f.locations[0]?.path), f]));
     expect(byKind["unused-file:dead"]?.confidence).toBe("high");
@@ -72,6 +76,7 @@ describe("normalizeKnipReport", () => {
         ["fixtures/app/src/entry.ts", "fixture"],
       ]),
       fileTexts: new Map(),
+      dependencyFacts: installed,
     });
     expect(findings).toEqual([]);
   });
@@ -84,6 +89,7 @@ describe("normalizeKnipReport", () => {
       scannedFiles: new Set(["dist/out.js"]),
       roles: new Map([["dist/out.js", "generated"]]),
       fileTexts: new Map(),
+      dependencyFacts: installed,
     });
     expect(findings).toEqual([]);
   });
@@ -104,6 +110,7 @@ describe("dead-code fingerprints follow the code (BUG-08)", () => {
       scannedFiles: new Set(["src/helpers.ts"]),
       roles: new Map([["src/helpers.ts", "source"]]),
       fileTexts: new Map([["src/helpers.ts", text]]),
+      dependencyFacts: installed,
     });
     return f!.fingerprint;
   };
@@ -124,5 +131,42 @@ describe("dead-code fingerprints follow the code (BUG-08)", () => {
     const base = fpOf(helper("", "toFixed(3)"), "unused-file");
     expect(fpOf(helper("", "toFixed(3)").replace(/\n/g, "\n\n"), "unused-file")).toBe(base);
     expect(fpOf(helper("", "toFixed(4)"), "unused-file")).not.toBe(base);
+  });
+});
+
+describe("dependency verdicts without installed dependencies (BUG-10)", () => {
+  const report: KnipJsonReport = {
+    issues: [
+      { file: "package.json", dependencies: [{ name: "next" }, { name: "left-pad" }] },
+      { file: "packages/web/package.json", dependencies: [{ name: "left-pad" }] },
+    ],
+  };
+  const run = (installed: boolean) =>
+    normalizeKnipReport(report, {
+      scannedFiles: new Set(),
+      roles: new Map(),
+      fileTexts: new Map(),
+      dependencyFacts: () => ({ installed, scripts: "next dev\nnext build" }),
+    });
+
+  it("caps every dependency verdict at low and says why when node_modules is missing", () => {
+    const findings = run(false);
+    expect(findings.every((f) => f.confidence === "low")).toBe(true);
+    expect(findings.every((f) => f.evidence.some((e) => e.label === "dependencies-installed"))).toBe(true);
+  });
+
+  it("with dependencies installed, a package used as a script command is low, an unused one stays high", () => {
+    const findings = run(true);
+    const bySymbol = (name: string, manifest: string) =>
+      findings.find((f) => f.locations[0]?.symbol === name && f.locations[0]?.path === manifest);
+    expect(bySymbol("next", "package.json")?.confidence).toBe("low");
+    expect(bySymbol("next", "package.json")?.evidence).toContainEqual({ label: "script-mentions", value: "2" });
+    expect(bySymbol("left-pad", "package.json")?.confidence).toBe("high");
+  });
+
+  it("the same dependency in two manifests stays two findings", () => {
+    const leftPads = run(true).filter((f) => f.locations[0]?.symbol === "left-pad");
+    expect(leftPads.map((f) => f.locations[0]?.path).sort()).toEqual(["package.json", "packages/web/package.json"]);
+    expect(new Set(leftPads.map((f) => f.fingerprint)).size).toBe(2);
   });
 });

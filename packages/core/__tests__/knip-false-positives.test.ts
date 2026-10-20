@@ -59,6 +59,10 @@ describe("knip false positives on knip-app", () => {
       // Test data under fixtures/ is read from disk, never imported — not dead code (BUG-06).
       const onFixtures = findings.filter((f) => f.locations.some((loc) => loc.path.startsWith("fixtures/")));
       expect(onFixtures).toEqual([]);
+      // No node_modules in the fixture: dependency verdicts cannot be checked, so never high (BUG-10).
+      const deps = findings.filter((f) => f.kind === "unused-dependency" || f.kind === "unlisted-dependency");
+      expect(deps.length).toBeGreaterThan(0);
+      expect(deps.filter((f) => f.confidence !== "low")).toEqual([]);
     },
     60_000,
   );

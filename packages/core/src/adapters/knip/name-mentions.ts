@@ -23,6 +23,17 @@ export function countNameMentions(needle: string, fileTexts: Iterable<string>): 
   return total;
 }
 
+/**
+ * How often `name` is used as a command word in package.json scripts (`"dev": "next dev"`). Without
+ * installed dependencies Knip cannot map such commands to their package (BUG-10).
+ */
+export function countScriptMentions(name: string, scripts: string): number {
+  const trimmed = name.trim();
+  if (!trimmed) return 0;
+  const re = new RegExp(`(^|[\\s;&|(])${escapeRegExp(trimmed)}(?=$|[\\s;&|)])`, "g");
+  return scripts.match(re)?.length ?? 0;
+}
+
 /** Basename without extension — what people usually put in a string when loading by name. */
 export function fileStem(repoRelativePosix: string): string {
   const base = repoRelativePosix.split("/").pop() ?? repoRelativePosix;

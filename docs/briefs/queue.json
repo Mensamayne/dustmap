@@ -560,12 +560,15 @@
       "brief": "docs/briefs/BUG-07-semantic-pair-second-side.md",
       "gates": [],
       "epic": "BUG",
-      "status": "in_progress",
+      "status": "done",
       "kind": "bug",
       "severity": "medium",
       "source": "lab / poligon / self-scan 2026-10-20",
       "startedAt": "2026-10-20T22:15:36.453Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T22:21:26.365Z",
+      "gitProofSha": "683163b9ef898a78da4fa6bd0de96fe3aa615afb",
+      "closureNotes": "per-side name/body from own file (pairsFromJscpdReport), fingerprint over all members, semantic rev 2 keys pair cache; lab 03 label check green; Service-B clusters now show distinct names; verify + verify:targets green"
     },
     {
       "id": "BUG-08",
@@ -608,12 +611,12 @@
       "brief": "docs/briefs/BUG-10-unused-deps-without-node-modules.md",
       "gates": [],
       "epic": "BUG",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "bug",
       "severity": "medium",
       "source": "lab / poligon / self-scan 2026-10-20",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T22:21:26.542Z",
+      "startedBy": "agent"
     },
     {
       "id": "BUG-11",
