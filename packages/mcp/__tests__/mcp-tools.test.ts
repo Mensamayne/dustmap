@@ -288,6 +288,7 @@ describe("Dustmap MCP tools (in-process client)", () => {
     expect(summary.findingCount).toBeGreaterThan(0);
     expect(summary.byCategory["dead-code"]).toBeGreaterThan(0);
     expect(summary.stale).toBe(false);
+    expect(summary.headAvailable).toBe(true);
     expect(summary.topPlaces.length).toBeGreaterThan(0);
 
     const listRaw = await pair.client.callTool({
@@ -371,6 +372,7 @@ describe("Dustmap MCP tools (in-process client)", () => {
     });
     const summary = JSON.parse(textPayload(summaryRaw));
     expect(summary.stale).toBe(true);
+    expect(summary.headAvailable).toBe(true);
     expect(summary.staleWarning).toMatch(/stale/i);
 
     const listRaw = await pair.client.callTool({
@@ -380,6 +382,55 @@ describe("Dustmap MCP tools (in-process client)", () => {
     const list = JSON.parse(textPayload(listRaw));
     expect(list.stale).toBe(true);
     expect(list.staleWarning).toMatch(/dustmap_scan/);
+  });
+
+  it("repo without HEAD reports stale unknown, never fresh", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-nohead-"));
+    writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "mcp-nohead", private: true, type: "module" }),
+    );
+    git(root, ["init"]);
+    const outDir = path.join(root, ".dustmap");
+    mkdirSync(outDir, { recursive: true });
+    const finding = sampleFinding("src/dead.ts", "orphan");
+    writeFileSync(
+      path.join(outDir, "report.json"),
+      JSON.stringify({
+        schema: "dustmap.report/v1",
+        scan: {
+          mode: "full",
+          commit: "cccccccccccccccccccccccccccccccccccccccc",
+          startedAt: "2026-10-15T12:00:00.000Z",
+          tools: [{ name: "knip", version: "5.0.0" }],
+        },
+        summary: {
+          byCategory: { "dead-code": 1 },
+          topPlaces: [
+            {
+              path: "src/dead.ts",
+              score: 1,
+              findingFingerprints: [finding.fingerprint],
+            },
+          ],
+        },
+        findings: [finding],
+      }),
+    );
+
+    const pair = await connectPair({ cwd: root });
+    closers.push(pair.close);
+
+    const summaryRaw = await pair.client.callTool({
+      name: "dustmap_summary",
+      arguments: { out: outDir },
+    });
+    expect(summaryRaw.isError).toBeFalsy();
+    const summary = JSON.parse(textPayload(summaryRaw));
+    expect(summary.stale).toBe("unknown");
+    expect(summary.headAvailable).toBe(false);
+    expect(summary.staleWarning).toMatch(/HEAD is unavailable/i);
+    expect(summary.next[0]?.tool).toBe("dustmap_scan");
   });
 
   it("oversized tool reply stays under the configured byte cap", async () => {

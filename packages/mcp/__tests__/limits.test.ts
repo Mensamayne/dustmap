@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyResponseLimit,
+  reportFreshness,
   reportStaleWarning,
   TRUNCATION_NOTE,
   utf8Bytes,
@@ -27,15 +28,29 @@ describe("applyResponseLimit", () => {
   });
 });
 
-describe("reportStaleWarning", () => {
-  it("returns null when HEAD matches or is unknown", () => {
+describe("reportFreshness", () => {
+  it("matches HEAD as fresh", () => {
+    expect(reportFreshness("abc", "abc")).toEqual({
+      stale: false,
+      headAvailable: true,
+      warning: null,
+    });
     expect(reportStaleWarning("abc", "abc")).toBeNull();
-    expect(reportStaleWarning("abc", null)).toBeNull();
+  });
+
+  it("marks HEAD unavailable as unknown, never as fresh", () => {
+    const f = reportFreshness("aaaaaaaaaaaaaaaa", null);
+    expect(f.stale).toBe("unknown");
+    expect(f.headAvailable).toBe(false);
+    expect(f.warning).toMatch(/HEAD is unavailable/i);
+    expect(reportStaleWarning("aaaaaaaaaaaaaaaa", null)).toMatch(/unavailable/i);
   });
 
   it("warns when report commit ≠ HEAD", () => {
-    const w = reportStaleWarning("aaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbb");
-    expect(w).toMatch(/stale/i);
-    expect(w).toMatch(/dustmap_scan/);
+    const f = reportFreshness("aaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbb");
+    expect(f.stale).toBe(true);
+    expect(f.headAvailable).toBe(true);
+    expect(f.warning).toMatch(/stale/i);
+    expect(f.warning).toMatch(/dustmap_scan/);
   });
 });

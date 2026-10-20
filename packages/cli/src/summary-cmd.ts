@@ -50,6 +50,24 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
     };
   }
 
+  const head = gitHead(cwd);
+  const freshness =
+    head === null
+      ? ({
+          stale: "unknown" as const,
+          headAvailable: false,
+          staleWarning:
+            `Cannot confirm report freshness: git HEAD is unavailable (empty repo or not a git checkout). ` +
+            `Report commit ${report.scan.commit.slice(0, 12)}.`,
+        } as const)
+      : report.scan.commit === head
+        ? ({ stale: false as const, headAvailable: true } as const)
+        : ({
+            stale: true as const,
+            headAvailable: true,
+            staleWarning: `Report commit ${report.scan.commit.slice(0, 12)} ≠ HEAD ${head.slice(0, 12)}.`,
+          } as const);
+
   if (args.json) {
     return {
       exitCode: 0,
@@ -58,6 +76,10 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
           summary: report.summary,
           scan: report.scan,
           findingCount: report.findings.length,
+          stale: freshness.stale,
+          headAvailable: freshness.headAvailable,
+          ...(freshness.staleWarning ? { staleWarning: freshness.staleWarning } : {}),
+          head: head ?? null,
         },
         null,
         2,
@@ -66,13 +88,12 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
     };
   }
 
-  const head = gitHead(cwd);
   const commitLine =
-    head === null
-      ? `Report commit: ${report.scan.commit} · scanned ${ageLabel(report.scan.startedAt)}`
-      : report.scan.commit === head
-        ? `Report matches HEAD (${head.slice(0, 12)}) · scanned ${ageLabel(report.scan.startedAt)}`
-        : `Report commit ${report.scan.commit.slice(0, 12)} ≠ HEAD ${head.slice(0, 12)} · scanned ${ageLabel(report.scan.startedAt)}`;
+    freshness.stale === "unknown"
+      ? `Cannot confirm freshness: git HEAD unavailable · report ${report.scan.commit.slice(0, 12)} · scanned ${ageLabel(report.scan.startedAt)}`
+      : freshness.stale === false
+        ? `Report matches HEAD (${head!.slice(0, 12)}) · scanned ${ageLabel(report.scan.startedAt)}`
+        : `Report commit ${report.scan.commit.slice(0, 12)} ≠ HEAD ${head!.slice(0, 12)} · scanned ${ageLabel(report.scan.startedAt)}`;
 
   const lines: string[] = [];
   lines.push(commitLine);

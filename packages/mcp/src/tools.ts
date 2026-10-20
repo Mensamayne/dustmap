@@ -21,7 +21,7 @@ import {
   runScan,
   upsertDecision,
 } from "@dustmap/core";
-import { reportStaleWarning, utf8Bytes } from "./limits.js";
+import { reportFreshness, utf8Bytes } from "./limits.js";
 import {
   findFinding,
   gitHead,
@@ -87,12 +87,19 @@ export function suggestNext(
   tool: DustmapToolName,
   data: Record<string, unknown>,
 ): NextHint[] {
-  if (data.stale === true && tool !== "dustmap_scan" && tool !== "dustmap_guide") {
+  if (
+    (data.stale === true || data.stale === "unknown") &&
+    tool !== "dustmap_scan" &&
+    tool !== "dustmap_guide"
+  ) {
     return [
       {
         tool: "dustmap_scan",
         args: { mode: "diff" },
-        reason: "Report is stale — refresh with a diff scan before decide/enqueue",
+        reason:
+          data.stale === "unknown"
+            ? "HEAD unavailable — scan in a repo with commits before decide/enqueue"
+            : "Report is stale — refresh with a diff scan before decide/enqueue",
       },
     ];
   }
@@ -197,14 +204,15 @@ function withFreshness(
   cwd: string,
 ): ToolSuccess {
   const head = gitHead(cwd);
-  const staleWarning = reportStaleWarning(report.scan.commit, head);
+  const freshness = reportFreshness(report.scan.commit, head);
   return withNext(tool, {
     ok: true,
     reportCommit: report.scan.commit,
     data: {
       ...data,
-      stale: staleWarning !== null,
-      ...(staleWarning ? { staleWarning } : {}),
+      stale: freshness.stale,
+      headAvailable: freshness.headAvailable,
+      ...(freshness.warning ? { staleWarning: freshness.warning } : {}),
       head: head ?? null,
       reportCommit: report.scan.commit,
     },

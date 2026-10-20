@@ -44,18 +44,48 @@ export function applyResponseLimit(
   return { text, truncated: true, bytes: utf8Bytes(text) };
 }
 
+/** Freshness of a report relative to git HEAD (BUG-02: never pretend fresh when HEAD is missing). */
+export type ReportFreshness = {
+  /** `true` = commit mismatch; `false` = matches HEAD; `"unknown"` = HEAD unavailable. */
+  stale: boolean | "unknown";
+  headAvailable: boolean;
+  warning: string | null;
+};
+
 /**
- * When report.scan.commit ≠ current HEAD, every tool reply should warn the agent.
- * Returns null when HEAD is unknown or matches.
+ * Compare report.scan.commit to current HEAD.
+ * HEAD missing is not "fresh" — agents get `stale: "unknown"` plus a warning.
  */
+export function reportFreshness(
+  reportCommit: string,
+  head: string | null,
+): ReportFreshness {
+  if (head === null) {
+    return {
+      stale: "unknown",
+      headAvailable: false,
+      warning:
+        `Cannot confirm report freshness: git HEAD is unavailable (empty repo or not a git checkout). ` +
+        `Report commit ${reportCommit.slice(0, 12)}. Run dustmap_scan in a repo with commits, ` +
+        `or treat findings as unverified against HEAD.`,
+    };
+  }
+  if (reportCommit === head) {
+    return { stale: false, headAvailable: true, warning: null };
+  }
+  return {
+    stale: true,
+    headAvailable: true,
+    warning:
+      `Report is stale: report commit ${reportCommit.slice(0, 12)} ≠ HEAD ${head.slice(0, 12)}. ` +
+      `Run dustmap_scan (diff by default) to refresh.`,
+  };
+}
+
+/** Warning string from {@link reportFreshness}, or null when the report matches HEAD. */
 export function reportStaleWarning(
   reportCommit: string,
   head: string | null,
 ): string | null {
-  if (head === null) return null;
-  if (reportCommit === head) return null;
-  return (
-    `Report is stale: report commit ${reportCommit.slice(0, 12)} ≠ HEAD ${head.slice(0, 12)}. ` +
-    `Run dustmap_scan (diff by default) to refresh.`
-  );
+  return reportFreshness(reportCommit, head).warning;
 }

@@ -3,7 +3,7 @@
  * Spawns packages/cli/bin/dustmap.mjs (no in-process CLI import as proof).
  */
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -55,5 +55,47 @@ describe("dustmap CLI e2e (real bin)", () => {
     const r = dustmap(["nope"]);
     expect(r.status).toBe(2);
     expect(r.stderr).toMatch(/Unknown command/);
+  });
+
+  it("summary without git HEAD says freshness cannot be confirmed", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dustmap-cli-nohead-"));
+    writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "cli-nohead", private: true }),
+    );
+    const init = spawnSync("git", ["init"], {
+      cwd: root,
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    expect(init.status, init.stderr).toBe(0);
+
+    const out = path.join(root, ".dustmap");
+    mkdirSync(out, { recursive: true });
+    writeFileSync(
+      path.join(out, "report.json"),
+      JSON.stringify({
+        schema: "dustmap.report/v1",
+        scan: {
+          mode: "full",
+          commit: "dddddddddddddddddddddddddddddddddddddddd",
+          startedAt: "2026-10-15T12:00:00.000Z",
+          tools: [{ name: "knip", version: "5.0.0" }],
+        },
+        summary: { byCategory: {}, topPlaces: [] },
+        findings: [],
+      }),
+    );
+
+    const summary = dustmap(["summary", "--out", out], root);
+    expect(summary.status, summary.stderr || summary.stdout).toBe(0);
+    expect(summary.stdout).toMatch(/Cannot confirm freshness|HEAD unavailable/i);
+
+    const json = dustmap(["summary", "--out", out, "--json"], root);
+    expect(json.status, json.stderr || json.stdout).toBe(0);
+    const body = JSON.parse(json.stdout);
+    expect(body.stale).toBe("unknown");
+    expect(body.headAvailable).toBe(false);
+    expect(body.staleWarning).toMatch(/HEAD is unavailable/i);
   });
 });
