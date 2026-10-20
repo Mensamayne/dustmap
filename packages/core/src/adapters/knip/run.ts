@@ -21,9 +21,10 @@ const BLOCKED_ROLES = new Set(["generated", "vendored", "minified", "oversized"]
  * Bump whenever this adapter's config building or normalization changes — part of the cache key,
  * so an upgraded Dustmap never serves findings computed by the old logic (2: per-workspace entries;
  * 3: fingerprints hash the code, not the name; 4: no dead-code findings on fixtures;
- * 5: dependency verdicts capped without installed dependencies, workspace manifests).
+ * 5: dependency verdicts capped without installed dependencies, workspace manifests;
+ * 6: one unlisted-dependency finding per package and manifest).
  */
-const ADAPTER_REV = 5;
+const ADAPTER_REV = 6;
 
 type KnipPkg = { name?: string; version: string; bin?: string | Record<string, string> };
 
@@ -216,6 +217,21 @@ function dependencyFacts(repoRoot: string, packageJsonPath: string): DependencyF
   return { installed, scripts };
 }
 
+/** Nearest package.json above a repo-relative file (memoized per directory); root manifest as fallback. */
+function nearestManifest(repoRoot: string): (filePath: string) => string {
+  const byDir = new Map<string, string>();
+  const find = (dir: string): string => {
+    const hit = byDir.get(dir);
+    if (hit !== undefined) return hit;
+    const candidate = dir === "." ? "package.json" : `${dir}/package.json`;
+    const found =
+      dir === "." || existsSync(path.join(repoRoot, candidate)) ? candidate : find(path.posix.dirname(dir));
+    byDir.set(dir, found);
+    return found;
+  };
+  return (filePath) => find(path.posix.dirname(filePath));
+}
+
 export async function runKnipAdapter(ctx: AdapterContext) {
   const knipConfig = buildKnipConfig(ctx);
   const report = await runKnipJson(ctx.repoRoot, knipConfig);
@@ -230,6 +246,7 @@ export async function runKnipAdapter(ctx: AdapterContext) {
     roles: ctx.roles,
     fileTexts,
     dependencyFacts: (packageJsonPath) => dependencyFacts(ctx.repoRoot, packageJsonPath),
+    manifestOf: nearestManifest(ctx.repoRoot),
   });
 }
 

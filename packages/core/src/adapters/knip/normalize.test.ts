@@ -19,6 +19,7 @@ describe("normalizeKnipReport", () => {
       roles: new Map([["src/loaded-by-name.ts", "source"], ["src/index.ts", "source"]]),
       fileTexts: new Map([["src/index.ts", `const plugin = "loaded-by-name";`]]),
       dependencyFacts: installed,
+      manifestOf: () => "package.json",
     });
     expect(findings).toHaveLength(1);
     expect(findings[0]?.kind).toBe("unused-file");
@@ -54,6 +55,7 @@ describe("normalizeKnipReport", () => {
       ]),
       fileTexts: new Map([["src/used.ts", `export const used = 1;`]]),
       dependencyFacts: installed,
+      manifestOf: () => "package.json",
     });
     const byKind = Object.fromEntries(findings.map((f) => [f.kind + ":" + (f.locations[0]?.symbol ?? f.locations[0]?.path), f]));
     expect(byKind["unused-file:dead"]?.confidence).toBe("high");
@@ -77,6 +79,7 @@ describe("normalizeKnipReport", () => {
       ]),
       fileTexts: new Map(),
       dependencyFacts: installed,
+      manifestOf: () => "package.json",
     });
     expect(findings).toEqual([]);
   });
@@ -90,6 +93,7 @@ describe("normalizeKnipReport", () => {
       roles: new Map([["dist/out.js", "generated"]]),
       fileTexts: new Map(),
       dependencyFacts: installed,
+      manifestOf: () => "package.json",
     });
     expect(findings).toEqual([]);
   });
@@ -111,6 +115,7 @@ describe("dead-code fingerprints follow the code (BUG-08)", () => {
       roles: new Map([["src/helpers.ts", "source"]]),
       fileTexts: new Map([["src/helpers.ts", text]]),
       dependencyFacts: installed,
+      manifestOf: () => "package.json",
     });
     return f!.fingerprint;
   };
@@ -147,6 +152,7 @@ describe("dependency verdicts without installed dependencies (BUG-10)", () => {
       roles: new Map(),
       fileTexts: new Map(),
       dependencyFacts: () => ({ installed, scripts: "next dev\nnext build" }),
+      manifestOf: () => "package.json",
     });
 
   it("caps every dependency verdict at low and says why when node_modules is missing", () => {
@@ -168,5 +174,26 @@ describe("dependency verdicts without installed dependencies (BUG-10)", () => {
     const leftPads = run(true).filter((f) => f.locations[0]?.symbol === "left-pad");
     expect(leftPads.map((f) => f.locations[0]?.path).sort()).toEqual(["package.json", "packages/web/package.json"]);
     expect(new Set(leftPads.map((f) => f.fingerprint)).size).toBe(2);
+  });
+});
+
+describe("unlisted dependencies are grouped per package and manifest (BUG-10)", () => {
+  it("many importing files of one manifest → one finding; another manifest → its own", () => {
+    const files = ["packages/web/src/a.ts", "packages/web/src/b.ts", "packages/web/src/c.ts", "packages/api/src/x.ts"];
+    const report: KnipJsonReport = {
+      issues: files.map((file, i) => ({ file, unlisted: [{ name: "zod", line: i + 1 }] })),
+    };
+    const findings = normalizeKnipReport(report, {
+      scannedFiles: new Set(files),
+      roles: new Map(files.map((f) => [f, "source"])),
+      fileTexts: new Map(),
+      dependencyFacts: () => ({ installed: true, scripts: "" }),
+      manifestOf: (f) => `${f.split("/").slice(0, 2).join("/")}/package.json`,
+    });
+    expect(findings).toHaveLength(2);
+    const web = findings.find((f) => f.evidence.some((e) => e.value === "packages/web/package.json"));
+    expect(web?.locations.map((l) => l.path)).toEqual(["packages/web/src/a.ts", "packages/web/src/b.ts", "packages/web/src/c.ts"]);
+    expect(web?.evidence).toContainEqual({ label: "importing-files", value: "3" });
+    expect(new Set(findings.map((f) => f.fingerprint)).size).toBe(2);
   });
 });

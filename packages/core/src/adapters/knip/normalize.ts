@@ -36,11 +36,11 @@ export type NormalizeKnipOptions = {
    * text of its scripts (a dependency may be used only as a command there).
    */
   dependencyFacts: (packageJsonPath: string) => DependencyFacts;
+  /** Nearest package.json (repo-relative POSIX) above a source file — the manifest that should list its imports. */
+  manifestOf: (filePath: string) => string;
 };
 
 export type DependencyFacts = { installed: boolean; scripts: string };
-
-const DEPENDENCY_KINDS = new Set<FindingKind>(["unused-dependency", "unlisted-dependency"]);
 
 type KindSpec = {
   kind: FindingKind;
@@ -89,7 +89,7 @@ function buildFinding(
   const symbol = symbolFromName ? item.name : fileStem(path);
   const mentionNeedle = symbolFromName ? item.name : fileStem(path);
   const mentions = countNameMentions(mentionNeedle, opts.fileTexts.values());
-  const isDependency = DEPENDENCY_KINDS.has(kind);
+  const isDependency = kind === "unused-dependency";
   const facts = isDependency ? opts.dependencyFacts(path) : null;
   const inScripts = facts ? countScriptMentions(item.name, facts.scripts) : 0;
   // Without installed dependencies Knip cannot resolve commands in scripts or config-loading plugins,
@@ -134,6 +134,39 @@ function buildFinding(
   };
 }
 
+type Importer = { path: string; line?: number };
+
+/**
+ * One finding per (package, manifest) for imports the manifest does not declare: Knip reports them
+ * per importing file, which would turn one missing entry into hundreds of findings. The importing
+ * files become the locations; the manifest is part of the fingerprint.
+ */
+function buildUnlistedFinding(name: string, manifest: string, importers: Importer[], opts: NormalizeKnipOptions): FindingType {
+  const facts = opts.dependencyFacts(manifest);
+  const locations = [...importers]
+    .sort((a, b) => a.path.localeCompare(b.path) || (a.line ?? 0) - (b.line ?? 0))
+    .map((i) => ({ path: i.path, ...(i.line !== undefined ? { startLine: i.line } : {}), symbol: name }));
+  return {
+    fingerprint: fingerprint("unlisted-dependency", [`dep:${name}`], [name, manifest]),
+    kind: "unlisted-dependency",
+    category: "dead-code",
+    locations,
+    evidence: [
+      { label: "knip", value: "unlisted-dependency" },
+      { label: "manifest", value: manifest },
+      { label: "importing-files", value: String(new Set(importers.map((i) => i.path)).size) },
+      ...(facts.installed
+        ? []
+        : [{ label: "dependencies-installed", value: "no — scripts and plugin configs could not be checked" }]),
+    ],
+    // Imported by name, so never a confident "dead" verdict; the fix is a manifest entry, not a delete.
+    confidence: "low",
+    suggestedAction: "review",
+    verifyHint: VERIFY_HINT,
+    source: SOURCE,
+  };
+}
+
 function specsForFile(row: KnipJsonFileIssues): KindSpec[] {
   return [
     { kind: "unused-file", items: row.files, symbolFromName: false },
@@ -153,6 +186,7 @@ export function normalizeKnipReport(
 ): FindingType[] {
   const out: FindingType[] = [];
   const seen = new Set<string>();
+  const unlisted = new Map<string, { name: string; manifest: string; importers: Importer[] }>();
 
   for (const row of report.issues ?? []) {
     const filePath = toPosixPath(row.file);
@@ -161,6 +195,14 @@ export function normalizeKnipReport(
         const subjectPath =
           spec.kind === "unused-file" ? toPosixPath(item.name || filePath) : filePath;
         if (!isAllowedFile(subjectPath, opts)) continue;
+        if (spec.kind === "unlisted-dependency") {
+          const manifest = opts.manifestOf(subjectPath);
+          const key = `${manifest}\0${item.name}`;
+          const group = unlisted.get(key) ?? { name: item.name, manifest, importers: [] };
+          group.importers.push({ path: subjectPath, ...(item.line !== undefined ? { line: item.line } : {}) });
+          unlisted.set(key, group);
+          continue;
+        }
         const finding = buildFinding(
           spec.kind,
           subjectPath,
@@ -174,6 +216,7 @@ export function normalizeKnipReport(
       }
     }
   }
+  for (const g of unlisted.values()) out.push(buildUnlistedFinding(g.name, g.manifest, g.importers, opts));
 
   return out;
 }
