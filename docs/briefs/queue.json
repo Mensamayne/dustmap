@@ -720,11 +720,10 @@
         "EMB-00"
       ],
       "epic": "EMB",
-      "status": "blocked",
+      "status": "in_progress",
       "kind": "feature",
       "startedAt": "2026-10-20T23:28:26.143Z",
-      "startedBy": "agent",
-      "blockedReason": "czeka na zgody maintainera: docs/experiments/emb-env.md (miejsce na dysku, pobrania P1-P5, wagi W2-W4, trust_remote_code)"
+      "startedBy": "agent"
     },
     {
       "id": "EMB-03",
