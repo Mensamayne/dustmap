@@ -58,7 +58,11 @@ function git(cwd: string, args: string[]): string {
   return (r.stdout ?? "").trim();
 }
 
-function sampleFinding(pathRel: string, symbol: string) {
+function sampleFinding(
+  pathRel: string,
+  symbol: string,
+  confidence: "low" | "medium" | "high" = "medium",
+) {
   const fp = fingerprint("unused-export", [`export const ${symbol} = 1`], [symbol]);
   return {
     fingerprint: fp,
@@ -69,7 +73,7 @@ function sampleFinding(pathRel: string, symbol: string) {
       { label: "export", value: symbol },
       { label: "pad", value: "y".repeat(200) },
     ],
-    confidence: "medium" as const,
+    confidence,
     suggestedAction: "decide" as const,
     verifyHint: "Delete the export and typecheck the package.",
     source: "knip",
@@ -100,8 +104,9 @@ function writeFixtureRepo(opts: {
   git(root, ["commit", "-m", "init"]);
 
   const count = opts.findingCount ?? 3;
+  const ladder: Array<"low" | "medium" | "high"> = ["high", "medium", "low"];
   const findings = Array.from({ length: count }, (_, i) =>
-    sampleFinding(`src/file-${i}.ts`, `sym${i}`),
+    sampleFinding(`src/file-${i}.ts`, `sym${i}`, ladder[i % ladder.length]!),
   );
   const fingerprints = findings.map((f) => f.fingerprint);
   const byCategory = { "dead-code": findings.length };
@@ -294,6 +299,29 @@ describe("Dustmap MCP tools (in-process client)", () => {
     expect(list.items).toHaveLength(2);
     expect(list.hasMore).toBe(true);
     expect(list.total).toBe(3);
+
+    const highOnlyRaw = await pair.client.callTool({
+      name: "dustmap_list",
+      arguments: {
+        out: outDir,
+        category: "dead-code",
+        minConfidence: "high",
+        limit: 20,
+      },
+    });
+    expect(highOnlyRaw.isError).toBeFalsy();
+    const highOnly = JSON.parse(textPayload(highOnlyRaw));
+    expect(highOnly.total).toBe(1);
+    expect(highOnly.items).toHaveLength(1);
+    expect(highOnly.items.every((i: { confidence: string }) => i.confidence === "high")).toBe(
+      true,
+    );
+
+    const badConf = await pair.client.callTool({
+      name: "dustmap_list",
+      arguments: { out: outDir, minConfidence: "extreme" },
+    });
+    expect(badConf.isError).toBeTruthy();
 
     const showRaw = await pair.client.callTool({
       name: "dustmap_show",

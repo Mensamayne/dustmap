@@ -7,7 +7,9 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  Confidence,
   FindingCategory,
+  type ConfidenceType,
   type FindingCategoryType,
   type FindingType,
   type ReportType,
@@ -286,6 +288,8 @@ export function dustmapSummary(ctx: McpToolContext, args: SummaryArgs = {}): Too
 export type ListArgs = {
   out?: string;
   category?: string;
+  /** Minimum confidence floor: low | medium | high (inclusive). */
+  minConfidence?: string;
   pathPrefix?: string;
   offset?: number;
   limit?: number;
@@ -293,6 +297,12 @@ export type ListArgs = {
 
 const DEFAULT_LIST_LIMIT = 20;
 const MAX_LIST_LIMIT = 50;
+
+const CONFIDENCE_RANK: Record<ConfidenceType, number> = {
+  low: 1,
+  medium: 2,
+  high: 3,
+};
 
 function filterFindings(report: ReportType, args: ListArgs): FindingType[] {
   let items = report.findings;
@@ -306,13 +316,28 @@ function filterFindings(report: ReportType, args: ListArgs): FindingType[] {
     const cat: FindingCategoryType = parsed.data;
     items = items.filter((f) => f.category === cat);
   }
+  if (args.minConfidence !== undefined) {
+    const parsed = Confidence.safeParse(args.minConfidence);
+    if (!parsed.success) {
+      throw new Error(
+        `Invalid minConfidence "${args.minConfidence}". Expected one of: ${Confidence.options.join(", ")}`,
+      );
+    }
+    const floor = CONFIDENCE_RANK[parsed.data];
+    items = items.filter((f) => CONFIDENCE_RANK[f.confidence] >= floor);
+  }
   if (args.pathPrefix !== undefined && args.pathPrefix.length > 0) {
     const prefix = args.pathPrefix.replace(/\\/g, "/").replace(/\/+$/, "");
     items = items.filter((f) =>
       f.locations.some((l) => l.path === prefix || l.path.startsWith(`${prefix}/`)),
     );
   }
-  return items;
+  // Highest confidence first so "safest deletes" land on page 1 without scanning.
+  return [...items].sort((a, b) => {
+    const byConf = CONFIDENCE_RANK[b.confidence] - CONFIDENCE_RANK[a.confidence];
+    if (byConf !== 0) return byConf;
+    return a.fingerprint.localeCompare(b.fingerprint);
+  });
 }
 
 export function dustmapList(ctx: McpToolContext, args: ListArgs = {}): ToolResult {

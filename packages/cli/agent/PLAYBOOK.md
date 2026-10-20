@@ -25,7 +25,7 @@ Every MCP reply includes `next`: 1–3 suggested follow-up tool calls. Prefer th
 
 1. **Orient** — Call `dustmap_guide` (or read this playbook). If there is no report, or `stale: true`, run `dustmap_scan` with `mode: "diff"` (CLI: `dustmap scan --diff <base>`). Full scan only when the user asks or the repo has no useful base ref.
 2. **Summary** — `dustmap_summary` / `dustmap summary`. Note category counts and **top places** (paths that hurt), not a wall of fingerprints.
-3. **Pick a place** — From top places, take one path or fingerprint. Optionally `dustmap_list` with `category` / `pathPrefix` and pagination.
+3. **Pick a place** — From top places, take one path or fingerprint. Optionally `dustmap_list` with `category` / `pathPrefix` / `minConfidence` and pagination (sorted high → low confidence). For safest delete candidates: `category: "dead-code"` and `minConfidence: "high"`.
 4. **Evidence** — `dustmap_show` / `dustmap show <fingerprint>`. Read `verifyHint`, locations, evidence.
 5. **Safety** — Before deleting or large edits, **run the verifyHint** (typecheck / tests / the command it names). Do not skip this.
 6. **Decide or queue** —

@@ -99,7 +99,7 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
     "dustmap_list",
     {
       description:
-        "List findings with optional category/path filters and pagination (offset/limit).",
+        "List findings with optional category/path/minConfidence filters and pagination (offset/limit). Results are sorted highest confidence first.",
       inputSchema: {
         out: z.string().optional().describe("outputDir with report.json"),
         category: z
@@ -107,6 +107,12 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
           .optional()
           .describe(
             "Finding category: dead-code | duplicate | semantic-duplicate | refactor-signal | structure",
+          ),
+        minConfidence: z
+          .enum(["low", "medium", "high"])
+          .optional()
+          .describe(
+            "Minimum confidence floor (inclusive). Use high + category dead-code for safest delete candidates.",
           ),
         pathPrefix: z.string().optional().describe("Only findings under this path prefix"),
         offset: z.number().int().nonnegative().optional().describe("Pagination offset (default 0)"),
@@ -124,6 +130,9 @@ export function createDustmapMcpServer(opts: DustmapMcpOptions = {}): McpServer 
         dustmapList(ctx, {
           ...(args.out !== undefined ? { out: args.out } : {}),
           ...(args.category !== undefined ? { category: args.category } : {}),
+          ...(args.minConfidence !== undefined
+            ? { minConfidence: args.minConfidence }
+            : {}),
           ...(args.pathPrefix !== undefined ? { pathPrefix: args.pathPrefix } : {}),
           ...(args.offset !== undefined ? { offset: args.offset } : {}),
           ...(args.limit !== undefined ? { limit: args.limit } : {}),
