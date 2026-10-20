@@ -702,10 +702,13 @@
         "EMB-00"
       ],
       "epic": "EMB",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-20T23:28:26.143Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-20T23:43:18.209Z",
+      "gitProofSha": "98149ee3ccb248cd8528257216d9a8e98a584f7a",
+      "closureNotes": "gold 165 pairs (same 65/pattern 56/different 44; 142 hand-written public, 23 DUST-15 private refs, no code); meter + selftests in verify; baseline test split AP 0.528, recall@0.82 0.07, prec 0.60, same 0.44 vs pattern 0.45, 29/113 no score"
     },
     {
       "id": "EMB-02",
@@ -717,10 +720,11 @@
         "EMB-00"
       ],
       "epic": "EMB",
-      "status": "in_progress",
+      "status": "blocked",
       "kind": "feature",
       "startedAt": "2026-10-20T23:28:26.143Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "blockedReason": "czeka na zgody maintainera: docs/experiments/emb-env.md (miejsce na dysku, pobrania P1-P5, wagi W2-W4, trust_remote_code)"
     },
     {
       "id": "EMB-03",
