@@ -533,6 +533,308 @@
       "kind": "feature",
       "startedAt": null,
       "startedBy": null
+    },
+    {
+      "id": "BUG-06",
+      "title": "Dane testowe (fixtures) zgłaszane jako martwy kod high",
+      "layer": 100,
+      "segment": "core",
+      "brief": "docs/briefs/BUG-06-fixtures-reported-dead.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "medium",
+      "source": "lab / poligon / self-scan 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-07",
+      "title": "Para po sensie: druga strona z nazwą i treścią pierwszej",
+      "layer": 100,
+      "segment": "core",
+      "brief": "docs/briefs/BUG-07-semantic-pair-second-side.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "medium",
+      "source": "lab / poligon / self-scan 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-08",
+      "title": "Odcisk martwego kodu z samej nazwy — decyzje nie wygasają",
+      "layer": 100,
+      "segment": "core",
+      "brief": "docs/briefs/BUG-08-dead-code-fingerprint-ignores-code.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "high",
+      "source": "lab / poligon / self-scan 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-09",
+      "title": "summary ocenia świeżość względem bieżącego katalogu",
+      "layer": 100,
+      "segment": "agent",
+      "brief": "docs/briefs/BUG-09-cli-freshness-from-cwd.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "low",
+      "source": "lab / poligon / self-scan 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-10",
+      "title": "unused-dependency high bez zainstalowanych paczek",
+      "layer": 100,
+      "segment": "core",
+      "brief": "docs/briefs/BUG-10-unused-deps-without-node-modules.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "medium",
+      "source": "lab / poligon / self-scan 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-11",
+      "title": "Zła baza scan --diff kończy się kodem 1",
+      "layer": 100,
+      "segment": "core",
+      "brief": "docs/briefs/BUG-11-bad-diff-ref-exit-1.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "low",
+      "source": "lab / poligon / self-scan 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "BUG-12",
+      "title": "Monorepo: punkty wejścia nie docierają do paczek",
+      "layer": 100,
+      "segment": "core",
+      "brief": "docs/briefs/BUG-12-workspace-entries-ignored.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "high",
+      "source": "lab / poligon / self-scan 2026-10-20",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "DUST-24",
+      "title": "Posprzątać kurz znaleziony w samym Dustmapie",
+      "layer": 24,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-24-self-scan-cleanup.md",
+      "gates": [
+        "BUG-06",
+        "BUG-12"
+      ],
+      "epic": "DUST",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-00",
+      "title": "Overview: własny lokalny model embeddingowy",
+      "layer": 0,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-00-overview.md",
+      "gates": [],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-01",
+      "title": "Zbiór wzorcowy par i miernik",
+      "layer": 1,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-01-gold-set-and-meter.md",
+      "gates": [
+        "EMB-00"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-02",
+      "title": "Środowisko treningowe i zgody",
+      "layer": 2,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-02-training-env-and-consent.md",
+      "gates": [
+        "EMB-00"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-03",
+      "title": "Wybór modelu bazowego",
+      "layer": 3,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-03-base-model-choice.md",
+      "gates": [
+        "EMB-01",
+        "EMB-02"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-04",
+      "title": "Dane: pary ten sam sens",
+      "layer": 4,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-04-positive-pairs.md",
+      "gates": [
+        "EMB-03"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-05",
+      "title": "Dane: trudne negatywy i wzorce",
+      "layer": 5,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-05-hard-negatives.md",
+      "gates": [
+        "EMB-03"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-06",
+      "title": "Trening: model prywatny i publiczny",
+      "layer": 6,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-06-contrastive-training.md",
+      "gates": [
+        "EMB-04",
+        "EMB-05"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-07",
+      "title": "Eksport ONNX i odchudzenie",
+      "layer": 7,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-07-onnx-export.md",
+      "gates": [
+        "EMB-06"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-08",
+      "title": "Dostawca onnx w Dustmapie",
+      "layer": 8,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-08-onnx-provider.md",
+      "gates": [
+        "EMB-07",
+        "BUG-07"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-09",
+      "title": "Kalibracja: podobieństwo → pewność",
+      "layer": 9,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-09-calibration.md",
+      "gates": [
+        "EMB-08"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-10",
+      "title": "Pomiar na prawdziwym kodzie i decyzja o domyślnym",
+      "layer": 10,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-10-targets-and-default.md",
+      "gates": [
+        "EMB-09"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-11",
+      "title": "Dystrybucja modelu publicznego",
+      "layer": 11,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-11-model-distribution.md",
+      "gates": [
+        "EMB-10"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
     }
   ]
 }

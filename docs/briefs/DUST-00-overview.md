@@ -47,6 +47,7 @@ Wizja: [docs/VISION.md](../VISION.md).
 | DUST-21 | Filtr pewności w `dustmap_list` (z DUST-18) |
 | DUST-22 | `dustmap list` w CLI — ta sama pętla bez MCP (z audytu) |
 | DUST-23 | Żywy agent na migawce Monorepo-A — dokończenie DUST-18 (z audytu) |
+| DUST-24 | Posprzątać kurz znaleziony w samym Dustmapie (z self-scanu) |
 
 Kolejność startu: DUST-00 → DUST-01 i **równolegle DUST-15** (sam pomiar, bez kodu) → DUST-02 → DUST-16 → reszta.
 

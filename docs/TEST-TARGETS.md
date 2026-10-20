@@ -9,6 +9,16 @@ Fixtures w `packages/*/fixtures/` sprawdzają pojedyncze przypadki. **Prawdziwą
 3. **Nie uruchamiaj skryptów celu** (`npm install`, `npm run …`, docker, dev serwer). Skanujemy pliki, nie odpalamy projektu.
 4. Maintainer pracuje w celu na żywo. **Skan „live” może się zmieniać między przebiegami** — do pomiarów jakości używaj migawki (niżej).
 
+## Lab, tortury i poligon (`../dustmap-lab`, osobne repo)
+
+Zewnętrzny poligon, który używa Dustmapa **tylko z zewnątrz** (CLI `--json`, MCP przez stdio) — jak obcy użytkownik albo agent:
+
+- **Lab** (`npm run lab`) — świeże repo z podłożonym kurzem i spisaną prawdą: co ma być znalezione, w jakie pułapki nie wolno wpaść. Znane błędy oznaczone ID z kolejki (🟡); gdy znany błąd zniknie, wynik mówi 🟢 „zdejmij oznaczenie”.
+- **Tortury** (`npm run tortury`) — wejścia, które mają wywrócić narzędzie (puste repo, emoji w ścieżkach, 4000 plików, wyścig dwóch skanów, uszkodzony raport, złe wywołania MCP).
+- **Poligon** (`npm run poligon`, `--ciezkie` z Monorepo-A) — prawdziwe repo maintainera: `git clone --no-hardlinks` (źródło tylko czytane; HEAD i status źródła sprawdzane przed i po) → `init` → skan → cache → skan zmian → MCP. Daje arkusze `results/poligon/*-do-oceny.md` do ręcznej oceny trafności.
+
+Każde wywołanie Dustmapa jest sprawdzane migawką repo przed/po — jakikolwiek zapis w skanowanym repo to porażka. Tabele wyników (`results/*.md`) są w gicie labu, więc postęp widać w historii. Brief, który zmienia wynik skanu albo naprawia błąd z labu, w notatce close podaje wynik `npm run lab` (i `poligon`, gdy dotyczy prawdziwych repo).
+
 ## Rejestr celów
 
 Plik `tools/targets/targets.json` (DUST-16). Ścieżka każdego celu da się nadpisać zmienną środowiskową — inny komputer, inna ścieżka.

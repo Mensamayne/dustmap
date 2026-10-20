@@ -18,6 +18,7 @@ Working rules were carried over from the Monorepo-A monorepo (same maintainer, s
 - **Service-B** at `../service-b` (env `DUSTMAP_TARGET_SERVICE_B`): small and clean — the report there must stay short.
 - Targets are **read-only**: output goes to `.tmp/targets/<target>/`; no writes, no writing git operations, no running their scripts. Quality measurements use pinned snapshots (`git archive`).
 - From DUST-16 on: `npm run verify:targets`, and closure notes carry the numbers.
+- **Lab / tortures / proving ground** at `../dustmap-lab` (separate repo, uses Dustmap only via CLI and MCP): planted scenarios with known truth, torture inputs, real-repo health runs. Known bugs are tagged there by queue ID; a fix closes when its lab check turns green. See [TEST-TARGETS](docs/TEST-TARGETS.md).
 
 Corollaries:
 - **Generic, not tailored:** no knowledge of any specific project in `packages/*/src`. Project specifics live in the user's `dustmap.config.json`.

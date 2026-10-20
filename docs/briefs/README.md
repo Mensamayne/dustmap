@@ -29,3 +29,27 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | BUG-05 | Harness żywego agenta: `--bare`, brak oceny, brudna migawka |
 | DUST-22 | `dustmap list` w CLI — pętla bez MCP |
 | DUST-23 | Żywy agent na migawce Monorepo-A (wymaga `claude auth login`) |
+| BUG-06 | Dane testowe (fixtures) jako martwy kod high |
+| BUG-07 | Para po sensie: druga strona z nazwą i treścią pierwszej |
+| BUG-08 | Odcisk martwego kodu z samej nazwy — decyzje nie wygasają |
+| BUG-09 | `summary` ocenia świeżość względem bieżącego katalogu |
+| BUG-10 | `unused-dependency` high bez zainstalowanych paczek |
+| BUG-11 | Zła baza `scan --diff` → kod 1 |
+| BUG-12 | Monorepo: punkty wejścia nie docierają do paczek |
+| DUST-24 | Posprzątać kurz znaleziony w samym Dustmapie |
+
+**Epik EMB — własny lokalny model embeddingowy** („ten sam sens, inny kod”). Overview: [EMB-00-overview.md](EMB-00-overview.md).
+
+| ID | Co |
+|----|----|
+| EMB-00 | Overview, stan wyjściowy z pomiarów, decyzje |
+| EMB-01 | Zbiór wzorcowy par + miernik + wynik bazowy |
+| EMB-02 | Środowisko treningowe i zgody (CUDA, wagi, dysk) |
+| EMB-03 | Wybór modelu bazowego (liczby, licencje) |
+| EMB-04–05 | Dane: pary „ten sam sens”, trudne negatywy i wzorce |
+| EMB-06 | Trening: model prywatny i publiczny |
+| EMB-07 | Eksport ONNX + int8 |
+| EMB-08 | Dostawca `onnx` w Dustmapie |
+| EMB-09 | Kalibracja progów i pewności |
+| EMB-10 | Pomiar na celach, decyzja o domyślnym, usunięcie ścieżki jscpd |
+| EMB-11 | Dystrybucja modelu publicznego |
