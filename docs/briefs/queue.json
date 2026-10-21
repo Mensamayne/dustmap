@@ -886,11 +886,14 @@
         "EMB-09"
       ],
       "epic": "EMB",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-21T16:36:16.028Z",
       "startedBy": "agent",
-      "note": "Stary brief (bliźniaki algorytmów) anulowany decyzją maintainera 21.10; ten brief = holdout prawdziwego kodu."
+      "note": "Stary brief (bliźniaki algorytmów) anulowany decyzją maintainera 21.10; ten brief = holdout prawdziwego kodu.",
+      "completedAt": "2026-10-21T21:28:08.197Z",
+      "gitProofSha": "3e4d139f509999b1d16aa18ddedce5eef31972fc",
+      "closureNotes": "241 par prawdziwego kodu w mierniku; bramka przecieku je widzi (stary dataset: 12k naruszen do EMB-13); kolejka EMB-13..15"
     },
     {
       "id": "EMB-13",
@@ -902,10 +905,10 @@
         "EMB-12"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T21:31:01.672Z",
+      "startedBy": "agent"
     },
     {
       "id": "EMB-14",

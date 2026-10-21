@@ -1,5 +1,9 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## Dane EMB-13 (21.10.2026)
+
+Zbiór treningowy przebudowany pod definicję odpowiedzialności: bez bliźniaków algorytmów i mutantów; poprawki `fix` jako pozytywy (975); rewrite ograniczony (waga 0,25, max 2 na kotwicę). Prywatny train: 81 134 trójek. Bramki przecieku i etykiet: 0 naruszeń. Szczegóły: `dustmap-emb/DATA-CARD.md`, `docs/experiments/emb-data.md`. Trening modelu: EMB-14.
+
 Każdy wiersz to jeden przebieg `npm run emb:eval` na zbiorze z `tools/emb/gold` (EMB-01). **same** = ta sama logika (klasa pozytywna); **pattern** i **different** = negatywy. Główna liczba to **AP** (średnia precyzja rankingu: 1,0 = wszystkie pary `same` nad wszystkimi pozostałymi; los ≈ odsetek par `same`). „Brak wyniku” = dostawca w ogóle nie połączył pary (liczone jako 0). Zbiór `test` jest odłożony — nie trenujemy ani nie stroimy na nim progów.
 
 ## Wynik bazowy (21.10.2026, EMB-01)
