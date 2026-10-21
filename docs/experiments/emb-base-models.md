@@ -27,6 +27,8 @@ Wejście obcinane do 512 tokenów (dotyczy 10–11 ze 180 funkcji w zbiorze).
 
 Los dałby AP ≈ 0,39 (odsetek par `same`). Bootstrap: 2000 losowań par ze zwracaniem, porównanie w parach na tych samych losowaniach — **W4 wypada lepiej niż każdy z pozostałych w 99,3–100% losowań**.
 
+Odtworzenie: `dustmap-emb/compare.py` + `dustmap-emb/bench.py` (pomiar), potem `node tools/emb/compare-runs.mjs --challenger W4` (AP na wspólnych parach, wykrywalność przy danej precyzji, bootstrap).
+
 ## Co z tego wynika
 
 1. **Żaden model bez douczania nie spełnia celu epiku** (precyzja ≥ 0,90 przy ≥ 70% wykrytych par `same`). Przy precyzji ≥ 0,90 każdy znajduje 2–5% — tylko pary prawie identyczne. To potwierdza plan: douczanie na parach „ten sam sens” i trudnych negatywach (EMB-04 → EMB-06).

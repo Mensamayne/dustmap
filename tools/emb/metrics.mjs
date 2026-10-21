@@ -62,6 +62,21 @@ export function bestF1(pairs) {
   return best;
 }
 
+/** Highest share of `same` pairs found while precision stays ≥ minPrecision, and the threshold for it. */
+export function recallAtPrecision(pairs, minPrecision) {
+  const ranked = pairs.map((p, i) => ({ s: scoreOf(p), pos: positive(p), i })).sort((a, b) => b.s - a.s || a.i - b.i);
+  const totalPos = ranked.filter((r) => r.pos).length;
+  let tp = 0;
+  let fp = 0;
+  let best = { recall: 0, threshold: null };
+  for (const r of ranked) {
+    if (r.pos) tp++;
+    else fp++;
+    if (totalPos > 0 && tp / (tp + fp) >= minPrecision && tp / totalPos > best.recall) best = { recall: tp / totalPos, threshold: r.s };
+  }
+  return best;
+}
+
 export function meanByLabel(pairs) {
   const out = {};
   for (const label of ["same", "pattern", "different"]) {
