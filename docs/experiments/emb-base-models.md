@@ -1,6 +1,6 @@
 # Wybór modelu bazowego (EMB-03)
 
-**Stan:** rekomendacja gotowa, czeka na akceptację maintainera.
+**Stan:** zaakceptowane 21.10.2026 — baza: `microsoft/unixcoder-base` (W4).
 **Data:** 21.10.2026 · **Zbiór:** `tools/emb/gold` (165 par; wyniki na odłożonej części `test`, 113 par) · **Miernik:** `npm run emb:eval`, każdy model przez dostawcę HTTP Dustmapa (`dustmap-emb/compare.py`), bez douczania.
 
 ## Kandydaci
@@ -43,4 +43,4 @@ Odtworzenie: `dustmap-emb/compare.py` + `dustmap-emb/bench.py` (pomiar), potem `
 - **Zapasowa: W1 jina** — druga na wspólnych parach (0,61) i już w produkcie, ale do douczania wymaga jej osobnego repo z kodem modelu (osobna zgoda + przegląd). Sięgamy po nią tylko, jeśli douczanie W4 zawiedzie.
 - W2 i W3 odpadają.
 
-**Akceptacja maintainera:** ________ (cytat w notatce zamknięcia EMB-03)
+**Akceptacja maintainera (21.10.2026):** „Akceptuję microsoft/unixcoder-base (W4) jako model bazowy.”
