@@ -1,7 +1,8 @@
 /**
- * Semantic duplicate adapter — local jscpd embeddings or HTTP OpenAI-compatible providers.
- * Vector/pair caches live under outputDir/cache/semantic. Never sends code off-machine without
- * allowRemote. Never writes into the scanned repo source tree.
+ * Semantic duplicate adapter — a Dustmap ONNX model package in-process (`onnx`), local jscpd
+ * embeddings, or HTTP OpenAI-compatible providers. Vector/pair caches live under
+ * outputDir/cache/semantic. Never sends code off-machine without allowRemote. Never writes into the
+ * scanned repo source tree.
  */
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -17,6 +18,7 @@ import {
 } from "./cluster.js";
 import { extractFunctions } from "./extract.js";
 import { runJscpdSemanticPairs } from "./jscpd-semantic.js";
+import { openOnnxProvider } from "./onnx-provider.js";
 import { hashesMatch, readPairCache, writePairCache } from "./pair-cache.js";
 import {
   assertHttpProviderAllowed,
@@ -26,8 +28,8 @@ import {
 } from "./provider.js";
 import { openVectorCache } from "./vector-cache.js";
 
-/** Bump when pair extraction or clustering changes; also keys pairs.json (2: per-side bodies, BUG-07). */
-const ADAPTER_REV = "2";
+/** Bump when pair extraction or clustering changes; also keys pairs.json (2: per-side bodies, BUG-07; 3: parser extraction, EMB-08). */
+const ADAPTER_REV = "3";
 
 export type SemanticRunStats = {
   newEmbeddings: number;
@@ -89,7 +91,7 @@ export type RunSemanticOptions = {
 
 function wantsEmbedPath(ctx: AdapterContext, opts: RunSemanticOptions): boolean {
   if (opts.provider || opts.forceEmbedPath) return true;
-  if (ctx.config.semantic.provider === "http") return true;
+  if (ctx.config.semantic.provider === "http" || ctx.config.semantic.provider === "onnx") return true;
   const engine = (ctx.config.adapters.semantic?.options as { engine?: string } | undefined)?.engine;
   return engine === "embed";
 }
@@ -140,20 +142,19 @@ async function runViaJscpd(
   };
 }
 
+/** `fns` were extracted once by runSemanticAnalysis with the embed-path token floor. */
 async function runViaEmbed(
-  ctx: AdapterContext,
   cfg: SemanticConfig,
-  files: readonly string[],
+  fns: readonly SemanticFunctionRef[],
   cacheDir: string,
   provider: EmbeddingProvider,
 ): Promise<SemanticRunResult> {
-  const fns = await loadFunctions(ctx, files, extractMinTokens(cfg, true));
   const vcache = openVectorCache(cacheDir, provider.modelId);
   const embedItems = fns.map((f) => ({ contentHash: hashBody(f.body), text: f.body }));
   const { vectors, newEmbeddings } = await vcache.embedMissing(embedItems, provider);
   vcache.flush();
 
-  const pairs: SemanticPair[] = pairsAboveThreshold(fns, vectors, cfg.threshold);
+  const pairs: SemanticPair[] = await pairsAboveThreshold(fns, vectors, cfg.threshold);
   writePairCache(cacheDir, {
     rev: ADAPTER_REV,
     modelId: provider.modelId,
@@ -170,7 +171,7 @@ async function runViaEmbed(
 
 /**
  * Run semantic analysis for a scan context.
- * - `http` / injected provider / `engine: embed` → extract + embed + cosine
+ * - `onnx` / `http` / injected provider / `engine: embed` → extract + embed + cosine
  * - `local` → jscpd `--semantic` + pair cache
  * - `none` → empty (unless provider injected for tests)
  */
@@ -194,11 +195,19 @@ export async function runSemanticAnalysis(
   const hashes = fnsForHash.map((f) => hashBody(f.body)).sort();
 
   if (wantsEmbedPath(ctx, opts)) {
+    if (!opts.provider && cfg.provider === "onnx") {
+      const onnx = await openOnnxProvider(cfg);
+      try {
+        return await runViaEmbed(cfg, fnsForHash, cacheDir, onnx);
+      } finally {
+        await onnx.release();
+      }
+    }
     const provider =
       opts.provider ??
       createEmbeddingProvider(cfg) ??
       createMemoryEmbeddingProvider(cfg.model);
-    return runViaEmbed(ctx, cfg, files, cacheDir, provider);
+    return runViaEmbed(cfg, fnsForHash, cacheDir, provider);
   }
 
   if (cfg.provider === "local") {

@@ -1,0 +1,74 @@
+{
+  "schema": "dustmap-embedding-model/1",
+  "id": "dustmap-test-tiny",
+  "version": "0.0.1",
+  "created": "2026-10-21",
+  "private": false,
+  "licence": "Apache-2.0",
+  "task": "test fixture: bag-of-tokens embedder with the real package format",
+  "base": {
+    "repo": "none (seeded random table)",
+    "revision": null,
+    "licence": "Apache-2.0",
+    "sha256": null
+  },
+  "input": {
+    "tokenizer": "tokenizer.json",
+    "names": [
+      "input_ids",
+      "attention_mask"
+    ],
+    "dtype": "int64",
+    "maxTokens": 64,
+    "truncation": "longer inputs are cut to maxTokens by the caller's tokenizer"
+  },
+  "output": {
+    "name": "embedding",
+    "dtype": "float32",
+    "dimensions": 16,
+    "pooling": "mean over attention mask, inside the graph",
+    "normalized": true
+  },
+  "variants": {
+    "cpu": {
+      "file": "model.onnx",
+      "precision": "fp32",
+      "executionProviders": [
+        "cpu"
+      ]
+    },
+    "gpu": {
+      "file": "model.fp16.onnx",
+      "precision": "fp16",
+      "executionProviders": [
+        "dml",
+        "cuda"
+      ]
+    }
+  },
+  "usage": "test fixture",
+  "files": {
+    "model.onnx": {
+      "sha256": "bbd01fd44dbbacfad26a267463d2cca4b143e0250e17b1a859e63dc8e6347d09",
+      "bytes": 19816
+    },
+    "model.fp16.onnx": {
+      "sha256": "319b3521d52eae30848d169741fc909acfce6c94abd98cb2324ffb599c006094",
+      "bytes": 10213
+    },
+    "tokenizer.json": {
+      "sha256": "77bfd9dfed8b95d0de6fc875d83ab7e2833492b4f4b993d4933fddd22b5bb6f6",
+      "bytes": 8213
+    }
+  },
+  "training": {
+    "run": null
+  },
+  "quality": {
+    "meter": "none \u2014 test fixture"
+  },
+  "privacy": {
+    "verdict": "ok",
+    "manifestSha256": null
+  }
+}

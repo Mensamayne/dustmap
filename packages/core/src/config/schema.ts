@@ -31,10 +31,23 @@ export type AdapterConfig = z.infer<typeof AdapterConfig>;
  */
 export const SemanticConfig = z
   .object({
-    /** `local` = jscpd built-in model; `http` = OpenAI-compatible embeddings URL; `none` = off. */
-    provider: z.enum(["local", "http", "none"]).default("local"),
-    /** Embedding model id (local jscpd model name, or HTTP model field). */
+    /**
+     * `local` = jscpd built-in model; `http` = OpenAI-compatible embeddings URL; `onnx` = a Dustmap
+     * model package run in-process (ONNX Runtime, no network); `none` = off.
+     */
+    provider: z.enum(["local", "http", "onnx", "none"]).default("local"),
+    /** Embedding model id (local jscpd model name, HTTP model field, or onnx package id). */
     model: z.string().min(1).default("jina-embeddings-v2-base-code"),
+    /**
+     * `onnx` only: where model packages live (`<modelDir>/<model>/manifest.json`). Default: the user
+     * cache, `$DUSTMAP_MODELS_DIR` or `~/.cache/dustmap/models`. Never inside the scanned repo's source.
+     */
+    modelDir: z.string().min(1).optional(),
+    /**
+     * `onnx` only: `auto` = the package's GPU variant when a GPU runtime works here (DirectML on
+     * Windows, CUDA on Linux), otherwise its CPU variant; `gpu` = GPU or fail; `cpu` = CPU always.
+     */
+    device: z.enum(["auto", "gpu", "cpu"]).default("auto"),
     /** Minimum cosine similarity within one language to report (spike: 0.82). */
     threshold: z.number().gt(0).lte(1).default(0.82),
     /** Minimum function tokens before a function is considered (passed to jscpd / extractors). */

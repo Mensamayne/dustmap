@@ -20,6 +20,14 @@ export {
   type SemanticFunctionRef,
 } from "./cluster.js";
 export { extractFunctions, type ExtractedFunction } from "./extract.js";
+export {
+  loadModelPackage,
+  openOnnxProvider,
+  resolveModelDir,
+  OnnxModelError,
+  type ModelManifest,
+  type OnnxProvider,
+} from "./onnx-provider.js";
 export { runJscpdSemanticPairs, type JscpdSemanticOptions } from "./jscpd-semantic.js";
 export { dedupeSemanticAgainstClones, isFullyCoveredByClone } from "./dedupe-vs-clones.js";
 export {

@@ -5,6 +5,7 @@
  *
  *   npm run emb:eval                                   current product path (jscpd --semantic, jina)
  *   npm run emb:eval -- --provider http --url http://127.0.0.1:8080/v1 --model <id>
+ *   npm run emb:eval -- --provider onnx --model <package id> [--model-dir <dir>] [--device auto|gpu|cpu]
  *   npm run emb:eval -- --selftest                     oracle / inverted / random must land where expected
  *
  * Options: --threshold 0.82 · --concurrency 4 · --note "…" · --no-write (skip results table).
@@ -15,7 +16,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { cosineSimilarity, createOpenAiCompatibleProvider, runJscpdSemanticPairs } from "@dustmap/core";
+import { cosineSimilarity, createOpenAiCompatibleProvider, openOnnxProvider, runJscpdSemanticPairs } from "@dustmap/core";
 import { summarize } from "./metrics.mjs";
 
 type Side = { name: string; code: string };
@@ -106,6 +107,25 @@ async function scoreHttp(pairs: GoldPair[], url: string, model: string): Promise
   return pairs.map((p) => ({ ...p, score: cosineSimilarity(vectors.get(p.a.code)!, vectors.get(p.b.code)!) }));
 }
 
+/** A Dustmap model package in-process — the `onnx` provider exactly as a scan uses it. */
+async function scoreOnnx(pairs: GoldPair[], model: string, modelDir: string | undefined, device: "auto" | "gpu" | "cpu"): Promise<{ scored: Scored[]; variant: string; size: string }> {
+  const provider = await openOnnxProvider({ model, device, ...(modelDir ? { modelDir: path.resolve(modelDir) } : {}) });
+  try {
+    const texts = [...new Set(pairs.flatMap((p) => [p.a.code, p.b.code]))];
+    const vs = await provider.embed(texts);
+    const vectors = new Map(texts.map((t, k) => [t, vs[k]!]));
+    const file = provider.manifest.variants[provider.variant]!.file;
+    const fallback = provider.gpuFallbackReason ? ` (GPU niedostępne: ${provider.gpuFallbackReason})` : "";
+    return {
+      scored: pairs.map((p) => ({ ...p, score: cosineSimilarity(vectors.get(p.a.code)!, vectors.get(p.b.code)!) })),
+      variant: `${provider.variant}${fallback}`,
+      size: `${Math.round(provider.manifest.files[file]!.bytes / 1024 / 1024)} MB`,
+    };
+  } finally {
+    await provider.release();
+  }
+}
+
 /** Seeded pseudo-random score — the "model knows nothing" baseline. */
 function randomScore(id: string): number {
   return createHash("sha256").update(id).digest().readUInt32BE(0) / 0xffffffff;
@@ -172,6 +192,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   let scored: Scored[];
   let size = "—";
+  let variantNote = "";
   if (provider === "current") {
     scored = await scoreCurrent(pairs, model!, Number(arg("concurrency", "4")));
     const bytes = dirBytes(path.join(process.env.LOCALAPPDATA ?? "", "jscpd/cache/models", `jinaai--${model}`));
@@ -179,10 +200,18 @@ async function main(): Promise<void> {
   } else if (provider === "http") {
     if (!arg("url") || !model) throw new Error("--provider http needs --url and --model");
     scored = await scoreHttp(pairs, arg("url")!, model);
+  } else if (provider === "onnx") {
+    if (!model) throw new Error("--provider onnx needs --model <package id>");
+    const device = arg("device", "auto") as "auto" | "gpu" | "cpu";
+    if (!["auto", "gpu", "cpu"].includes(device)) throw new Error("--device: auto | gpu | cpu");
+    const r = await scoreOnnx(pairs, model, arg("model-dir"), device);
+    scored = r.scored;
+    size = r.size;
+    variantNote = `wariant ${r.variant}`;
   } else if (provider === "random") {
     scored = pairs.map((p) => ({ ...p, score: randomScore(p.id) }));
   } else {
-    throw new Error(`Unknown --provider ${provider} (current | http | random)`);
+    throw new Error(`Unknown --provider ${provider} (current | http | onnx | random)`);
   }
   const seconds = (Date.now() - t0) / 1000;
 
@@ -191,7 +220,7 @@ async function main(): Promise<void> {
     ["całość", scored],
   ];
   const label = provider === "current" ? `obecny: jscpd --semantic · ${model}` : `${provider}${model ? ` · ${model}` : ""}`;
-  const notes = [arg("note"), priv.note].filter(Boolean).join("; ");
+  const notes = [arg("note"), variantNote, priv.note].filter(Boolean).join("; ");
   console.log(`\n${label} · ${pairs.length} par (${priv.pairs.length} prywatnych) · ${seconds.toFixed(1)} s\n`);
   for (const [name, set] of sets) {
     const s = summarize(set, threshold);

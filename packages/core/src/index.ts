@@ -60,8 +60,12 @@ export {
   createOpenAiCompatibleProvider,
   cosineSimilarity,
   runJscpdSemanticPairs,
+  openOnnxProvider,
+  loadModelPackage,
+  resolveModelDir,
+  OnnxModelError,
 } from "./semantic/index.js";
-export type { EmbeddingProvider, SemanticRunResult, JscpdSemanticOptions } from "./semantic/index.js";
+export type { EmbeddingProvider, SemanticRunResult, JscpdSemanticOptions, ModelManifest, OnnxProvider } from "./semantic/index.js";
 export {
   codeSignalsAdapter,
   runCodeSignals,

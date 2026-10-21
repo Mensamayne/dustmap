@@ -131,3 +131,62 @@ Co mogłoby dać ≥ 50 funkcji/s (decyzja produktowa, nie ten brief):
 2. **Mniejszy model** — destylacja do ~6 warstw / ~40 M parametrów, uczony na wektorach obecnego modelu. Wymaga treningu i nowego pomiaru jakości.
 
 Zgoda maintainera z 21.10.2026 na pobrania potrzebne do zadania: „masz pozwolenie na zaciąganie paczki i czegokolwiek tylko potrzebujesz”. W EMB-07 nic nie pobrano — rozwiązanie korzysta z już zainstalowanych `onnx`, `onnxruntime` i `numpy`.
+| 2026-10-21 | http · onnx fp16 dustmap-same-meaning-public | test | 113 | 0.770 | 0.875 | 0.163 | 1.000 | 0.384 (F1 0.74) | 0 | 0.57 / 0.29 / 0.16 | 64 s | — | EMB-08 ONNX fp16 (wariant na kartę), liczone na CPU |
+| 2026-10-21 | http · onnx fp16 dustmap-same-meaning-public | całość | 165 | 0.788 | 0.889 | 0.123 | 1.000 | 0.467 (F1 0.75) | 0 | 0.56 / 0.29 / 0.17 | 64 s | — | EMB-08 ONNX fp16 (wariant na kartę), liczone na CPU |
+| 2026-10-21 | http · onnx fp16 dustmap-same-meaning-private | test | 113 | 0.864 | 1.000 | 0.070 | 1.000 | 0.426 (F1 0.81) | 0 | 0.55 / 0.26 / 0.12 | 63 s | — | EMB-08 ONNX fp16 (wariant na kartę), liczone na CPU |
+| 2026-10-21 | http · onnx fp16 dustmap-same-meaning-private | całość | 165 | 0.862 | 1.000 | 0.046 | 1.000 | 0.391 (F1 0.81) | 0 | 0.52 / 0.25 / 0.12 | 63 s | — | EMB-08 ONNX fp16 (wariant na kartę), liczone na CPU |
+| 2026-10-21 | onnx · dustmap-same-meaning-private | test | 113 | 0.860 | 1.000 | 0.093 | 1.000 | 0.426 (F1 0.81) | 0 | 0.55 / 0.26 / 0.12 | 28 s | 121 MB | EMB-08 dostawca onnx w Dustmapie, device=cpu; wariant cpu |
+| 2026-10-21 | onnx · dustmap-same-meaning-private | całość | 165 | 0.859 | 1.000 | 0.062 | 1.000 | 0.389 (F1 0.82) | 0 | 0.53 / 0.25 / 0.12 | 28 s | 121 MB | EMB-08 dostawca onnx w Dustmapie, device=cpu; wariant cpu |
+| 2026-10-21 | onnx · dustmap-same-meaning-private | test | 113 | 0.863 | 1.000 | 0.070 | 1.000 | 0.427 (F1 0.81) | 0 | 0.55 / 0.26 / 0.12 | 3 s | 239 MB | EMB-08 dostawca onnx w Dustmapie, device=auto; wariant gpu |
+| 2026-10-21 | onnx · dustmap-same-meaning-private | całość | 165 | 0.862 | 1.000 | 0.046 | 1.000 | 0.391 (F1 0.81) | 0 | 0.52 / 0.25 / 0.12 | 3 s | 239 MB | EMB-08 dostawca onnx w Dustmapie, device=auto; wariant gpu |
+| 2026-10-21 | onnx · dustmap-same-meaning-public | test | 113 | 0.768 | 0.875 | 0.163 | 1.000 | 0.388 (F1 0.74) | 0 | 0.57 / 0.30 / 0.16 | 24 s | 121 MB | EMB-08 dostawca onnx w Dustmapie, device=cpu; wariant cpu |
+| 2026-10-21 | onnx · dustmap-same-meaning-public | całość | 165 | 0.787 | 0.889 | 0.123 | 1.000 | 0.474 (F1 0.75) | 0 | 0.57 / 0.29 / 0.17 | 24 s | 121 MB | EMB-08 dostawca onnx w Dustmapie, device=cpu; wariant cpu |
+| 2026-10-21 | onnx · dustmap-same-meaning-public | test | 113 | 0.770 | 0.875 | 0.163 | 1.000 | 0.385 (F1 0.74) | 0 | 0.57 / 0.29 / 0.16 | 3 s | 239 MB | EMB-08 dostawca onnx w Dustmapie, device=auto; wariant gpu |
+| 2026-10-21 | onnx · dustmap-same-meaning-public | całość | 165 | 0.787 | 0.889 | 0.123 | 1.000 | 0.385 (F1 0.75) | 0 | 0.56 / 0.29 / 0.17 | 3 s | 239 MB | EMB-08 dostawca onnx w Dustmapie, device=auto; wariant gpu |
+
+## Dostawca `onnx` w Dustmapie, z kartą graficzną (EMB-08, 21.10.2026)
+
+**W skrócie.** Dustmap sam liczy wektory funkcji modelem z paczki. Działa bez sieci i bez Pythona. Gdy jest karta graficzna, używa jej (wariant fp16 przez DirectML na Windows, CUDA na Linuksie). Bez karty liczy na procesorze (wariant int8). Znajduje **wszystkie** pary nad progiem, a nie tylko część jak jscpd, i składa je w grupy według decyzji z DUST-15.
+
+```json
+{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning-public", "device": "auto" } }
+```
+
+Paczka leży w `~/.cache/dustmap/models/<id>/` (albo `semantic.modelDir`, albo `$DUSTMAP_MODELS_DIR`). Przed użyciem Dustmap sprawdza sumy SHA-256 wszystkich plików z `manifest.json`. Brak albo zmiana pliku daje czytelny błąd — modelu nigdy nie pobiera sam (pobieranie to EMB-11).
+
+| Miernik przez dostawcę Dustmapa (`npm run emb:eval -- --provider onnx`) | AP test | Czas (165 par, z wczytaniem) |
+|---|--:|--:|
+| prywatny, karta (fp16, DirectML) | 0,863 | 3 s |
+| prywatny, procesor (int8) | 0,860 | 28 s |
+| publiczny, karta | 0,770 | 3 s |
+| publiczny, procesor | 0,768 | 24 s |
+
+**Prawdziwy kod — migawka Monorepo-A** (model prywatny, karta, próg 0,82). Skan dotyczy tylko części „po sensie”; migawka tylko do odczytu, wyniki w `.tmp/emb08/`.
+- 22 342 funkcje, porównane wszystkie pary.
+- Pierwszy skan 160 s (~140 funkcji/s razem z wycinaniem i wszystkimi parami), drugi 18 s — niczego nie liczy od nowa.
+- 4521 par nad progiem → 868 znalezisk: 773 grupy kopii jednej funkcji i 95 par „dwa równoległe pliki”.
+- To dużo — próg 0,82 dobrano pod starą skalę modelu jina; ustawienie go dla nowego modelu to EMB-09.
+
+**Co zmieniono:**
+- **Wycinanie funkcji przez parser TypeScript** zamiast dopasowywania nawiasów (`extract.ts`). Łapie:
+  - funkcje, także zagnieżdżone;
+  - metody klas i obiektów, akcesory i konstruktory (z nazwą `Klasa.metoda`);
+  - strzałki przypisane do nazw.
+
+  Linie są dokładne, a komentarze usuwa skaner — zmiana komentarza nie zmienia odcisku.
+- **Wszystkie pary dokładnie** (`similarity.ts`): do 1500 funkcji w JS, powyżej jako mnożenie macierzy w ONNX Runtime (jednowęzłowy graf zapisany w kodzie). Na 2000 wektorów wynik jest identyczny jak w zwykłej pętli. 22 tys. funkcji to kilka sekund. Indeks przybliżony nie był potrzebny.
+- **Grupy** (`cluster.ts`):
+  - jedna funkcja w N kopiach → jedno znalezisko z N miejscami;
+  - kilka osobnych par między tymi samymi dwoma plikami → jedno znalezisko „dwa równoległe systemy”.
+
+  Dowody: kształt grupy, liczba funkcji i par, min/max podobieństwa, nazwy, liczba plików.
+- **Pamięć wektorów binarna** (`vector-cache.ts`): float32 + indeks, wartości bez zmian. Na Monorepo-A 66 MB zamiast 309 MB w JSON, drugi skan 18 s zamiast 29 s.
+- **Zależności:** `onnxruntime-node` 1.30.0 (MIT) i `@huggingface/tokenizers` 0.2.0 (Apache-2.0). Bramka licencji przechodzi. Tokenizer JS daje identyczne tokeny jak Python na 4004 funkcjach, także przy przycinaniu długich i nietypowych znakach. ONNX Runtime waży ~300 MB (binarki dla wszystkich systemów). Na Linuksie jego instalator przy `npm install` może dociągnąć z NuGet pliki CUDA — to instalacja, nie skan.
+- **Paczki modeli mają dwa warianty** (`dustmap-emb/half.py`, `package.py`): `cpu` = `model.onnx` (int8, 127 MB) i `gpu` = `model.fp16.onnx` (251 MB). AP wariantu fp16 = pełna precyzja (0,770 / 0,864). Wektory z karty i z procesora różnią się minimalnie (cosinus ≥ 0,993), więc pamięć wektorów trzyma je osobno (id modelu zawiera wariant).
+
+**Sprawdzone:**
+- `npm run verify` — w tym nowe testy: wycinanie (metody, strzałki w obiektach, funkcje zagnieżdżone), paczka modelu (sumy, brak modelu, zmieniony plik), dostawca (wektory długości 1, ten sam wynik osobno i w paczce, przycinanie), dokładność wszystkich par i grupowanie „dwa równoległe pliki”. Wszystko na modelu testowym 38 KB w `packages/core/fixtures/onnx-model`, bez sieci.
+- `npm run verify:targets` — bez zmian (domyślny skan nadal używa jscpd).
+- Lab `03` — zielony: trzy te same pętle = jedna grupa z 3 miejscami. Jedno oczekiwanie poprawione: `totalOf` i `totalPositive` lab uznawał za „tę samą pętlę”, ale `totalOf` odejmuje 1 przy liczbie ≤ 0 i dodaje długość tablicy. Stary model je łączył (0,88), nowy słusznie rozdziela (0,43). Pięć par zostaje oznaczonych jako znane — nowy model daje im 0,43–0,68, poniżej progu 0,82 dobranego pod jina (EMB-09).
+
+Pobrania w tym zadaniu (zgoda maintainera z 21.10.2026 — „masz pozwolenie na zaciąganie paczki i czegokolwiek tylko potrzebujesz”): `onnxruntime-node` 1.30.0 i `@huggingface/tokenizers` 0.2.0 z npm; `onnxconverter-common` 1.16.0 (MIT) do środowiska Pythona na E: (konwersja fp16).

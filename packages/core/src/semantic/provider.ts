@@ -1,6 +1,7 @@
 /**
  * Embedding providers for semantic duplicate detection. Local path uses jscpd's built-in model
- * (pair detection, not raw vectors); HTTP path uses an OpenAI-compatible embeddings API.
+ * (pair detection, not raw vectors); HTTP path uses an OpenAI-compatible embeddings API; the `onnx`
+ * path (a Dustmap model package in-process) lives in onnx-provider.ts.
  * Non-loopback URLs require explicit `allowRemote: true` — otherwise zero network calls.
  */
 import type { SemanticConfig } from "../config/schema.js";
@@ -162,7 +163,7 @@ function bagOfTokensVector(text: string): number[] {
   return v.map((x) => x / norm);
 }
 
-export type ProviderKind = "local" | "http" | "none" | "memory";
+export type ProviderKind = "local" | "http" | "onnx" | "none" | "memory";
 
 /**
  * Build an embedding provider from config. `local` uses a memory embedder for unit fixtures;
@@ -179,6 +180,10 @@ export function createEmbeddingProvider(
   }
   if (kind === "memory") {
     return createMemoryEmbeddingProvider(cfg.model);
+  }
+  if (kind === "onnx") {
+    // Loading and verifying a model package is asynchronous — see openOnnxProvider (onnx-provider.ts).
+    throw new SemanticProviderConfigError('semantic.provider "onnx" is opened with openOnnxProvider(), not createEmbeddingProvider().');
   }
   // local: vector path for tests / small fixtures; jscpd semantic is preferred in the adapter.
   return createMemoryEmbeddingProvider(`local:${cfg.model}`);

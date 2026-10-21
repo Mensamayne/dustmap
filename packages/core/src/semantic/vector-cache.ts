@@ -1,8 +1,10 @@
 /**
  * Disk cache of embedding vectors keyed by model id + content hash. Lives under outputDir so
- * re-scans only embed changed functions.
+ * re-scans only embed changed functions. Binary: `vectors.bin` holds float32 rows, `vectors.index.json`
+ * the model id, dimension and content hash of each row — 4 bytes per number instead of ~18 in JSON
+ * (22k functions × 768 dims: 68 MB instead of 309 MB) and no parse cost. Exact values are kept.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { EmbeddingProvider } from "./provider.js";
 
@@ -17,40 +19,48 @@ export type VectorCache = {
   flush: () => void;
 };
 
-type StoreFile = {
-  modelId: string;
-  vectors: Record<string, number[]>;
-};
+type IndexFile = { modelId: string; dims: number; hashes: string[] };
 
 export function openVectorCache(cacheDir: string, modelId: string): VectorCache {
   mkdirSync(cacheDir, { recursive: true });
-  const filePath = path.join(cacheDir, "vectors.json");
-  let store: StoreFile = { modelId, vectors: {} };
-  if (existsSync(filePath)) {
+  const indexPath = path.join(cacheDir, "vectors.index.json");
+  const binPath = path.join(cacheDir, "vectors.bin");
+  // The JSON format before EMB-08 is never read again; drop it so it does not linger at hundreds of MB.
+  rmSync(path.join(cacheDir, "vectors.json"), { force: true });
+
+  const vectors = new Map<string, Float32Array>();
+  if (existsSync(indexPath) && existsSync(binPath)) {
     try {
-      const raw = JSON.parse(readFileSync(filePath, "utf8")) as StoreFile;
-      if (raw.modelId === modelId && raw.vectors && typeof raw.vectors === "object") {
-        store = raw;
+      const index = JSON.parse(readFileSync(indexPath, "utf8")) as IndexFile;
+      const buf = readFileSync(binPath);
+      if (index.modelId === modelId && buf.byteLength === index.hashes.length * index.dims * 4) {
+        const all = new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
+        index.hashes.forEach((h, row) => vectors.set(h, all.slice(row * index.dims, (row + 1) * index.dims)));
       }
     } catch {
-      store = { modelId, vectors: {} };
+      vectors.clear();
     }
   }
+  let dirty = false;
+
+  const put = (contentHash: string, vector: number[]) => {
+    vectors.set(contentHash, Float32Array.from(vector));
+    dirty = true;
+  };
 
   return {
     get(contentHash) {
-      return store.vectors[contentHash];
+      const v = vectors.get(contentHash);
+      return v ? Array.from(v) : undefined;
     },
-    put(contentHash, vector) {
-      store.vectors[contentHash] = vector;
-    },
+    put,
     async embedMissing(items, provider) {
-      const vectors: number[][] = new Array(items.length);
+      const out: number[][] = new Array(items.length);
       const missingIdx: number[] = [];
       const missingTexts: string[] = [];
       for (let i = 0; i < items.length; i++) {
-        const hit = store.vectors[items[i]!.contentHash];
-        if (hit) vectors[i] = hit;
+        const hit = vectors.get(items[i]!.contentHash);
+        if (hit) out[i] = Array.from(hit);
         else {
           missingIdx.push(i);
           missingTexts.push(items[i]!.text);
@@ -61,14 +71,21 @@ export function openVectorCache(cacheDir: string, modelId: string): VectorCache 
         for (let j = 0; j < missingIdx.length; j++) {
           const vi = missingIdx[j]!;
           const vec = embedded[j]!;
-          vectors[vi] = vec;
-          store.vectors[items[vi]!.contentHash] = vec;
+          out[vi] = vec;
+          put(items[vi]!.contentHash, vec);
         }
       }
-      return { vectors: vectors as number[][], newEmbeddings: missingTexts.length };
+      return { vectors: out, newEmbeddings: missingTexts.length };
     },
     flush() {
-      writeFileSync(filePath, `${JSON.stringify(store)}\n`, "utf8");
+      if (!dirty) return;
+      const hashes = [...vectors.keys()];
+      const dims = hashes.length ? vectors.get(hashes[0]!)!.length : 0;
+      const bin = new Float32Array(hashes.length * dims);
+      hashes.forEach((h, row) => bin.set(vectors.get(h)!, row * dims));
+      writeFileSync(binPath, Buffer.from(bin.buffer, bin.byteOffset, bin.byteLength));
+      writeFileSync(indexPath, `${JSON.stringify({ modelId, dims, hashes } satisfies IndexFile)}\n`, "utf8");
+      dirty = false;
     },
   };
 }

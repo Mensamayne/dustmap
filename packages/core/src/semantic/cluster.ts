@@ -1,8 +1,11 @@
 /**
- * Build semantic-cluster findings from scored function pairs: union-find across overlapping
- * functions, then group by connected components. Confidence: ≥0.85 medium, else low (spike).
+ * Build semantic-cluster findings from scored function pairs, as decided in DUST-15: functions linked
+ * by similarity form groups (union-find) — one function in N copies is one finding with N places; and
+ * several separate pairs between the same two files become one finding, "two parallel systems".
+ * Pairs come from every function pair (similarity.ts, exact). Confidence: ≥0.85 medium, else low.
  */
 import { fingerprint, type FindingType } from "@dustmap/contract";
+import { pairsAtLeast } from "./similarity.js";
 
 export type SemanticFunctionRef = {
   path: string;
@@ -32,22 +35,17 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return denom === 0 ? 0 : dot / denom;
 }
 
-/** All pairs with similarity ≥ threshold (i < j). */
-export function pairsAboveThreshold(
+/** Every function pair with cosine similarity ≥ threshold (i < j), exact; vectors are normalised first. */
+export async function pairsAboveThreshold(
   fns: readonly SemanticFunctionRef[],
   vectors: readonly number[][],
   threshold: number,
-): SemanticPair[] {
-  const pairs: SemanticPair[] = [];
-  for (let i = 0; i < fns.length; i++) {
-    for (let j = i + 1; j < fns.length; j++) {
-      const sim = cosineSimilarity(vectors[i]!, vectors[j]!);
-      if (sim >= threshold) {
-        pairs.push({ a: fns[i]!, b: fns[j]!, similarity: sim });
-      }
-    }
-  }
-  return pairs;
+): Promise<SemanticPair[]> {
+  const unit = vectors.map((v) => {
+    const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
+    return n === 0 ? v : v.map((x) => x / n);
+  });
+  return (await pairsAtLeast(unit, threshold)).map(({ i, j, similarity }) => ({ a: fns[i]!, b: fns[j]!, similarity }));
 }
 
 class UnionFind {
@@ -96,9 +94,33 @@ export function looksLikeConfigFactory(body: string): boolean {
   return /\b[a-zA-Z_$][\w$]*\s*\(\s*\{/.test(body) && /(?:name|id|handler|run)\s*:/.test(body);
 }
 
+type Group = { members: string[]; shape: "copies" | "parallel-files" };
+
+/** Components of linked functions; two-function components between the same two files merge into one. */
+function groups(components: string[][], byKey: Map<string, SemanticFunctionRef>): Group[] {
+  const out: Group[] = [];
+  const byFilePair = new Map<string, string[][]>();
+  for (const members of components) {
+    if (members.length === 2) {
+      const [x, y] = members.map((k) => byKey.get(k)!.path);
+      if (x !== y) {
+        const key = [x, y].sort().join("\0");
+        byFilePair.set(key, [...(byFilePair.get(key) ?? []), members]);
+        continue;
+      }
+    }
+    out.push({ members, shape: "copies" });
+  }
+  for (const comps of byFilePair.values()) {
+    if (comps.length === 1) out.push({ members: comps[0]!, shape: "copies" });
+    else out.push({ members: comps.flat(), shape: "parallel-files" });
+  }
+  return out;
+}
+
 /**
- * Cluster pairs into semantic-cluster findings. Several pairs between the same two files become
- * one finding (spike: parallel systems). Transitive function links become one multi-place cluster.
+ * Cluster pairs into semantic-cluster findings: a group of N copies of one function, or two files
+ * with several matching functions (parallel systems).
  */
 export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: number): FindingType[] {
   if (pairs.length === 0) return [];
@@ -118,9 +140,9 @@ export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: 
     edgeSims.set(ek, Math.max(edgeSims.get(ek) ?? 0, p.similarity));
   }
 
+  const components = [...uf.components().values()].filter((m) => m.length >= 2);
   const findings: FindingType[] = [];
-  for (const members of uf.components().values()) {
-    if (members.length < 2) continue;
+  for (const { members, shape } of groups(components, byKey)) {
     const fns = members.map((k) => byKey.get(k)!);
     const sims: number[] = [];
     for (let i = 0; i < members.length; i++) {
@@ -158,7 +180,9 @@ export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: 
         }))
         .sort((a, b) => a.path.localeCompare(b.path) || (a.startLine ?? 0) - (b.startLine ?? 0)),
       evidence: [
+        { label: "shape", value: shape === "parallel-files" ? `parallel files: ${sims.length} matching function pairs between 2 files` : `copies: ${fns.length} functions` },
         { label: "functions", value: String(fns.length) },
+        { label: "pairs", value: String(sims.length) },
         { label: "similarity-min", value: minSim.toFixed(3) },
         { label: "similarity-max", value: maxSim.toFixed(3) },
         { label: "names", value: names.join(", ") },
@@ -167,7 +191,9 @@ export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: 
       confidence,
       suggestedAction: "review",
       verifyHint:
-        "Compare the listed functions; extract shared behaviour if they truly do the same job, then re-scan.",
+        shape === "parallel-files"
+          ? "Two files implement the same set of functions; compare them side by side, keep one system if they do the same job, then re-scan."
+          : "Compare the listed functions; extract shared behaviour if they truly do the same job, then re-scan.",
       source: "semantic",
     });
   }
