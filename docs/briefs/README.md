@@ -51,5 +51,9 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | EMB-07 | Eksport ONNX + int8 |
 | EMB-08 | Dostawca `onnx` w Dustmapie |
 | EMB-09 | Kalibracja progów i pewności |
+| EMB-12 | Domknięcie zestawu testowego (prawdziwy kod w mierniku) |
+| EMB-13 | Przebudowa danych treningowych wg definicji odpowiedzialności |
+| EMB-14 | Trening z oceną par + pojedynek baz |
+| EMB-15 | Pełny trening, paczka ONNX, kalibracja |
 | EMB-10 | Pomiar na celach, decyzja o domyślnym, usunięcie ścieżki jscpd |
-| EMB-11 | Dystrybucja modelu publicznego |
+| EMB-11 | Dystrybucja modelu publicznego (wstrzymane) |

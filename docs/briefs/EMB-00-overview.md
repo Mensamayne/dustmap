@@ -46,10 +46,16 @@ Dustmap ma znajdować funkcje, które robią to samo, choć są napisane inaczej
 | EMB-07 | Eksport ONNX + int8, zgodność z oryginałem, szybkość |
 | EMB-08 | Dostawca `onnx` w Dustmapie: wycinanie funkcji z drzewa składni TS, wszystkie pary, grupy po parze plików |
 | EMB-09 | Kalibracja: próg → pewność, obniżanie wzorców |
+| EMB-12 | Domknięcie zestawu testowego: pary z prawdziwego kodu, trening ich nie widzi, miernik raportuje je osobno |
+| EMB-13 | Dane treningowe wg definicji odpowiedzialności: mniej rewrite, fix = duplikat, bez mutantów i bliźniaków algorytmów, spójność etykiet |
+| EMB-14 | Trening z oceną par + pojedynek dwóch baz na 10% danych (wybór po wyniku na prawdziwym kodzie) |
+| EMB-15 | Pełny trening, paczka ONNX, kalibracja progów |
 | EMB-10 | Pomiar na Monorepo-A, Service-B i labie; decyzja o domyślnym; usunięcie ścieżki jscpd |
-| EMB-11 | Dystrybucja modelu publicznego: karta modelu, licencja, suma kontrolna, jawne pobieranie |
+| EMB-11 | Dystrybucja modelu publicznego (wstrzymane: najpierw tylko model prywatny) |
 
-Kolejność: EMB-01 i EMB-02 równolegle → EMB-03 → EMB-04 i EMB-05 równolegle → EMB-06 → EMB-07 → EMB-08 → EMB-09 → EMB-10 → EMB-11. EMB-08 czeka też na BUG-07.
+Kolejność: EMB-01 i EMB-02 równolegle → EMB-03 → EMB-04 i EMB-05 równolegle → EMB-06 → EMB-07 → EMB-08 → EMB-09 → EMB-12 → EMB-13 → EMB-14 → EMB-15 → EMB-10 → EMB-11. EMB-08 czeka też na BUG-07.
+
+**Korekta po EMB-09 (21.10.2026):** brief „sztuczne bliźniaki algorytmów + mutanty” anulowany. Definicja etykiet: `tools/emb/gold/README.md`. Priorytet: model prywatny; publiczny olewamy aż maintainer powie inaczej.
 
 ## Constraints
 

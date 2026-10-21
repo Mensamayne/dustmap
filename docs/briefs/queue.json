@@ -687,10 +687,13 @@
         "DUST-20"
       ],
       "epic": "DUST",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-21T18:35:00.000Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T18:44:20.503Z",
+      "gitProofSha": "fe57ddd78d32ede7781803985122894bc6f00441",
+      "closureNotes": "falsegreen-js adapter; allowlist C5/C7/C44/JS25/C2/C2b/C6/C11a/JS2/JS27; fixture C5; Monorepo-A smoke 180 findings (5 high), 0 .tmp paths, ~21s"
     },
     {
       "id": "EMB-00",
@@ -874,13 +877,74 @@
       "closureNotes": "Bands from gold validation in the manifest; report from medium; structural pattern rule. Test: public high 0.913 / medium+ 0.750 / patterns below 0.875 (met); private 0.829 / 0.739 / 0.80 (not met, too little validation data)."
     },
     {
+      "id": "EMB-12",
+      "title": "Domknięcie zestawu testowego (prawdziwy kod)",
+      "layer": 10,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-12-independent-implementations.md",
+      "gates": [
+        "EMB-09"
+      ],
+      "epic": "EMB",
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-21T16:36:16.028Z",
+      "startedBy": "agent",
+      "note": "Stary brief (bliźniaki algorytmów) anulowany decyzją maintainera 21.10; ten brief = holdout prawdziwego kodu."
+    },
+    {
+      "id": "EMB-13",
+      "title": "Dane treningowe wg definicji odpowiedzialności",
+      "layer": 10,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-13-rebuild-training-data.md",
+      "gates": [
+        "EMB-12"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-14",
+      "title": "Trening z oceną par + pojedynek baz",
+      "layer": 10,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-14-training-and-base-duel.md",
+      "gates": [
+        "EMB-13"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
+      "id": "EMB-15",
+      "title": "Pełny trening, paczka ONNX, kalibracja",
+      "layer": 10,
+      "segment": "semantic",
+      "brief": "docs/briefs/EMB-15-full-train-pack-calibrate.md",
+      "gates": [
+        "EMB-14"
+      ],
+      "epic": "EMB",
+      "status": "todo",
+      "kind": "feature",
+      "startedAt": null,
+      "startedBy": null
+    },
+    {
       "id": "EMB-10",
-      "title": "Pomiar na prawdziwym kodzie i decyzja o domyślnym",
+      "title": "Pomiar na celach i decyzja o domyślnym",
       "layer": 10,
       "segment": "semantic",
       "brief": "docs/briefs/EMB-10-targets-and-default.md",
       "gates": [
-        "EMB-09"
+        "EMB-15"
       ],
       "epic": "EMB",
       "status": "todo",
@@ -898,10 +962,11 @@
         "EMB-10"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "blocked",
       "kind": "feature",
       "startedAt": null,
-      "startedBy": null
+      "startedBy": null,
+      "closureNotes": "Wstrzymane decyzją maintainera 21.10.2026: „narazie rozwijajmy tylko prywatny model, publiczny całkowicie olewamy aż powiem, ze jest inaczej”. Gotowe w kopii roboczej (niezatwierdzone): dustmap model pull/list z testami (packages/cli/src/model-cmd.ts)."
     }
   ]
 }

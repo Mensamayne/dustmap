@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 /**
- * Validate the EMB gold set: public.jsonl (pairs with code) and private-refs.jsonl (references only).
+ * Validate the EMB gold set: public.jsonl (pairs with code) and private reference files
+ * (private-refs.jsonl from DUST-15, real-refs.jsonl from EMB-12 — references only, never code).
  * Rules: known labels and splits, unique ids, no code anywhere in private refs, sane line ranges,
  * minimum sizes from EMB-01 (≥150 pairs, ≥40 `same`, ≥40 `pattern`), public.jsonl in sync with its
  * sources. `--selftest` plants defects and requires each to be caught.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+const PRIVATE_REF_FILES = ["private-refs.jsonl", "real-refs.jsonl"];
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const LABELS = new Set(["same", "pattern", "different"]);
@@ -72,9 +75,13 @@ export function validateGold(pub, priv, { minTotal = 150, minSame = 40, minPatte
 }
 
 function load() {
+  const priv = PRIVATE_REF_FILES.flatMap((name) => {
+    const file = path.join(here, name);
+    return existsSync(file) ? parseJsonl(readFileSync(file, "utf8"), name) : [];
+  });
   return {
     pub: parseJsonl(readFileSync(path.join(here, "public.jsonl"), "utf8"), "public.jsonl"),
-    priv: parseJsonl(readFileSync(path.join(here, "private-refs.jsonl"), "utf8"), "private-refs.jsonl"),
+    priv,
   };
 }
 
@@ -85,7 +92,7 @@ function selftest() {
     ["zdublowane id", [...pub, pub[0]], priv],
     ["nieznana etykieta", [...pub, { ...pub[0], id: "x2", label: "maybe" }], priv],
     ["zły zakres linii", pub, [...priv, { ...priv[0], id: "x3", a: { ...priv[0].a, startLine: 9, endLine: 3 } }]],
-    ["za mało par", pub.slice(0, 10), priv],
+    ["za mało par", pub.slice(0, 10), priv.slice(0, 5)],
   ];
   let failed = 0;
   for (const [what, p, q] of planted) {

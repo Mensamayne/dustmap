@@ -1,6 +1,8 @@
 /**
  * The EMB gold set as the meter and the calibration read it: public pairs from tools/emb/gold, private
- * pairs read back from the pinned Monorepo-A snapshot (a drifted side drops the pair, never the run).
+ * pairs read back from the pinned snapshots (a drifted side drops the pair, never the run). Private
+ * refs come from two files: private-refs.jsonl (DUST-15 groups, hand-picked) and real-refs.jsonl
+ * (EMB-12: pairs drawn across every similarity band of Monorepo-A and Service-B and labelled by hand).
  */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -18,17 +20,21 @@ export const goldDir = path.join(repo, "tools/emb/gold");
 export const jsonl = <T,>(file: string): T[] =>
   readFileSync(file, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l) as T);
 
-/** Private sides read back from the pinned snapshot; a drifted or missing side drops the pair. */
+export const REAL_SOURCE = "EMB-12 real";
+
+/** Private sides read back from the pinned snapshots; a drifted or missing side drops the pair. */
 export function loadPrivate(): { pairs: GoldPair[]; note: string } {
-  const refs = jsonl<Omit<GoldPair, "a" | "b"> & { a: PrivateRef; b: PrivateRef }>(path.join(goldDir, "private-refs.jsonl"));
+  const refs = ["private-refs.jsonl", "real-refs.jsonl"]
+    .map((f) => path.join(goldDir, f))
+    .filter((f) => existsSync(f))
+    .flatMap((f) => jsonl<Omit<GoldPair, "a" | "b"> & { a: PrivateRef; b: PrivateRef }>(f));
   if (refs.length === 0) return { pairs: [], note: "" };
-  const first = refs[0]!.a;
-  const snap = path.join(repo, ".tmp/targets", `${first.repo}@${first.sha.slice(0, 12)}`, "src");
-  if (!existsSync(snap)) {
-    return { pairs: [], note: `bez par prywatnych: brak migawki (npm run target -- ${first.repo} --snapshot ${first.sha})` };
-  }
+  const snapOf = (r: PrivateRef) => path.join(repo, ".tmp/targets", `${r.repo}@${r.sha.slice(0, 12)}`, "src");
+  const missing = [...new Set(refs.flatMap((r) => [r.a, r.b]).filter((r) => !existsSync(snapOf(r))).map((r) => `npm run target -- ${r.repo} --snapshot ${r.sha}`))];
   const read = (r: PrivateRef): Side | null => {
-    const span = readFileSync(path.join(snap, r.path), "utf8").split(/\r?\n/).slice(r.startLine - 1, r.endLine).join("\n");
+    const file = path.join(snapOf(r), r.path);
+    if (!existsSync(file)) return null;
+    const span = readFileSync(file, "utf8").split(/\r?\n/).slice(r.startLine - 1, r.endLine).join("\n");
     if (createHash("sha256").update(span).digest("hex") !== r.sha256) return null;
     // Class members and object properties are not valid on their own; wrap them for parsers.
     const code =
@@ -43,7 +49,11 @@ export function loadPrivate(): { pairs: GoldPair[]; note: string } {
     if (!a || !b) drifted++;
     else pairs.push({ ...r, a, b });
   }
-  return { pairs, note: drifted ? `${drifted} par prywatnych pominiętych: kod pod odnośnikiem się zmienił` : "" };
+  const notes = [
+    missing.length ? `brak migawki: ${missing.join("; ")}` : "",
+    drifted ? `${drifted} par prywatnych pominiętych: kod pod odnośnikiem się zmienił lub nie ma migawki` : "",
+  ];
+  return { pairs, note: notes.filter(Boolean).join("; ") };
 }
 
 /** Every gold pair: public ones plus the private ones the snapshot can still serve. */
