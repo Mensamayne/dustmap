@@ -77,3 +77,57 @@ Co by to zmieniło (nowe zadania, nie ten brief): (1) pozytywy z niezależnych i
 - **Model prywatny** leży tylko w `E:\dustmap-emb-data\runs` — poza gitem.
 
 Dysk: przebiegi 4,3 GB (po 2 rotowane checkpointy + finał), dane 1,5 GB, wagi 1,4 GB, środowisko 4,7 GB — w budżecie 25 GB.
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-public | test | 113 | 0.770 | 0.875 | 0.163 | 1.000 | 0.384 (F1 0.74) | 0 | 0.57 / 0.29 / 0.16 | 119 s | — | EMB-07 ONNX fp32, CPU 16 wątków |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-public | całość | 165 | 0.787 | 0.889 | 0.123 | 1.000 | 0.467 (F1 0.75) | 0 | 0.56 / 0.29 / 0.17 | 119 s | — | EMB-07 ONNX fp32, CPU 16 wątków |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-public | test | 113 | 0.718 | 0.422 | 1.000 | 0.050 | 0.912 (F1 0.77) | 0 | 0.94 / 0.89 / 0.87 | 97 s | — | EMB-07 ONNX int8, CPU 16 wątków |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-public | całość | 165 | 0.741 | 0.433 | 1.000 | 0.036 | 0.917 (F1 0.76) | 0 | 0.94 / 0.89 / 0.87 | 97 s | — | EMB-07 ONNX int8, CPU 16 wątków |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-private | test | 113 | 0.864 | 1.000 | 0.070 | 1.000 | 0.427 (F1 0.81) | 0 | 0.55 / 0.26 / 0.12 | 118 s | — | EMB-07 ONNX fp32, CPU 16 wątków |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-private | całość | 165 | 0.862 | 1.000 | 0.046 | 1.000 | 0.391 (F1 0.81) | 0 | 0.52 / 0.25 / 0.12 | 118 s | — | EMB-07 ONNX fp32, CPU 16 wątków |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-private | test | 113 | 0.654 | 0.406 | 0.953 | 0.025 | 0.891 (F1 0.67) | 0 | 0.94 / 0.91 / 0.85 | 59 s | — | EMB-07 ONNX int8, CPU 16 wątków |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-private | całość | 165 | 0.667 | 0.412 | 0.938 | 0.018 | 0.920 (F1 0.67) | 0 | 0.93 / 0.91 / 0.86 | 59 s | — | EMB-07 ONNX int8, CPU 16 wątków |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-public | test | 113 | 0.770 | 0.875 | 0.163 | 1.000 | 0.384 (F1 0.74) | 0 | 0.57 / 0.29 / 0.16 | 101 s | — | EMB-07 ONNX fp32, CPU 16 wątków, po 1 funkcji |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-public | całość | 165 | 0.787 | 0.889 | 0.123 | 1.000 | 0.467 (F1 0.75) | 0 | 0.56 / 0.29 / 0.17 | 101 s | — | EMB-07 ONNX fp32, CPU 16 wątków, po 1 funkcji |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-public | test | 113 | 0.766 | 0.422 | 1.000 | 0.075 | 0.910 (F1 0.79) | 0 | 0.94 / 0.88 / 0.86 | 78 s | — | EMB-07 ONNX int8, CPU 16 wątków, po 1 funkcji |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-public | całość | 165 | 0.772 | 0.436 | 1.000 | 0.089 | 0.908 (F1 0.78) | 0 | 0.94 / 0.88 / 0.86 | 78 s | — | EMB-07 ONNX int8, CPU 16 wątków, po 1 funkcji |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-private | test | 113 | 0.864 | 1.000 | 0.070 | 1.000 | 0.427 (F1 0.81) | 0 | 0.55 / 0.26 / 0.12 | 98 s | — | EMB-07 ONNX fp32, CPU 16 wątków, po 1 funkcji |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-private | całość | 165 | 0.862 | 1.000 | 0.046 | 1.000 | 0.391 (F1 0.81) | 0 | 0.52 / 0.25 / 0.12 | 98 s | — | EMB-07 ONNX fp32, CPU 16 wątków, po 1 funkcji |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-private | test | 113 | 0.654 | 0.406 | 0.953 | 0.025 | 0.891 (F1 0.67) | 0 | 0.94 / 0.91 / 0.85 | 64 s | — | EMB-07 ONNX int8, CPU 16 wątków, po 1 funkcji |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-private | całość | 165 | 0.667 | 0.412 | 0.938 | 0.018 | 0.920 (F1 0.67) | 0 | 0.93 / 0.91 / 0.86 | 64 s | — | EMB-07 ONNX int8, CPU 16 wątków, po 1 funkcji |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-public | test | 113 | 0.770 | 0.875 | 0.163 | 1.000 | 0.384 (F1 0.74) | 0 | 0.57 / 0.29 / 0.16 | 53 s | — | EMB-07 ONNX fp32 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-public | całość | 165 | 0.787 | 0.889 | 0.123 | 1.000 | 0.467 (F1 0.75) | 0 | 0.56 / 0.29 / 0.17 | 53 s | — | EMB-07 ONNX fp32 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-public | test | 113 | 0.768 | 0.875 | 0.163 | 1.000 | 0.387 (F1 0.74) | 0 | 0.57 / 0.30 / 0.16 | 60 s | — | EMB-07 ONNX int8 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-public | całość | 165 | 0.787 | 0.889 | 0.123 | 1.000 | 0.379 (F1 0.76) | 0 | 0.57 / 0.29 / 0.17 | 60 s | — | EMB-07 ONNX int8 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-private | test | 113 | 0.864 | 1.000 | 0.070 | 1.000 | 0.427 (F1 0.81) | 0 | 0.55 / 0.26 / 0.12 | 46 s | — | EMB-07 ONNX fp32 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-21 | http · onnx fp32 dustmap-same-meaning-private | całość | 165 | 0.862 | 1.000 | 0.046 | 1.000 | 0.391 (F1 0.81) | 0 | 0.52 / 0.25 / 0.12 | 46 s | — | EMB-07 ONNX fp32 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-private | test | 113 | 0.858 | 1.000 | 0.093 | 1.000 | 0.426 (F1 0.81) | 0 | 0.55 / 0.26 / 0.12 | 58 s | — | EMB-07 ONNX int8 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-21 | http · onnx int8 dustmap-same-meaning-private | całość | 165 | 0.858 | 1.000 | 0.062 | 1.000 | 0.390 (F1 0.82) | 0 | 0.53 / 0.25 / 0.12 | 58 s | — | EMB-07 ONNX int8 (int8 = tylko wagi), CPU 16 wątków |
+
+## Eksport ONNX i odchudzenie (EMB-07, 21.10.2026)
+
+**W skrócie.** Oba modele działają teraz bez Pythona i bez karty graficznej: jeden plik ONNX (127 MB) + `tokenizer.json`, z uśrednianiem i normalizacją wektora w środku grafu. Jakość prawie bez strat. **Cel szybkości (≥ 50 funkcji/s na CPU) jest nieosiągalny dla tego modelu** — jest 7–10 funkcji/s. Szczegóły i co z tym zrobić niżej.
+
+| Paczka (`dustmap-emb/dist/`) | AP test, pełna precyzja (ONNX) | AP test, int8 | Spadek | Rozmiar | Funkcje/s, CPU 16 wątków | `private` |
+|---|--:|--:|--:|--:|--:|---|
+| `dustmap-same-meaning-public` | 0,770 | **0,768** | 0,15 pkt | 127 MB (z 502) | 9,8 | `false`, Apache-2.0 |
+| `dustmap-same-meaning-private` | 0,864 | **0,858** | 0,60 pkt | 127 MB (z 502) | 6,7 | `true`, bez licencji |
+| **cel z briefu** | | | **≤ 1 pkt** | **≤ 150 MB** | **≥ 50** | |
+
+- **Eksport** (`export_onnx.py`): wejścia `input_ids`, `attention_mask`, wyjście `embedding` [n, 768] o długości 1. Wektory ONNX vs PyTorch na 1000 funkcjach z korpusu: najmniejsze podobieństwo cosinusowe 1,000000 (próg 0,999), dla obu modeli. Wzorzec PyTorch liczony na karcie, graf ONNX na procesorze.
+- **Int8 tylko na wagach** (`quantize.py`, `weight_only.py`): każda macierz wag i tablica tokenów zapisane 8-bitowo, ze skalą na kolumnę / wiersz; obliczenia dalej w pełnej precyzji. Wektor funkcji liczonej samodzielnie i w paczce z innymi jest identyczny (cosinus 0,999999). Plik jest 4× mniejszy. Szybkość jak pełnej precyzji, jeśli sesja ma ustawione `session.disable_quant_qdq=1` — wtedy wagi są rozpakowywane raz przy wczytaniu (bez tego int8 było o ~25% wolniejsze).
+- **Odrzucone: int8 „dynamiczne”** (standard ONNX Runtime). Przelicza skalę wartości pośrednich z całego wejścia, razem z dopełnieniem:
+  - w paczkach po 16 wektor funkcji zależał od jej sąsiadów (cosinus 0,95–0,99 do samej siebie), a AP modelu publicznego spadło do 0,719;
+  - nawet przy osadzaniu po jednej funkcji model prywatny tracił 21 pkt (0,864 → 0,654);
+  - skala podobieństw przesuwała się w górę (średnio `same` 0,94, `pattern` 0,88).
+  
+  Wiersze `onnx int8 …` w tabeli przebiegów z notą „CPU 16 wątków” albo „po 1 funkcji” to te odrzucone próby. Obowiązują wiersze z notą „int8 = tylko wagi”.
+- **Paczka** (`package.py`) zawiera `model.onnx`, `tokenizer.json` i `manifest.json`: sumy SHA-256 i rozmiary plików, wersja 0.1.0, maks. 512 tokenów, kształt wyjścia, licencja, `private`, sposób użycia, pochodzenie treningu (przebieg, sumy plików danych, commit), jakość i szybkość. Paczka publiczna ma tylko z pozytywną kontrolą prywatności z EMB-06. `python dustmap-emb/verify_package.py` sprawdza wszystko jednym poleceniem: pola, licencja ↔ `private`, sumy plików, brak obcych plików, wczytanie modelu i wektory długości 1. Test negatywny: zmieniony bajt w `tokenizer.json` i paczka publiczna bez licencji — oba wychwycone. `dist/` jest poza gitem.
+
+### Dlaczego nie 50 funkcji/s
+
+Model ma 126 M parametrów, a funkcje z korpusu mają medianę ~100 tokenów (10% ma ponad 370). To kilkadziesiąt miliardów operacji na funkcję. Ten procesor robi tego realnie kilkaset miliardów na sekundę, czyli wychodzi ~10 funkcji/s. Kwantyzacja tylko wag nie przyspiesza, a dynamiczna (która przyspiesza) psuje wyniki. Pomiary szybkości robione przy obciążeniu komputera innymi programami 34–39% (przy pracującej grze wychodziło 4–5 funkcji/s). Na czystej maszynie będzie trochę lepiej, ale nie pięć razy.
+
+Co mogłoby dać ≥ 50 funkcji/s (decyzja produktowa, nie ten brief):
+1. **Karta graficzna, gdy jest.** Ten sam model w PyTorch na RTX 4070 Ti robił 255–315 funkcji/s (EMB-03). W Dustmapie oznacza to ONNX Runtime z obsługą karty i paczkę fp16 obok int8 — do EMB-08.
+2. **Mniejszy model** — destylacja do ~6 warstw / ~40 M parametrów, uczony na wektorach obecnego modelu. Wymaga treningu i nowego pomiaru jakości.
+
+Zgoda maintainera z 21.10.2026 na pobrania potrzebne do zadania: „masz pozwolenie na zaciąganie paczki i czegokolwiek tylko potrzebujesz”. W EMB-07 nic nie pobrano — rozwiązanie korzysta z już zainstalowanych `onnx`, `onnxruntime` i `numpy`.
