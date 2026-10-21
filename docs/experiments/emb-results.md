@@ -2,7 +2,18 @@
 
 ## Dane EMB-13 (21.10.2026)
 
-Zbiór treningowy przebudowany pod definicję odpowiedzialności: bez bliźniaków algorytmów i mutantów; poprawki `fix` jako pozytywy (975); rewrite ograniczony (waga 0,25, max 2 na kotwicę). Prywatny train: 81 134 trójek. Bramki przecieku i etykiet: 0 naruszeń. Szczegóły: `dustmap-emb/DATA-CARD.md`, `docs/experiments/emb-data.md`. Trening modelu: EMB-14.
+Zbiór treningowy przebudowany pod definicję odpowiedzialności: bez bliźniaków algorytmów i mutantów; poprawki `fix` jako pozytywy (975); rewrite ograniczony (waga 0,25, max 2 na kotwicę). Prywatny train: 81 134 trójek. Bramki przecieku i etykiet: 0 naruszeń. Szczegóły: `dustmap-emb/DATA-CARD.md`, `docs/experiments/emb-data.md`.
+
+## Pojedynek baz EMB-14 (21.10.2026)
+
+Przepis: 10% danych prywatnych, strata kontrastowa + BCE na parach (`pair_loss_weight` 0,5), checkpoint wybierany po **AP na prawdziwym kodzie** (241 par `EMB-12 real`), nie po stratach treningu. Bazy już zatwierdzone (bez nowego pobrania): W4 UniXcoder 126 M vs W2 CodeRankEmbed 137 M (MIT).
+
+| Baza | AP prawdziwy (best) | AP test | Krok best | Minuty | Werdykt |
+|------|--------------------:|--------:|----------:|-------:|---------|
+| W4 `microsoft/unixcoder-base` | 0,748 | 0,748 | 150 | 8,7 | |
+| **W2 `nomic-ai/CodeRankEmbed`** | **0,840** | **0,782** | 150 | 15,7 | **wygrywa → EMB-15** |
+
+W2 zero-shot na prawdziwym kodzie już 0,821; po 10% douczeniu 0,840. W4 start 0,737 → best 0,748. Pełny trening EMB-15 na W2.
 
 Każdy wiersz to jeden przebieg `npm run emb:eval` na zbiorze z `tools/emb/gold` (EMB-01). **same** = ta sama logika (klasa pozytywna); **pattern** i **different** = negatywy. Główna liczba to **AP** (średnia precyzja rankingu: 1,0 = wszystkie pary `same` nad wszystkimi pozostałymi; los ≈ odsetek par `same`). „Brak wyniku” = dostawca w ogóle nie połączył pary (liczone jako 0). Zbiór `test` jest odłożony — nie trenujemy ani nie stroimy na nim progów.
 

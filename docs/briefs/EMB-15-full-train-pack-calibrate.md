@@ -4,7 +4,7 @@
 
 ## Overview
 
-Po EMB-14: pełny trening zwycięskiej bazy na nowych danych, eksport ONNX (int8 wag), paczka z manifestem i kalibracją pasm pewności. Gotowy model prywatny (i publiczny tylko jeśli maintainer odblokuje — dziś priorytet prywatny).
+Po EMB-14: pełny trening **zwycięzcy pojedynku W2 `nomic-ai/CodeRankEmbed`** (AP prawdziwy 0,840 na 10% danych vs 0,748 u W4) na nowych danych EMB-13, eksport ONNX (int8 wag), paczka z manifestem i kalibracją. Gotowy model prywatny (publiczny olewamy aż maintainer powie inaczej).
 
 ## Read first
 

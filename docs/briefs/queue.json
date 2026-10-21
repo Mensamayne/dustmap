@@ -905,10 +905,13 @@
         "EMB-12"
       ],
       "epic": "EMB",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-21T21:31:01.672Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T22:34:42.548Z",
+      "gitProofSha": "1dfa31e40d09c4bd3e44abe36b10f28080ba0221",
+      "closureNotes": "fix=pozytyw (975), bez algorytmow/mutantow, rewrite waga 0.25; leakage+labels 0; private train 81134 trojek"
     },
     {
       "id": "EMB-14",
@@ -920,10 +923,10 @@
         "EMB-13"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T22:35:13.861Z",
+      "startedBy": "agent"
     },
     {
       "id": "EMB-15",
