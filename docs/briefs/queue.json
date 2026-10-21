@@ -831,10 +831,13 @@
         "BUG-07"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T15:44:00.183Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T16:14:18.604Z",
+      "gitProofSha": "2542d3bf7cd114ad41231acf528ba2afded18ec8",
+      "closureNotes": "onnx provider: GPU fp16 (DirectML/CUDA) or CPU int8, manifest checksums, parser extraction, exact all pairs (ONNX matmul), groups by function and file pair. Meter private 0.863 GPU / 0.860 CPU. Monorepo-A 22,342 fns: 160 s first scan on GPU, 18 s cached. Lab 112 ok, 5 known (threshold, EMB-09)."
     },
     {
       "id": "EMB-09",
