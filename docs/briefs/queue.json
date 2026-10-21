@@ -812,10 +812,13 @@
         "EMB-06"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T12:12:02.915Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T15:24:51.738Z",
+      "gitProofSha": "db4580fb35464b9758dc78517bb8982e24c31700",
+      "closureNotes": "ONNX int8 (weight-only) 127 MB; test AP public 0.770->0.768, private 0.864->0.858; ONNX vs PyTorch cosine 1.0; verify_package.py OK. Speed 7-10 fn/s on CPU — 50/s goal not reachable with this model (GPU path or distillation needed)."
     },
     {
       "id": "EMB-08",
