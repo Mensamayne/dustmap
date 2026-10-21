@@ -739,10 +739,13 @@
         "EMB-02"
       ],
       "epic": "EMB",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-20T23:57:11.547Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T00:14:40.144Z",
+      "gitProofSha": "cdf295ee72bed886eb18ee65a0c6b6063347f6e6",
+      "closureNotes": "accepted: microsoft/unixcoder-base (W4) — AP 0.672 test vs 0.528-0.560, recall 49% at precision>=0.75 (others 2-5%), 327/11 fn/s GPU/CPU, Apache-2.0, no remote code; fallback jina"
     },
     {
       "id": "EMB-04",
@@ -754,10 +757,13 @@
         "EMB-03"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T00:14:40.346Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T02:00:13.176Z",
+      "gitProofSha": "e67c241dd09fc0b1bb12c4e2cfe21e02bbfde4f4",
+      "closureNotes": "55,674 public+synthetic rewrite pairs (0 mismatches), 754 history pairs on equal shape (none from fix commits), 153 clone pairs; leak gate 0 violations. dustmap-emb/DATA-CARD.md"
     },
     {
       "id": "EMB-05",
@@ -769,10 +775,13 @@
         "EMB-03"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T00:14:40.346Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T02:00:13.358Z",
+      "gitProofSha": "08cdbad5e3b776757d8fdc231cc3b702e513b5dc",
+      "closureNotes": "13,372 pattern negatives (49/50 correct in review), same-name/fix/inverse negatives; dataset public 55,023/8,522 and private 207,311/25,288 triplets; leak gate 0 violations."
     },
     {
       "id": "EMB-06",
