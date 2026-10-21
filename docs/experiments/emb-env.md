@@ -71,7 +71,7 @@ Pobierane są tylko wagi `safetensors`, tokenizer, konfiguracja, karta modelu i 
 | W3 codet5p | 2 pliki, 125 linii (przeczytane w całości) | `T5EncoderModel` z `transformers` + `Linear(768→256)` + normalizacja; zero sieci, plików, procesów, `eval`/`exec` | **bezpieczny**. Lepiej: złożyć go własnym kodem (ten sam enkoder + warstwa) i nie włączać `trust_remote_code` wcale — tak robimy |
 | W2 CodeRankEmbed | 2 pliki, 1272 linie (importy i całe ładowanie wag przeczytane; reszta to architektura modelu) | własna architektura NomicBERT; zero `exec`, procesów, gniazd. **Ale:** własne `from_pretrained` z nazwą z huba samo pobiera `pytorch_model.bin` i ładuje go `torch.load` (pickle); z lokalnej ścieżki czyta tylko `model.safetensors` | **bezpieczny pod warunkami:** ładowanie wyłącznie z lokalnej ścieżki migawki + `HF_HUB_OFFLINE=1` (żadnej sieci przy ładowaniu). **Wymaga `einops`** (MIT, mała czysto-pythonowa biblioteka) — **nie było jej na liście, czeka na zgodę** |
 
-- [ ] zgoda na pobranie `einops` (MIT, ~60 KB) — potrzebne tylko dla W2
+- [x] zgoda na pobranie `einops` (MIT, ~60 KB) — potrzebne tylko dla W2. Maintainer 21.10.2026: „Zgoda na einops dla W2.” Zainstalowane: `einops==0.8.2`.
 
 ## Sprawdzenie środowiska (21.10.2026)
 

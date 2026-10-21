@@ -739,10 +739,10 @@
         "EMB-02"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-20T23:57:11.547Z",
+      "startedBy": "agent"
     },
     {
       "id": "EMB-04",
