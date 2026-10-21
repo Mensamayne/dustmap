@@ -2,9 +2,13 @@
  * Build semantic-cluster findings from scored function pairs, as decided in DUST-15: functions linked
  * by similarity form groups (union-find) — one function in N copies is one finding with N places; and
  * several separate pairs between the same two files become one finding, "two parallel systems".
- * Pairs come from every function pair (similarity.ts, exact). Confidence: ≥0.85 medium, else low.
+ * Pairs come from every function pair (similarity.ts, exact). Confidence: from the model's calibrated
+ * bands (calibration.ts) when it has them, else ≥0.85 medium / low (DUST-15 spike, uncalibrated
+ * models). A group whose every link is a deliberate pattern (calibration.ts sharedPattern) gets one
+ * level less and the pattern as evidence.
  */
 import { fingerprint, type FindingType } from "@dustmap/contract";
+import { confidenceFor, lowerConfidence, sharedPattern, type Calibration, type Confidence } from "./calibration.js";
 import { pairsAtLeast } from "./similarity.js";
 
 export type SemanticFunctionRef = {
@@ -89,11 +93,6 @@ function fnKey(f: SemanticFunctionRef): string {
   return `${f.path}\0${f.name}\0${f.startLine}\0${f.endLine}`;
 }
 
-/** Declares that look like factory/config objects (defineX({...})) — demote confidence. */
-export function looksLikeConfigFactory(body: string): boolean {
-  return /\b[a-zA-Z_$][\w$]*\s*\(\s*\{/.test(body) && /(?:name|id|handler|run)\s*:/.test(body);
-}
-
 type Group = { members: string[]; shape: "copies" | "parallel-files" };
 
 /** Components of linked functions; two-function components between the same two files merge into one. */
@@ -122,7 +121,7 @@ function groups(components: string[][], byKey: Map<string, SemanticFunctionRef>)
  * Cluster pairs into semantic-cluster findings: a group of N copies of one function, or two files
  * with several matching functions (parallel systems).
  */
-export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: number): FindingType[] {
+export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: number, calibration: Calibration | null = null): FindingType[] {
   if (pairs.length === 0) return [];
 
   const uf = new UnionFind();
@@ -163,9 +162,19 @@ export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: 
     const bodies = fns.map((f) => f.body).sort();
     const fp = fingerprint("semantic-cluster", bodies, names);
 
-    const allFactory = fns.every((f) => looksLikeConfigFactory(f.body));
-    let confidence: "low" | "medium" = maxSim >= 0.85 ? "medium" : "low";
-    if (allFactory) confidence = "low";
+    let confidence: Confidence = (calibration ? confidenceFor(maxSim, calibration) : null) ?? (maxSim >= 0.85 ? "medium" : "low");
+    // A deliberate pattern only when every linked pair of the group shares one.
+    const linked: Array<[SemanticFunctionRef, SemanticFunctionRef]> = [];
+    for (let i = 0; i < members.length; i++) {
+      for (let j = i + 1; j < members.length; j++) {
+        const a = members[i]!;
+        const b = members[j]!;
+        if (edgeSims.has(a < b ? `${a}\n${b}` : `${b}\n${a}`)) linked.push([byKey.get(a)!, byKey.get(b)!]);
+      }
+    }
+    const patterns = linked.map(([a, b]) => sharedPattern(a.body, b.body));
+    const pattern = patterns.length > 0 && patterns.every((x) => x !== null) ? patterns[0]! : null;
+    if (pattern) confidence = lowerConfidence(confidence);
 
     findings.push({
       fingerprint: fp,
@@ -187,6 +196,7 @@ export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: 
         { label: "similarity-max", value: maxSim.toFixed(3) },
         { label: "names", value: names.join(", ") },
         { label: "files", value: String(paths.length) },
+        ...(pattern ? [{ label: "shared-pattern", value: pattern }] : []),
       ],
       confidence,
       suggestedAction: "review",

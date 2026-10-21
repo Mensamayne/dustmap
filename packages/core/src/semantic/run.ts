@@ -18,6 +18,7 @@ import {
 } from "./cluster.js";
 import { extractFunctions } from "./extract.js";
 import { runJscpdSemanticPairs } from "./jscpd-semantic.js";
+import { reportFloor, type Calibration } from "./calibration.js";
 import { openOnnxProvider } from "./onnx-provider.js";
 import { hashesMatch, readPairCache, writePairCache } from "./pair-cache.js";
 import {
@@ -28,8 +29,11 @@ import {
 } from "./provider.js";
 import { openVectorCache } from "./vector-cache.js";
 
-/** Bump when pair extraction or clustering changes; also keys pairs.json (2: per-side bodies, BUG-07; 3: parser extraction, EMB-08). */
-const ADAPTER_REV = "3";
+/** Bump when pair extraction or clustering changes; also keys pairs.json (2: per-side bodies, BUG-07; 3: parser extraction, EMB-08; 4: calibrated confidence + structural patterns, EMB-09). */
+const ADAPTER_REV = "4";
+
+/** Report threshold for providers without calibration (DUST-15 spike, jina scale). */
+const UNCALIBRATED_THRESHOLD = 0.82;
 
 export type SemanticRunStats = {
   newEmbeddings: number;
@@ -103,36 +107,37 @@ async function runViaJscpd(
   hashes: string[],
   cacheDir: string,
 ): Promise<SemanticRunResult> {
+  const threshold = cfg.threshold ?? UNCALIBRATED_THRESHOLD;
   const cached = readPairCache(cacheDir);
   if (
     cached &&
     cached.rev === ADAPTER_REV &&
     cached.modelId === cfg.model &&
-    cached.threshold === cfg.threshold &&
+    cached.threshold === threshold &&
     hashesMatch(cached.functionHashes, hashes)
   ) {
     return {
-      findings: clusterSemanticPairs(cached.pairs, cfg.threshold),
+      findings: clusterSemanticPairs(cached.pairs, threshold),
       stats: { newEmbeddings: 0, functions: hashes.length, pairs: cached.pairs.length },
     };
   }
 
   const rawPairs = await runJscpdSemanticPairs(ctx.repoRoot, files, {
     model: cfg.model,
-    sameThreshold: Math.min(cfg.threshold, 0.7),
+    sameThreshold: Math.min(threshold, 0.7),
     minTokens: cfg.minTokens,
     minLines: 5,
   });
-  const pairs = rawPairs.filter((p) => p.similarity >= cfg.threshold);
+  const pairs = rawPairs.filter((p) => p.similarity >= threshold);
   writePairCache(cacheDir, {
     rev: ADAPTER_REV,
     modelId: cfg.model,
-    threshold: cfg.threshold,
+    threshold,
     functionHashes: hashes,
     pairs,
   });
   return {
-    findings: clusterSemanticPairs(pairs, cfg.threshold),
+    findings: clusterSemanticPairs(pairs, threshold),
     stats: {
       // jscpd embeds every function on a cache miss; treat as N new embeddings.
       newEmbeddings: hashes.length,
@@ -148,23 +153,26 @@ async function runViaEmbed(
   fns: readonly SemanticFunctionRef[],
   cacheDir: string,
   provider: EmbeddingProvider,
+  calibration: Calibration | null = null,
 ): Promise<SemanticRunResult> {
+  // Explicit config wins; a calibrated model reports from its own floor; anything else uses the spike value.
+  const threshold = cfg.threshold ?? (calibration ? reportFloor(calibration) : null) ?? UNCALIBRATED_THRESHOLD;
   const vcache = openVectorCache(cacheDir, provider.modelId);
   const embedItems = fns.map((f) => ({ contentHash: hashBody(f.body), text: f.body }));
   const { vectors, newEmbeddings } = await vcache.embedMissing(embedItems, provider);
   vcache.flush();
 
-  const pairs: SemanticPair[] = await pairsAboveThreshold(fns, vectors, cfg.threshold);
+  const pairs: SemanticPair[] = await pairsAboveThreshold(fns, vectors, threshold);
   writePairCache(cacheDir, {
     rev: ADAPTER_REV,
     modelId: provider.modelId,
-    threshold: cfg.threshold,
+    threshold,
     functionHashes: embedItems.map((i) => i.contentHash).sort(),
     pairs,
   });
 
   return {
-    findings: clusterSemanticPairs(pairs, cfg.threshold),
+    findings: clusterSemanticPairs(pairs, threshold, calibration),
     stats: { newEmbeddings, functions: fns.length, pairs: pairs.length },
   };
 }
@@ -198,7 +206,7 @@ export async function runSemanticAnalysis(
     if (!opts.provider && cfg.provider === "onnx") {
       const onnx = await openOnnxProvider(cfg);
       try {
-        return await runViaEmbed(cfg, fnsForHash, cacheDir, onnx);
+        return await runViaEmbed(cfg, fnsForHash, cacheDir, onnx, onnx.calibration);
       } finally {
         await onnx.release();
       }

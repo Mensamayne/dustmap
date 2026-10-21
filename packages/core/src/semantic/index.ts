@@ -15,11 +15,11 @@ export {
   clusterSemanticPairs,
   pairsAboveThreshold,
   cosineSimilarity,
-  looksLikeConfigFactory,
   type SemanticPair,
   type SemanticFunctionRef,
 } from "./cluster.js";
 export { extractFunctions, type ExtractedFunction } from "./extract.js";
+export { confidenceFor, lowerConfidence, reportFloor, sharedPattern, type Calibration, type Confidence } from "./calibration.js";
 export {
   loadModelPackage,
   openOnnxProvider,

@@ -13,8 +13,17 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import type { SemanticConfig } from "../config/schema.js";
+import type { Calibration } from "./calibration.js";
 import type { EmbeddingProvider } from "./provider.js";
 import { loadOrt } from "./similarity.js";
+
+const Bands = z.object({ high: z.number().nullable(), medium: z.number().nullable(), low: z.number().nullable() });
+const Variant = z.object({
+  file: z.string().min(1),
+  sessionConfig: z.record(z.string()).optional(),
+  /** Similarity bands from tools/emb/calibrate.mts (EMB-09); absent on uncalibrated packages. */
+  calibration: z.object({ bands: Bands }).passthrough().optional(),
+});
 
 const Manifest = z.object({
   schema: z.literal("dustmap-embedding-model/1"),
@@ -30,8 +39,8 @@ const Manifest = z.object({
   output: z.object({ name: z.string().min(1), dimensions: z.number().int().positive(), normalized: z.literal(true) }),
   variants: z
     .object({
-      cpu: z.object({ file: z.string().min(1), sessionConfig: z.record(z.string()).optional() }),
-      gpu: z.object({ file: z.string().min(1), sessionConfig: z.record(z.string()).optional() }).optional(),
+      cpu: Variant,
+      gpu: Variant.optional(),
     })
     .passthrough(),
   files: z.record(z.object({ sha256: z.string().regex(/^[0-9a-f]{64}$/), bytes: z.number().int().nonnegative() })),
@@ -114,6 +123,8 @@ export type OnnxProvider = EmbeddingProvider & {
   /** Why the GPU variant is not in use (auto mode), or null. */
   readonly gpuFallbackReason: string | null;
   readonly manifest: ModelManifest;
+  /** Calibration of the variant in use, or null when the package has none. */
+  readonly calibration: Calibration | null;
   /** Tokens cut by truncation across all calls (inputs longer than input.maxTokens). */
   readonly truncated: { count: number };
   release: () => Promise<void>;
@@ -191,6 +202,8 @@ export async function openOnnxProvider(
   };
 
   const batch = opts.batch ?? (variant === "gpu" ? 32 : 16);
+  const cal = manifest.variants[variant]?.calibration?.bands;
+  const calibration: Calibration | null = cal ? { bands: cal } : null;
   const dims = manifest.output.dimensions;
   const embedCalls = { count: 0 };
   return {
@@ -199,6 +212,7 @@ export async function openOnnxProvider(
     variant,
     gpuFallbackReason,
     manifest,
+    calibration,
     truncated,
     async embed(texts: readonly string[]) {
       if (texts.length === 0) return [];

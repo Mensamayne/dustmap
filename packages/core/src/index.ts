@@ -64,8 +64,12 @@ export {
   loadModelPackage,
   resolveModelDir,
   OnnxModelError,
+  confidenceFor,
+  lowerConfidence,
+  reportFloor,
+  sharedPattern,
 } from "./semantic/index.js";
-export type { EmbeddingProvider, SemanticRunResult, JscpdSemanticOptions, ModelManifest, OnnxProvider } from "./semantic/index.js";
+export type { EmbeddingProvider, SemanticRunResult, JscpdSemanticOptions, ModelManifest, OnnxProvider, Calibration, Confidence } from "./semantic/index.js";
 export {
   codeSignalsAdapter,
   runCodeSignals,

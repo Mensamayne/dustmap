@@ -5,7 +5,9 @@
  *
  *   npm run emb:eval                                   current product path (jscpd --semantic, jina)
  *   npm run emb:eval -- --provider http --url http://127.0.0.1:8080/v1 --model <id>
- *   npm run emb:eval -- --provider onnx --model <package id> [--model-dir <dir>] [--device auto|gpu|cpu]
+ *   npm run emb:eval -- --provider onnx --model <package id> [--model-dir <dir>] [--device auto|gpu|cpu] [--calibrated]
+ *     --calibrated: also the report's confidence levels (the model's calibrated bands + the structural
+ *     pattern rule, as a scan assigns them) and the EMB-09 goals on the held-out test split
  *   npm run emb:eval -- --selftest                     oracle / inverted / random must land where expected
  *
  * Options: --threshold 0.82 · --concurrency 4 · --note "…" · --no-write (skip results table).
@@ -16,53 +18,26 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { cosineSimilarity, createOpenAiCompatibleProvider, openOnnxProvider, runJscpdSemanticPairs } from "@dustmap/core";
+import {
+  confidenceFor,
+  cosineSimilarity,
+  createOpenAiCompatibleProvider,
+  lowerConfidence,
+  openOnnxProvider,
+  runJscpdSemanticPairs,
+  sharedPattern,
+  type Calibration,
+  type Confidence,
+} from "@dustmap/core";
+import { goldDir, jsonl, loadPrivate, repo, type GoldPair, type Scored } from "./gold-data.mts";
 import { summarize } from "./metrics.mjs";
 
-type Side = { name: string; code: string };
-type GoldPair = { id: string; label: "same" | "pattern" | "different"; split: "validation" | "test"; source: string; a: Side; b: Side };
-type Scored = GoldPair & { score: number | null };
-type PrivateRef = { repo: string; sha: string; path: string; startLine: number; endLine: number; name: string; kind: string; sha256: string };
-
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const goldDir = path.join(repo, "tools/emb/gold");
 const argv = process.argv.slice(2);
 const arg = (name: string, fallback?: string) => {
   const i = argv.indexOf(`--${name}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--") ? argv[i + 1]! : fallback;
 };
 const has = (name: string) => argv.includes(`--${name}`);
-
-const jsonl = <T,>(file: string): T[] =>
-  readFileSync(file, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l) as T);
-
-/** Private sides read back from the pinned snapshot; a drifted or missing side drops the pair. */
-function loadPrivate(): { pairs: GoldPair[]; note: string } {
-  const refs = jsonl<Omit<GoldPair, "a" | "b"> & { a: PrivateRef; b: PrivateRef }>(path.join(goldDir, "private-refs.jsonl"));
-  if (refs.length === 0) return { pairs: [], note: "" };
-  const first = refs[0]!.a;
-  const snap = path.join(repo, ".tmp/targets", `${first.repo}@${first.sha.slice(0, 12)}`, "src");
-  if (!existsSync(snap)) {
-    return { pairs: [], note: `bez par prywatnych: brak migawki (npm run target -- ${first.repo} --snapshot ${first.sha})` };
-  }
-  const read = (r: PrivateRef): Side | null => {
-    const span = readFileSync(path.join(snap, r.path), "utf8").split(/\r?\n/).slice(r.startLine - 1, r.endLine).join("\n");
-    if (createHash("sha256").update(span).digest("hex") !== r.sha256) return null;
-    // Class members and object properties are not valid on their own; wrap them for parsers.
-    const code =
-      r.kind === "class-member" ? `class GoldWrapper {\n${span}\n}` : r.kind === "object-property" ? `const goldWrapper = {\n${span}\n};` : span;
-    return { name: r.name, code };
-  };
-  const pairs: GoldPair[] = [];
-  let drifted = 0;
-  for (const r of refs) {
-    const a = read(r.a);
-    const b = read(r.b);
-    if (!a || !b) drifted++;
-    else pairs.push({ ...r, a, b });
-  }
-  return { pairs, note: drifted ? `${drifted} par prywatnych pominiętych: kod pod odnośnikiem się zmienił` : "" };
-}
 
 async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
@@ -108,7 +83,7 @@ async function scoreHttp(pairs: GoldPair[], url: string, model: string): Promise
 }
 
 /** A Dustmap model package in-process — the `onnx` provider exactly as a scan uses it. */
-async function scoreOnnx(pairs: GoldPair[], model: string, modelDir: string | undefined, device: "auto" | "gpu" | "cpu"): Promise<{ scored: Scored[]; variant: string; size: string }> {
+async function scoreOnnx(pairs: GoldPair[], model: string, modelDir: string | undefined, device: "auto" | "gpu" | "cpu"): Promise<{ scored: Scored[]; variant: string; size: string; calibration: Calibration | null }> {
   const provider = await openOnnxProvider({ model, device, ...(modelDir ? { modelDir: path.resolve(modelDir) } : {}) });
   try {
     const texts = [...new Set(pairs.flatMap((p) => [p.a.code, p.b.code]))];
@@ -120,10 +95,39 @@ async function scoreOnnx(pairs: GoldPair[], model: string, modelDir: string | un
       scored: pairs.map((p) => ({ ...p, score: cosineSimilarity(vectors.get(p.a.code)!, vectors.get(p.b.code)!) })),
       variant: `${provider.variant}${fallback}`,
       size: `${Math.round(provider.manifest.files[file]!.bytes / 1024 / 1024)} MB`,
+      calibration: provider.calibration,
     };
   } finally {
     await provider.release();
   }
+}
+
+/** Confidence a scan would report for one pair: calibrated band, one level less for a deliberate pattern. */
+function reportedConfidence(p: Scored, cal: Calibration): Confidence | null {
+  const band = confidenceFor(p.score ?? 0, cal);
+  if (!band) return null;
+  return sharedPattern(p.a.code, p.b.code) ? lowerConfidence(band) : band;
+}
+
+/** EMB-09 goals on one split: precision of `high` and of `medium`-or-better, patterns kept below `medium`. */
+function calibratedSummary(set: Scored[], cal: Calibration) {
+  const levels = set.map((p) => ({ p, c: reportedConfidence(p, cal) }));
+  const precision = (keep: (c: Confidence | null) => boolean) => {
+    const hits = levels.filter((x) => keep(x.c));
+    return { n: hits.length, value: hits.length ? hits.filter((x) => x.p.label === "same").length / hits.length : null };
+  };
+  const high = precision((c) => c === "high");
+  const mediumUp = precision((c) => c === "high" || c === "medium");
+  const same = levels.filter((x) => x.p.label === "same");
+  const patterns = levels.filter((x) => x.p.label === "pattern");
+  return {
+    high,
+    mediumUp,
+    recallMediumUp: same.length ? same.filter((x) => x.c === "high" || x.c === "medium").length / same.length : null,
+    patternsBelowMedium: patterns.length ? patterns.filter((x) => x.c === "low" || x.c === null).length / patterns.length : null,
+    patternRule: patterns.filter((x) => sharedPattern(x.p.a.code, x.p.b.code)).length,
+    patterns: patterns.length,
+  };
 }
 
 /** Seeded pseudo-random score — the "model knows nothing" baseline. */
@@ -193,6 +197,7 @@ async function main(): Promise<void> {
   let scored: Scored[];
   let size = "—";
   let variantNote = "";
+  let calibration: Calibration | null = null;
   if (provider === "current") {
     scored = await scoreCurrent(pairs, model!, Number(arg("concurrency", "4")));
     const bytes = dirBytes(path.join(process.env.LOCALAPPDATA ?? "", "jscpd/cache/models", `jinaai--${model}`));
@@ -208,6 +213,7 @@ async function main(): Promise<void> {
     scored = r.scored;
     size = r.size;
     variantNote = `wariant ${r.variant}`;
+    calibration = r.calibration;
   } else if (provider === "random") {
     scored = pairs.map((p) => ({ ...p, score: randomScore(p.id) }));
   } else {
@@ -233,6 +239,21 @@ async function main(): Promise<void> {
         `| ${new Date().toLocaleDateString("sv-SE")} | ${label} | ${name} | ${s.pairs} | ${fmt(s.ap)} | ${fmt(s.at.precision)} | ${fmt(s.at.recall)} | ${fmt(s.at.patternBelow)} | ${fmt(s.best.threshold)} (F1 ${fmt(s.best.f1, 2)}) | ${s.noScore} | ${fmt(s.mean.same, 2)} / ${fmt(s.mean.pattern, 2)} / ${fmt(s.mean.different, 2)} | ${seconds.toFixed(0)} s | ${size} | ${notes} |`,
       );
     }
+  }
+  if (has("calibrated")) {
+    if (!calibration) throw new Error("--calibrated: the model package has no calibration (npm run emb:calibrate -- --model <id>)");
+    const b = calibration.bands;
+    console.log(`
+kalibracja: high ≥ ${fmt(b.high)} · medium ≥ ${fmt(b.medium)} (raport od medium; wzorzec o stopień niżej)`);
+    let goalsMet = true;
+    for (const [name, set] of sets) {
+      const c = calibratedSummary(set, calibration);
+      console.log(
+        `${name.padEnd(7)} precyzja high ${fmt(c.high.value)} (${c.high.n} par) · precyzja ≥ medium ${fmt(c.mediumUp.value)} (${c.mediumUp.n}) · wykrywalność ≥ medium ${fmt(c.recallMediumUp)} · wzorce poniżej medium ${fmt(c.patternsBelowMedium)} (reguła rozpoznała ${c.patternRule}/${c.patterns})`,
+      );
+      if (name === "test") goalsMet = (c.high.value ?? 1) >= 0.9 && (c.mediumUp.value ?? 0) >= 0.75 && (c.patternsBelowMedium ?? 0) >= 0.8;
+    }
+    console.log(goalsMet ? "cele EMB-09 na części test: spełnione" : "cele EMB-09 na części test: NIE spełnione");
   }
   const rawDir = path.join(repo, ".tmp/emb");
   mkdirSync(rawDir, { recursive: true });

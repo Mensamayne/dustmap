@@ -190,3 +190,39 @@ Paczka leży w `~/.cache/dustmap/models/<id>/` (albo `semantic.modelDir`, albo `
 - Lab `03` — zielony: trzy te same pętle = jedna grupa z 3 miejscami. Jedno oczekiwanie poprawione: `totalOf` i `totalPositive` lab uznawał za „tę samą pętlę”, ale `totalOf` odejmuje 1 przy liczbie ≤ 0 i dodaje długość tablicy. Stary model je łączył (0,88), nowy słusznie rozdziela (0,43). Pięć par zostaje oznaczonych jako znane — nowy model daje im 0,43–0,68, poniżej progu 0,82 dobranego pod jina (EMB-09).
 
 Pobrania w tym zadaniu (zgoda maintainera z 21.10.2026 — „masz pozwolenie na zaciąganie paczki i czegokolwiek tylko potrzebujesz”): `onnxruntime-node` 1.30.0 i `@huggingface/tokenizers` 0.2.0 z npm; `onnxconverter-common` 1.16.0 (MIT) do środowiska Pythona na E: (konwersja fp16).
+
+## Kalibracja: od podobieństwa do pewności (EMB-09, 21.10.2026)
+
+**W skrócie.** Każda paczka modelu niesie teraz własne progi pewności, bo każdy model ma inną skalę podobieństw. Raport mówi `high` tam, gdzie ≥ 90% par zbioru wzorcowego to prawdziwe duplikaty, a `medium` tam, gdzie ≥ 75%. Poniżej `medium` raport milczy. Wzorce celowe są rozpoznawane z drzewa składni i dostają pewność o stopień niżej oraz dowód „wspólny wzorzec”. **Model publiczny spełnia cele na odłożonej części, model prywatny jeszcze nie.**
+
+| Część test (113 par), `npm run emb:eval -- --provider onnx --model <id> --calibrated` | publiczny (karta) | prywatny (karta) | cel |
+|---|--:|--:|--:|
+| progi z walidacji: `high` / `medium` | 0,608 / 0,466 | 0,393 / 0,339 | — |
+| trafność `high` | **0,913** (23 pary) | 0,829 (41) | ≥ 0,90 |
+| trafność `medium` i wyżej | **0,750** (40) | 0,739 (46) | ≥ 0,75 |
+| wykrywalność par „ten sam sens” od `medium` | 0,698 | 0,791 | — |
+| wzorce poniżej `medium` | **0,875** | 0,800 | ≥ 0,80 |
+
+Wariant procesorowy ma własne progi (publiczny 0,603 / 0,479), bo jego wektory minimalnie się różnią.
+
+**Jak liczone.** `npm run emb:calibrate -- --model <id>` (`tools/emb/calibrate.mts`):
+- każdą parę części **walidacyjnej** (52 pary) przepuszcza przez dostawcę Dustmapa, osobno dla każdego wariantu;
+- wyznacza najniższe podobieństwo, od którego trafność skumulowana osiąga 0,90 (`high`) i 0,75 (`medium`);
+- zapisuje to w `manifest.json` paczki.
+
+Część testowa służy tylko do sprawdzenia. Progów nie poprawiałem pod nią, także dla modelu prywatnego.
+
+**Dlaczego raport zaczyna się od `medium`, a nie od progu 50%.** W zbiorze wzorcowym ok. 40% par to duplikaty, więc 50% trafności wypada przy niemal przypadkowym podobieństwie (0,05–0,22). W prawdziwym repo duplikaty to ułamek promila wszystkich par: na Monorepo-A (21 518 funkcji, 231 mln par) model prywatny daje 42 329 par powyżej 0,45 i 813 powyżej 0,9. Próg 0,2 zalałby raport. Poziom `low` dostaje tylko wzorzec rozpoznany na poziomie `medium`. Próbowałem też liczyć tło z par funkcji z różnych pakietów npm, ale paczki dzielą ten sam kod pomocniczy, więc ogon to prawdziwe kopie — taki pomiar nic nie mówi o fałszywych alarmach. Czy progi trzymają się na prawdziwym kodzie, sprawdza ręczny przegląd w EMB-10.
+
+**Wzorce** (`packages/core/src/semantic/calibration.ts`, tylko struktura, bez nazw). Dwie funkcje, które nie są prawie-kopiami, mają wspólny wzorzec, gdy:
+- obie są jednym wywołaniem na tym samym obiekcie lub tej samej funkcji z innymi argumentami (rejestracje tras i zdarzeń, deklaracje);
+- obie zwracają wywołanie tej samej funkcji z innym obiektem konfiguracji;
+- mają te same instrukcje otwierające, a dalej inną logikę;
+- obie są jednym `switch` po tym samym polu;
+- obie owijają różną pracę tym samym blokiem `catch`.
+
+Reguły projektowałem wyłącznie na części walidacyjnej. Rozpoznają 8 z 13 jej wzorców i nie oznaczają żadnej pary „ten sam sens”. Odrzucona reguła „ten sam podpis portu”: łapała 3 prawdziwe duplikaty, bo dwie niezależne implementacje tej samej funkcji naturalnie mają ten sam podpis. Wzorców, które różnią się tylko literałami i jednym wywołaniem (migracje, walidatory, opakowania `fetch`), reguła nie rusza — tak samo wyglądają kopie z innymi literałami, które dane uznają za „ten sam sens”. Zastąpiona reguła `looksLikeConfigFactory` opierała się na liście nazw (`name|id|handler|run`) i znikła.
+
+**W produkcie:** `semantic.threshold` jest teraz opcjonalny. Bez niego paczka `onnx` raportuje od swojego progu `medium`, a `local` i `http` od 0,82 jak dotąd. Pewność grupy liczy się z jej najsilniejszej pary według pasm modelu. Grupa, w której każda para ma wspólny wzorzec, dostaje stopień niżej.
+
+**Model prywatny nie spełnia celów** (0,829 / 0,739 / 0,80), bo jego progi wyznaczyło 52 pary walidacji, w tym tylko 7 prywatnych. Lepsza kalibracja wymaga większej części walidacyjnej z prawdziwego kodu — to robota dla przeglądu w EMB-10, nie dla strojenia pod część testową. Domyślnym modelem produktu ma być i tak model publiczny.

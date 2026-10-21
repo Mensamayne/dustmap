@@ -27,7 +27,8 @@ export type AdapterConfig = z.infer<typeof AdapterConfig>;
 
 /**
  * Semantic (embedding) duplicate detection — defaults follow the DUST-15 spike decision:
- * local jina model via jscpd, threshold 0.82, confidence medium/low only.
+ * local jina model via jscpd, threshold 0.82, confidence medium/low only; an `onnx` model package
+ * brings its own calibrated bands (EMB-09).
  */
 export const SemanticConfig = z
   .object({
@@ -48,8 +49,11 @@ export const SemanticConfig = z
      * Windows, CUDA on Linux), otherwise its CPU variant; `gpu` = GPU or fail; `cpu` = CPU always.
      */
     device: z.enum(["auto", "gpu", "cpu"]).default("auto"),
-    /** Minimum cosine similarity within one language to report (spike: 0.82). */
-    threshold: z.number().gt(0).lte(1).default(0.82),
+    /**
+     * Minimum cosine similarity to report. Unset: `onnx` uses the model package's calibration (its
+     * `medium` band, EMB-09 — every model has its own scale); `local` / `http` use 0.82 (DUST-15 spike).
+     */
+    threshold: z.number().gt(0).lte(1).optional(),
     /** Minimum function tokens before a function is considered (passed to jscpd / extractors). */
     minTokens: z.number().int().positive().default(50),
     /** OpenAI-compatible embeddings base URL (e.g. http://127.0.0.1:11434/v1). Required for `http`. */
