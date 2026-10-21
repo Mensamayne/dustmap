@@ -794,10 +794,13 @@
         "EMB-05"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T09:33:22.193Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T12:03:18.057Z",
+      "gitProofSha": "90962ecbfca653172049a752bda3890af58cb742",
+      "closureNotes": "Test AP: base 0.672, public 0.770, private 0.864. EMB-00 goals not met yet; gaps (no independent-implementation positives, little permissive code) in emb-results.md. Public checkpoint privacy manifest ok."
     },
     {
       "id": "EMB-07",
