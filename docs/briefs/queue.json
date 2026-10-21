@@ -849,10 +849,13 @@
         "EMB-08"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T16:21:14.265Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T16:34:55.581Z",
+      "gitProofSha": "e57715d80904fa4b2359779775e1e3e4ec9f4c2a",
+      "closureNotes": "Bands from gold validation in the manifest; report from medium; structural pattern rule. Test: public high 0.913 / medium+ 0.750 / patterns below 0.875 (met); private 0.829 / 0.739 / 0.80 (not met, too little validation data)."
     },
     {
       "id": "EMB-10",
