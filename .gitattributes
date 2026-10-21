@@ -1,0 +1,2 @@
+# Model packages are checked byte for byte against their manifest SHA-256 — no end-of-line conversion.
+packages/core/fixtures/onnx-model/** -text
