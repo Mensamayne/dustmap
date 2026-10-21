@@ -677,6 +677,22 @@
       "startedBy": null
     },
     {
+      "id": "DUST-25",
+      "title": "Adapter falsegreen — fałszywie zielone testy",
+      "layer": 25,
+      "segment": "core",
+      "brief": "docs/briefs/DUST-25-adapter-falsegreen.md",
+      "gates": [
+        "DUST-03",
+        "DUST-20"
+      ],
+      "epic": "DUST",
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-21T18:35:00.000Z",
+      "startedBy": "agent"
+    },
+    {
       "id": "EMB-00",
       "title": "Overview: własny lokalny model embeddingowy",
       "layer": 0,

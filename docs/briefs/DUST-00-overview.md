@@ -13,7 +13,7 @@ Wizja: [docs/VISION.md](../VISION.md).
 - **Report-only:** narzędzie zapisuje wyłącznie `outputDir` (domyślnie `.dustmap/`: raport, cache, decyzje, baseline). Zero edycji źródeł, zero auto-delete. Jedyne wyjątki, tylko na jawne polecenie: `init` tworzy config, `init --agent` wstawia bloki instrukcji dla agentów (DUST-17).
 - **Agent-first:** głównym użytkownikiem jest agent AI. Każda odpowiedź mówi, co wywołać dalej; agent sam się wdraża z `dustmap_guide`; sukces mierzymy próbą prawdziwego agenta na Monorepo-A (DUST-18), nie tylko testami.
 - **Prawdziwy kod jako miara:** od DUST-16 każda zmiana wyniku skanu jest mierzona na Monorepo-A i Service-B (tylko odczyt) względem ręcznie przejrzanego zbioru prawdy — [TEST-TARGETS](../TEST-TARGETS.md).
-- **Owijka, nie fork:** Knip, jscpd (w tym `--semantic`), dependency-cruiser jako zwykłe zależności; każdy ma adapter → wspólny kontrakt.
+- **Owijka, nie fork:** Knip, jscpd (w tym `--semantic`), dependency-cruiser, falsegreen-js jako zwykłe zależności; każdy ma adapter → wspólny kontrakt.
 - **Ogólne, nie pod jeden projekt:** wiedza o konkretnym repo (punkty wejścia, warstwy, wyjątki) żyje tylko w `dustmap.config.json` użytkownika.
 - **Stały fingerprint znaleziska** (z treści kodu, nie numeru wiersza) — bez tego nie ma dedupe briefów ani pamięci decyzji.
 - **Lokalnie i offline domyślnie:** embeddingi przez lokalny model. Sędzia LLM wyłączony domyślnie (DUST-14).
@@ -48,6 +48,7 @@ Wizja: [docs/VISION.md](../VISION.md).
 | DUST-22 | `dustmap list` w CLI — ta sama pętla bez MCP (z audytu) |
 | DUST-23 | Żywy agent na migawce Monorepo-A — dokończenie DUST-18 (z audytu) |
 | DUST-24 | Posprzątać kurz znaleziony w samym Dustmapie (z self-scanu) |
+| DUST-25 | Adapter falsegreen — fałszywie zielone / tautologiczne testy |
 
 Kolejność startu: DUST-00 → DUST-01 i **równolegle DUST-15** (sam pomiar, bez kodu) → DUST-02 → DUST-16 → reszta.
 

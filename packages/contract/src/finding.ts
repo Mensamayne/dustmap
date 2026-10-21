@@ -34,6 +34,7 @@ export const FindingKind = z.enum([
   "cycle",
   "god-module",
   "layer-violation",
+  "false-green-test",
 ]);
 export type FindingKind = z.infer<typeof FindingKind>;
 
