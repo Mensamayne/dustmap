@@ -9,8 +9,18 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+export type GoldLabel = "same" | "contains" | "concept" | "pattern" | "different";
 export type Side = { name: string; code: string };
-export type GoldPair = { id: string; label: "same" | "pattern" | "different"; split: "validation" | "test"; source: string; a: Side; b: Side };
+export type GoldPair = {
+  id: string;
+  label: GoldLabel;
+  split: "validation" | "test";
+  source: string;
+  a: Side;
+  b: Side;
+  /** Required when label is `contains`: which side is the expanded / containing one. */
+  larger?: "a" | "b";
+};
 export type Scored = GoldPair & { score: number | null };
 type PrivateRef = { repo: string; sha: string; path: string; startLine: number; endLine: number; name: string; kind: string; sha256: string };
 
@@ -20,7 +30,8 @@ export const goldDir = path.join(repo, "tools/emb/gold");
 export const jsonl = <T,>(file: string): T[] =>
   readFileSync(file, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l) as T);
 
-export const REAL_SOURCE = "EMB-12 real";
+/** Real-code holdout (EMB-12). CON-01 rewrote labels and set `source` to `CON-01 relabel`. */
+export const REAL_SOURCES = new Set(["EMB-12 real", "CON-01 relabel"]);
 
 /** Private sides read back from the pinned snapshots; a drifted or missing side drops the pair. */
 export function loadPrivate(): { pairs: GoldPair[]; note: string } {

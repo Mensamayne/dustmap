@@ -1,5 +1,28 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-03 goal (22.10.2026)
+
+Cel zestawu testowego v2: **≥ 1200 kandydatów** → **≥ 800** ocenionych par z prawdziwego kodu. Kwoty docelowe po ocenie: 150 `contains`, 100 `concept`, 120 par klas, 100 CSS, 150 `pattern`. Skrypt: `tools/emb/gold/real-candidates.mts` → `.tmp/con03/candidates.json`. Uwaga: migawki Monorepo-A/Service-B z `git archive` nie zawierają osobnych plików `.css`/`.scss` (0 reguł w puli); CSS uzupełnimy z korpusu otwartego (CON-04) albo z CSS-in-JS, gdy damy radę zebrać dość jednostek.
+
+## CON-02: wspólne cięcie + parsery CSS (22.10.2026)
+
+Pobrania (npm, licencje MIT): `css-tree@3.2.1`, `postcss@8.5.31`, `postcss-scss@4.0.9` w `@dustmap/core`. Jednostki: funkcja / fragment / klasa|obiekt / reguła CSS w `packages/core/src/semantic/units.ts`. Potok `dustmap-emb/data/lib/extract.mjs` woła to samo cięcie, limity 3–80 linii / 4000 znaków dopiero po cięciu.
+
+## CON-01: nowa ocena 241 par (22.10.2026)
+
+241 par z `tools/emb/gold/real-refs.jsonl` ocenione na nowo wg pięciu etykiet (CON-00): `same`, `contains`, `concept`, `pattern`, `different`. Kod czytany lokalnie z migawek; w gicie nadal tylko odnośniki. Źródło w pliku: `CON-01 relabel`.
+
+| | Przed (3 etykiety) | Po (5 etykiet) |
+|--|--:|--:|
+| `same` | 77 | 52 |
+| `contains` | — | 22 |
+| `concept` | — | 7 |
+| `pattern` | 58 | 70 |
+| `different` | 106 | 90 |
+| **zmieniona etykieta** | | **61** |
+
+Główne przejścia: `same→contains` 14, `same→pattern` 13, `pattern→contains` 5, `different→pattern` 12, `different→concept` 4, `different→contains` 3, `same→concept` 2, `pattern→concept` 1. Wszystkie 22 `contains` mają `larger: "a"|"b"`. Walidacja złota i selftest miernika: OK.
+
 ## Dane EMB-13 (21.10.2026)
 
 Zbiór treningowy przebudowany pod definicję odpowiedzialności: bez bliźniaków algorytmów i mutantów; poprawki `fix` jako pozytywy (975); rewrite ograniczony (waga 0,25, max 2 na kotwicę). Prywatny train: 81 134 trójek. Bramki przecieku i etykiet: 0 naruszeń. Szczegóły: `dustmap-emb/DATA-CARD.md`, `docs/experiments/emb-data.md`.
@@ -15,7 +38,23 @@ Przepis: 10% danych prywatnych, strata kontrastowa + BCE na parach (`pair_loss_w
 
 W2 zero-shot na prawdziwym kodzie już 0,821; po 10% douczeniu 0,840. W4 start 0,737 → best 0,748. Pełny trening EMB-15 na W2.
 
-Każdy wiersz to jeden przebieg `npm run emb:eval` na zbiorze z `tools/emb/gold` (EMB-01). **same** = ta sama logika (klasa pozytywna); **pattern** i **different** = negatywy. Główna liczba to **AP** (średnia precyzja rankingu: 1,0 = wszystkie pary `same` nad wszystkimi pozostałymi; los ≈ odsetek par `same`). „Brak wyniku” = dostawca w ogóle nie połączył pary (liczone jako 0). Zbiór `test` jest odłożony — nie trenujemy ani nie stroimy na nim progów.
+## Pełny trening i paczka EMB-15 (22.10.2026)
+
+Pełne dane EMB-13, baza W2, strata kontrastowa + BCE na parach, checkpoint po AP na prawdziwym kodzie. Przebieg `private-w2-20261022-0107`: best przy kroku 250 (AP prawdziwy 0,844 / AP test 0,787 w mierniku treningowym, tylko etykieta `same`); dalsze kroki przeuczały (na końcu AP prawdziwy 0,736).
+
+Paczka prywatna `dustmap-same-meaning-private` v0.3.0 w `dustmap-emb/dist/` (poza gitem): CPU int8 wag 138 MB, GPU fp16 275 MB (rotary embeddings zostają w fp32, inaczej ONNX Runtime nie wczytuje grafu). Eksport ONNX vs PyTorch: cosinus min 1,0 na 1000 funkcjach. Spadek AP int8 vs fp32 ≈ 0. Tokenizer W2 (`[PAD]`, `TemplateProcessing`) obsługiwany w Pythonie i w Node.
+
+Po CON-01 miernik liczy AP na trzech etykietach pozytywnych (`same` + `contains` + `concept`). Na paczce ONNX int8 (CPU), z kalibracją:
+
+| Zestaw | AP | Precyzja high | Precyzja ≥ medium | Wykrywalność ≥ medium |
+|--------|---:|-------------:|------------------:|----------------------:|
+| test | 0,743 | 0,905 | 0,833 | 0,235 |
+| prawdziwy (241) | 0,771 | 0,933 | 0,850 | 0,420 |
+| całość | 0,715 | 0,912 | 0,841 | 0,253 |
+
+Progi (walidacja): high 0,812 / medium 0,787 / low 0,301. Cele EMB-09 na części test: spełnione. Szybkość CPU ~2,3 funkcji/s (16 wątków; model większy niż UniXcoder). Publiczna paczka nadal zablokowana (EMB-11).
+
+Każdy wiersz to jeden przebieg `npm run emb:eval` na zbiorze z `tools/emb/gold` (EMB-01). Od CON-01 główna liczba **AP** traktuje `same` + `contains` + `concept` jako pozytywy; `pattern` i `different` to negatywy. „Brak wyniku” = dostawca w ogóle nie połączył pary (liczone jako 0). Zbiór `test` jest odłożony — nie trenujemy ani nie stroimy na nim progów.
 
 ## Wynik bazowy (21.10.2026, EMB-01)
 
@@ -268,3 +307,19 @@ Reguły projektowałem wyłącznie na części walidacyjnej. Rozpoznają 8 z 13 
 | 2026-10-21 | onnx · dustmap-same-meaning-public | test | 232 | 0.786 | 0.816 | 0.348 | 0.891 | 0.458 (F1 0.75) | 0 | 0.70 / 0.41 / 0.28 | 10 s | 239 MB | wariant gpu |
 | 2026-10-21 | onnx · dustmap-same-meaning-public | prawdziwy | 241 | 0.767 | 0.765 | 0.506 | 0.810 | 0.624 (F1 0.73) | 0 | 0.78 / 0.64 / 0.35 | 10 s | 239 MB | wariant gpu |
 | 2026-10-21 | onnx · dustmap-same-meaning-public | całość | 406 | 0.734 | 0.790 | 0.345 | 0.895 | 0.458 (F1 0.70) | 0 | 0.69 / 0.46 / 0.29 | 10 s | 239 MB | wariant gpu |
+| 2026-10-22 | onnx · dustmap-same-meaning-public | test | 232 | 0.786 | 0.816 | 0.348 | 0.891 | 0.458 (F1 0.75) | 0 | 0.70 / 0.41 / 0.28 | 9 s | 239 MB | wariant gpu |
+| 2026-10-22 | onnx · dustmap-same-meaning-public | prawdziwy | 241 | 0.767 | 0.765 | 0.506 | 0.810 | 0.624 (F1 0.73) | 0 | 0.78 / 0.64 / 0.35 | 9 s | 239 MB | wariant gpu |
+| 2026-10-22 | onnx · dustmap-same-meaning-public | całość | 406 | 0.734 | 0.790 | 0.345 | 0.895 | 0.458 (F1 0.70) | 0 | 0.69 / 0.46 / 0.29 | 9 s | 239 MB | wariant gpu |
+| 2026-10-22 | http · onnx fp32 dustmap-same-meaning-private | test | 232 | 0.741 | 0.818 | 0.212 | 0.948 | 0.389 (F1 0.70) | 0 | 0.61 / 0.42 / 0.23 | 433 s | — | EMB-07 ONNX fp32 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-22 | http · onnx fp32 dustmap-same-meaning-private | całość | 406 | 0.715 | 0.857 | 0.205 | 0.960 | 0.385 (F1 0.69) | 0 | 0.62 / 0.45 / 0.25 | 433 s | — | EMB-07 ONNX fp32 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-22 | http · onnx int8 dustmap-same-meaning-private | test | 232 | 0.743 | 0.818 | 0.212 | 0.948 | 0.507 (F1 0.70) | 0 | 0.61 / 0.43 / 0.24 | 427 s | — | EMB-07 ONNX int8 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-22 | http · onnx int8 dustmap-same-meaning-private | całość | 406 | 0.715 | 0.857 | 0.205 | 0.960 | 0.388 (F1 0.69) | 0 | 0.62 / 0.45 / 0.25 | 427 s | — | EMB-07 ONNX int8 (int8 = tylko wagi), CPU 16 wątków |
+| 2026-10-22 | http · onnx fp16 dustmap-same-meaning-private | test | 232 | 0.741 | 0.818 | 0.212 | 0.948 | 0.390 (F1 0.70) | 0 | 0.61 / 0.42 / 0.23 | 502 s | — | EMB-08 ONNX fp16 (wariant na kartę), liczone na CPU |
+| 2026-10-22 | http · onnx fp16 dustmap-same-meaning-private | prawdziwy | 241 | 0.771 | 0.871 | 0.333 | 0.943 | 0.518 (F1 0.72) | 0 | 0.75 / 0.53 / 0.27 | 502 s | — | EMB-08 ONNX fp16 (wariant na kartę), liczone na CPU |
+| 2026-10-22 | http · onnx fp16 dustmap-same-meaning-private | całość | 406 | 0.715 | 0.857 | 0.205 | 0.960 | 0.385 (F1 0.69) | 0 | 0.62 / 0.45 / 0.25 | 502 s | — | EMB-08 ONNX fp16 (wariant na kartę), liczone na CPU |
+| 2026-10-22 | onnx · dustmap-same-meaning-private | test | 232 | 0.743 | 0.818 | 0.212 | 0.948 | 0.507 (F1 0.70) | 0 | 0.61 / 0.43 / 0.24 | 145 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |
+| 2026-10-22 | onnx · dustmap-same-meaning-private | prawdziwy | 241 | 0.771 | 0.871 | 0.333 | 0.943 | 0.506 (F1 0.72) | 0 | 0.75 / 0.53 / 0.28 | 145 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |
+| 2026-10-22 | onnx · dustmap-same-meaning-private | całość | 406 | 0.715 | 0.857 | 0.205 | 0.960 | 0.388 (F1 0.69) | 0 | 0.62 / 0.45 / 0.25 | 145 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |
+| 2026-10-22 | onnx · dustmap-same-meaning-private | test | 232 | 0.743 | 0.818 | 0.212 | 0.948 | 0.507 (F1 0.70) | 0 | 0.61 / 0.43 / 0.24 | 143 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |
+| 2026-10-22 | onnx · dustmap-same-meaning-private | prawdziwy | 241 | 0.771 | 0.871 | 0.333 | 0.943 | 0.506 (F1 0.72) | 0 | 0.75 / 0.53 / 0.28 | 143 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |
+| 2026-10-22 | onnx · dustmap-same-meaning-private | całość | 406 | 0.715 | 0.857 | 0.205 | 0.960 | 0.388 (F1 0.69) | 0 | 0.62 / 0.45 / 0.25 | 143 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |

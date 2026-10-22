@@ -182,14 +182,31 @@ export async function openOnnxProvider(
   const active = session;
 
   const tokenizerJson = JSON.parse(readFileSync(path.join(pkg, manifest.input.tokenizer), "utf8")) as {
-    post_processor?: { type?: string; cls?: [string, number]; sep?: [string, number] };
+    post_processor?: {
+      type?: string;
+      cls?: [string, number];
+      sep?: [string, number];
+      special_tokens?: Record<string, { ids?: number[] }>;
+    };
     added_tokens?: Array<{ content: string; id: number }>;
   };
   const pp = tokenizerJson.post_processor;
-  if (!pp?.cls || !pp.sep || !["RobertaProcessing", "BertProcessing"].includes(pp.type ?? "")) {
-    throw new OnnxModelError("onnx_model_corrupt", `Semantic model "${cfg.model}": tokenizer post-processor ${pp?.type ?? "none"} is not supported (need cls/sep).`);
+  // UniXcoder: RobertaProcessing with cls/sep tuples. CodeRankEmbed (W2): TemplateProcessing with [CLS]/[SEP].
+  const clsId =
+    pp?.cls?.[1] ??
+    pp?.special_tokens?.["[CLS]"]?.ids?.[0] ??
+    tokenizerJson.added_tokens?.find((t) => t.content === "[CLS]" || t.content === "<s>")?.id;
+  const sepId =
+    pp?.sep?.[1] ??
+    pp?.special_tokens?.["[SEP]"]?.ids?.[0] ??
+    tokenizerJson.added_tokens?.find((t) => t.content === "[SEP]" || t.content === "</s>")?.id;
+  const supportedPp = ["RobertaProcessing", "BertProcessing", "TemplateProcessing"].includes(pp?.type ?? "");
+  if (clsId == null || sepId == null || !supportedPp) {
+    throw new OnnxModelError(
+      "onnx_model_corrupt",
+      `Semantic model "${cfg.model}": tokenizer post-processor ${pp?.type ?? "none"} is not supported (need cls/sep).`,
+    );
   }
-  const [clsId, sepId] = [pp.cls[1], pp.sep[1]];
   const padId = tokenizerJson.added_tokens?.find((t) => t.content === "<pad>" || t.content === "[PAD]")?.id ?? 0;
   const tokenizer = new Tokenizer(tokenizerJson as object, {});
   const max = manifest.input.maxTokens;
