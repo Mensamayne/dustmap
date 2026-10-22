@@ -1129,9 +1129,12 @@
         "CON-03"
       ],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
-      "startedAt": "2026-10-22T11:52:07.548Z"
+      "startedAt": "2026-10-22T11:52:07.548Z",
+      "completedAt": "2026-10-22T11:54:10.616Z",
+      "gitProofSha": "c8d85fcf4c7fd92264d94055daee36ffdb33edde",
+      "closureNotes": "Reguly higieny w README, check-hygiene + selftest w emb:gold, rytual w emb-results, 22 smieci wyrzucone (1441 real-refs)"
     }
   ]
 }
