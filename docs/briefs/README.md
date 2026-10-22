@@ -57,3 +57,19 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | EMB-15 | Pełny trening, paczka ONNX, kalibracja |
 | EMB-10 | Pomiar na celach, decyzja o domyślnym, usunięcie ścieżki jscpd |
 | EMB-11 | Dystrybucja modelu publicznego (wstrzymane) |
+
+**Epik CON — dane do łapania powielonych koncepcji (v1)** (rozbudowane wersje, fragmenty, klasy, reguły CSS, koncepcje rozłożone inaczej; tylko dane i miara, trening osobno). Overview: [CON-00-overview.md](CON-00-overview.md).
+
+| ID | Co |
+|----|----|
+| CON-00 | Overview: definicja pięciu etykiet, jednostki, zasady |
+| CON-01 | Definicja z przykładami + nowa ocena 241 par |
+| CON-02 | Wspólne cięcie kodu: fragmenty, klasy, reguły CSS (dane = skan) |
+| CON-03 | Zestaw testowy v2: ≥ 800 par, dwóch oceniających |
+| CON-04 | Korpus: prywatne cele + otwarte repo na wolnych licencjach |
+| CON-05 | Pary z historii gita: wzrost, wydzielenie, scalenie, przeniesienie |
+| CON-06 | Pary generowane lokalnie z kontrolą, że operacja zaszła |
+| CON-07 | Trudne negatywy dla koncepcji |
+| CON-08 | Bramki: spójność, przeciek, bilans, karta danych |
+| CON-09 | Paczka danych + pomiar bazowy obecnego modelu |
+| CON-10 | Szlifowanie i pielęgnacja zbioru wzorcowego (śmieć out, rytuał) |

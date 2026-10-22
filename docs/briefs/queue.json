@@ -923,10 +923,13 @@
         "EMB-13"
       ],
       "epic": "EMB",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-21T22:35:13.861Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-21T23:06:53.870Z",
+      "gitProofSha": "0abe024f6a7d0f250a0b797b9c6a644f988fb7d9",
+      "closureNotes": "W2 CodeRankEmbed wygrywa pojedynek 10%: apReal 0.840 vs W4 0.748; strata par + wybor po prawdziwym kodzie"
     },
     {
       "id": "EMB-15",
@@ -938,10 +941,13 @@
         "EMB-14"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-21T23:07:09.696Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-22T02:30:09.716Z",
+      "gitProofSha": "54761d228e4e05a9634aa305854b31a4e772d723",
+      "closureNotes": "W2 private v0.3.0: train apReal 0.844@250, ONNX int8 138MB, test AP 0.743, EMB-09 cele na test spelnione"
     },
     {
       "id": "EMB-10",
@@ -953,10 +959,13 @@
         "EMB-15"
       ],
       "epic": "EMB",
-      "status": "todo",
+      "status": "done",
       "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "startedAt": "2026-10-22T02:30:38.710Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-22T02:48:47.288Z",
+      "gitProofSha": "eb7b284842fc5cc28e6554d4de05a9b7bf8237e6",
+      "closureNotes": "onnx private default; lab 119ok 0 EMB yellow; monorepo-a 275s/11s cache, 1199 semantic; sample high ~0.77<0.85 (patterns)"
     },
     {
       "id": "EMB-11",
@@ -973,6 +982,156 @@
       "startedAt": null,
       "startedBy": null,
       "closureNotes": "Wstrzymane decyzją maintainera 21.10.2026: „narazie rozwijajmy tylko prywatny model, publiczny całkowicie olewamy aż powiem, ze jest inaczej”. Gotowe w kopii roboczej (niezatwierdzone): dustmap model pull/list z testami (packages/cli/src/model-cmd.ts)."
+    },
+    {
+      "id": "CON-00",
+      "title": "Overview: dane do łapania powielonych koncepcji (v1)",
+      "layer": 0,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-00-overview.md",
+      "gates": [],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-01",
+      "title": "Definicja z przykładami + nowa ocena 241 par",
+      "layer": 1,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-01-definition-and-relabel.md",
+      "gates": [
+        "CON-00"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-02",
+      "title": "Wspólne cięcie: fragmenty, klasy, reguły CSS",
+      "layer": 1,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-02-shared-units.md",
+      "gates": [
+        "CON-00"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-03",
+      "title": "Zestaw testowy v2: wszystkie jednostki, dwóch oceniających",
+      "layer": 2,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-03-gold-v2.md",
+      "gates": [
+        "CON-01",
+        "CON-02"
+      ],
+      "epic": "CON",
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-22T11:29:27.303Z",
+      "gitProofSha": "437883b17cacf5375726a2737aee62a58dbfa81c",
+      "closureNotes": "1349 par, druga ocena kappa 0.67, 332 rozbieznosci rozstrzygniete; contains 117/150 jawny brak do CON-04"
+    },
+    {
+      "id": "CON-04",
+      "title": "Korpus: kod do nauki",
+      "layer": 2,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-04-corpus.md",
+      "gates": [
+        "CON-02"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-05",
+      "title": "Pary z historii gita: wzrost, wydzielenie, scalenie, przeniesienie",
+      "layer": 3,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-05-history-pairs.md",
+      "gates": [
+        "CON-04"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-06",
+      "title": "Pary generowane: rozbudowa, rozkład, klasy, CSS",
+      "layer": 3,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-06-generated-pairs.md",
+      "gates": [
+        "CON-04"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-07",
+      "title": "Trudne negatywy dla koncepcji",
+      "layer": 3,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-07-concept-negatives.md",
+      "gates": [
+        "CON-04"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-08",
+      "title": "Bramki: spójność etykiet, przeciek, bilans, karta danych",
+      "layer": 4,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-08-gates-and-card.md",
+      "gates": [
+        "CON-03",
+        "CON-05",
+        "CON-06",
+        "CON-07"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-09",
+      "title": "Paczka danych i pomiar bazowy",
+      "layer": 5,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-09-dataset-and-baseline.md",
+      "gates": [
+        "CON-08",
+        "EMB-15"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-10",
+      "title": "Szlifowanie i pielęgnacja zbioru wzorcowego",
+      "layer": 2,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-10-gold-hygiene.md",
+      "gates": [
+        "CON-03"
+      ],
+      "epic": "CON",
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-22T11:52:07.548Z"
     }
   ]
 }

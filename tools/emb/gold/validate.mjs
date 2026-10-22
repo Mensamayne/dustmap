@@ -144,4 +144,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   console.log(
     `gold: OK · ${pub.length} publicznych + ${priv.length} prywatnych · same ${by("same")} · contains ${by("contains")} · concept ${by("concept")} · pattern ${by("pattern")} · different ${by("different")}`,
   );
+  // CON-10: path / trivial-local hygiene (tsx so .mts runs without a separate npm script)
+  execFileSync(process.execPath, ["--import", "tsx", path.join(here, "check-hygiene.mts")], { stdio: "inherit" });
 }
