@@ -2,7 +2,22 @@
 
 ## CON-03 goal (22.10.2026)
 
-Cel zestawu testowego v2: **≥ 1200 kandydatów** → **≥ 800** ocenionych par z prawdziwego kodu. Kwoty docelowe po ocenie: 150 `contains`, 100 `concept`, 120 par klas, 100 CSS, 150 `pattern`. Skrypt: `tools/emb/gold/real-candidates.mts` → `.tmp/con03/candidates.json`. Uwaga: migawki Monorepo-A/Service-B z `git archive` nie zawierają osobnych plików `.css`/`.scss` (0 reguł w puli); CSS uzupełnimy z korpusu otwartego (CON-04) albo z CSS-in-JS, gdy damy radę zebrać dość jednostek.
+Cel zestawu testowego v2: **≥ 1200 kandydatów** → **≥ 800** ocenionych par z prawdziwego kodu. Kwoty docelowe po ocenie: 150 `contains`, 100 `concept`, 120 par klas, 100 CSS, 150 `pattern`. Skrypt: `tools/emb/gold/real-candidates.mts` → `.tmp/con03/candidates.json`. CSS: `git archive` pomija `.css`/`.scss`; dobrane z żywego Monorepo-A przez `git show` na tym samym SHA (`tools/emb/gold/add-css-candidates.mts`) — **180** par `css-css`, łącznie **1390** kandydatów.
+
+### CON-03 zestaw v2 zamknięty (22.10.2026)
+
+**1349** prywatnych par w `real-refs.jsonl` (241 CON-01 + 1108 nowych). Kandydaci: 1390 (w tym 180 CSS z `git show`). Podział `validation`/`test` po haśle **pliku** (`file-split.mjs`); selftest łapie przeciek. Druga niezależna ocena: zgodność **75,5%**, kappa **0,67**; wszystkie **332** rozbieżności rozstrzygnięte (główny oceniający, powód w `why`).
+
+| | Po rozstrzygnięciach | Cel |
+|--|--:|--:|
+| razem | 1349 | ≥ 800 ✅ |
+| `contains` | 117 | ≥ 150 ❌ (brak −33; z Monorepo-A/Service-B za mało prawdziwych rozbudowań; uzupełnienie → CON-04) |
+| `concept` | 126 | ≥ 100 ✅ |
+| `pattern` | 312 | ≥ 150 ✅ |
+| pary klas | 189 | ≥ 120 ✅ |
+| pary CSS | 160 | ≥ 100 ✅ |
+
+`same` 270 · `different` 524. Skrypty: `second-opinion.mts`, `apply-file-split.mts`.
 
 ## CON-02: wspólne cięcie + parsery CSS (22.10.2026)
 

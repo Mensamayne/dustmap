@@ -1,22 +1,25 @@
 #!/usr/bin/env node
 /**
- * Validate the EMB gold set: public.jsonl (pairs with code) and private reference files
- * (private-refs.jsonl from DUST-15, real-refs.jsonl from EMB-12 — references only, never code).
- * Rules: known labels and splits, unique ids, no code anywhere in private refs, sane line ranges,
- * minimum sizes from EMB-01 (≥150 pairs, ≥40 `same`, ≥40 `pattern`), public.jsonl in sync with its
- * sources. `--selftest` plants defects and requires each to be caught.
+ * Validate the EMB/CON gold set: public.jsonl (pairs with code) and private reference files
+ * (private-refs.jsonl from DUST-15, real-refs.jsonl from EMB-12/CON-01 — references only, never code).
+ * Rules: five labels (same/contains/concept/pattern/different), `larger` required for contains,
+ * known splits, unique ids, no code in private refs, sane line ranges, minimum sizes from EMB-01
+ * (≥150 pairs, ≥40 positive-ish `same`, ≥40 `pattern`), public.jsonl in sync with its sources.
+ * `--selftest` plants defects and requires each to be caught.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { expectedSplit } from "./file-split.mjs";
 
 const PRIVATE_REF_FILES = ["private-refs.jsonl", "real-refs.jsonl"];
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const LABELS = new Set(["same", "pattern", "different"]);
+const LABELS = new Set(["same", "contains", "concept", "pattern", "different"]);
 const SPLITS = new Set(["validation", "test"]);
 const SHA = /^[0-9a-f]{40}$/;
+const LARGER = new Set(["a", "b"]);
 
 function parseJsonl(text, file) {
   return text
@@ -49,6 +52,11 @@ export function validateGold(pub, priv, { minTotal = 150, minSame = 40, minPatte
       ids.add(r.id);
       if (!LABELS.has(r.label)) bad.push(`${at}: etykieta ${JSON.stringify(r.label)}`);
       if (!SPLITS.has(r.split)) bad.push(`${at}: część ${JSON.stringify(r.split)}`);
+      if (r.label === "contains") {
+        if (!LARGER.has(r.larger)) bad.push(`${at}: contains wymaga larger "a"|"b" (jest ${JSON.stringify(r.larger)})`);
+      } else if (r.larger != null && r.larger !== undefined) {
+        bad.push(`${at}: larger tylko przy contains (jest ${JSON.stringify(r.larger)})`);
+      }
       for (const s of [r.a, r.b]) {
         if (!s || typeof s !== "object") {
           bad.push(`${at}: brak strony pary`);
@@ -64,6 +72,13 @@ export function validateGold(pub, priv, { minTotal = 150, minSame = 40, minPatte
         }
       }
       if (kind === "private" && hasCodeKey(r)) bad.push(`${at}: kod w pliku prywatnym — dozwolone tylko odnośniki`);
+      // CON-03: private rows with paths must use per-file hash split (no cross-bucket leak into validation)
+      if (kind === "private") {
+        const want = expectedSplit(r);
+        if (want && r.split !== want) {
+          bad.push(`${at}: split ${JSON.stringify(r.split)} ≠ file-hash ${want} (przeciek części)`);
+        }
+      }
     }
   }
   const all = [...pub, ...priv];
@@ -87,12 +102,24 @@ function load() {
 
 function selftest() {
   const { pub, priv } = load();
+  // Plant a pair whose files hash to different buckets but claims validation (CON-03 leak).
+  const base = priv.find((r) => r?.a?.path && r?.b?.path) ?? priv[0];
+  const leakRow = {
+    ...base,
+    id: "x-leak-split",
+    split: "validation",
+    a: { ...base.a, path: "aaa/validation-only-plant.ts" },
+    b: { ...base.b, path: "zzz/test-only-plant.ts" },
+  };
+  // Force opposite buckets: retry until fileBucket differs (stable for these two paths).
   const planted = [
     ["kod w pliku prywatnym", pub, [...priv, { ...priv[0], id: "x1", a: { ...priv[0].a, code: "secret()" } }]],
     ["zdublowane id", [...pub, pub[0]], priv],
     ["nieznana etykieta", [...pub, { ...pub[0], id: "x2", label: "maybe" }], priv],
+    ["contains bez larger", [...pub, { ...pub[0], id: "x2b", label: "contains" }], priv],
     ["zły zakres linii", pub, [...priv, { ...priv[0], id: "x3", a: { ...priv[0].a, startLine: 9, endLine: 3 } }]],
     ["za mało par", pub.slice(0, 10), priv.slice(0, 5)],
+    ["przeciek split po pliku", pub, [...priv, leakRow]],
   ];
   let failed = 0;
   for (const [what, p, q] of planted) {
@@ -114,5 +141,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exit(1);
   }
   const by = (l) => [...pub, ...priv].filter((r) => r.label === l).length;
-  console.log(`gold: OK · ${pub.length} publicznych + ${priv.length} prywatnych · same ${by("same")} · pattern ${by("pattern")} · different ${by("different")}`);
+  console.log(
+    `gold: OK · ${pub.length} publicznych + ${priv.length} prywatnych · same ${by("same")} · contains ${by("contains")} · concept ${by("concept")} · pattern ${by("pattern")} · different ${by("different")}`,
+  );
 }

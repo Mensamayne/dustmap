@@ -68,6 +68,8 @@ Starsza definicja EMB-01 (tylko `same` / `pattern` / `different`) została zast�
 | `private-spec.json` | pary ocenione ręcznie w DUST-15 na Monorepo-A: tylko ścieżka + nazwa symbolu | tak |
 | `resolve-private.mjs` → `private-refs.jsonl` | dokładne `{repo, sha, path, startLine, endLine}` z drzewa składni przypiętej migawki + sha256 tych linii | tak — **bez kodu** |
 | `real-candidates.mts` → `.tmp/…` → `real-refs.jsonl` | EMB-12 / CON: pary z Monorepo-A/Service-B dobrane po pasmach podobieństwa, ocenione ręcznie; w gicie tylko odnośniki | tak — **bez kodu** |
+| `harvest-same-file-siblings.mts` → `same-file-siblings-candidates.jsonl` | highy z jednego pliku, różne nazwy (Monorepo-A): zagnieżdżenia → `different`, reszta propozycja `pattern` do etykietowania CON-07 | tak — **bez kodu** |
+| `same-file-siblings-seed.jsonl` | ręcznie oceniona próbka siostrzanych par (zapach szablonu / wariant / fałszywy alarm) | tak — **bez kodu** |
 | `validate.mjs` | format, 5 etykiet, `larger` przy `contains`, brak kodu w odnośnikach; `--selftest` | tak |
 
 Kod par prywatnych jest czytany dopiero w chwili pomiaru z migawki w `.tmp/targets/` (tylko lokalnie). Gdy kod pod odnośnikiem się zmienił (inny sha256), para jest pomijana i miernik o tym mówi.
@@ -87,4 +89,7 @@ npm run emb:gold                               # walidacja zbioru
 node tools/emb/gold/validate.mjs --selftest    # czy walidacja łapie podłożone wady
 npm run emb:eval                               # pomiar obecnego modelu → docs/experiments/emb-results.md
 npm run emb:eval -- --selftest                 # czy miernik nie kłamie (wyrocznia / los / odwrócenie)
+
+# Kandydaci CON-07 ze „siostr” w jednym pliku (wymaga raportu + migawki w .tmp/targets/):
+npx tsx tools/emb/gold/harvest-same-file-siblings.mts
 ```
