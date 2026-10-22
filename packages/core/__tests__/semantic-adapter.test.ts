@@ -26,13 +26,13 @@ async function ctx(): Promise<AdapterContext> {
     outputDir: out,
     semantic: {
       ...defaultConfig().semantic,
-      provider: "local" as const,
+      provider: "onnx" as const,
       threshold: 0.75,
       minTokens: 20,
       model: "memory-test-embed",
     },
     adapters: {
-      semantic: { enabled: true, options: { engine: "embed" } },
+      semantic: { enabled: true },
     },
   };
   const inv = takeInventory(fixtureRoot, config, "full");
@@ -57,7 +57,7 @@ describe("semantic adapter fixture", () => {
     async () => {
       const provider = createMemoryEmbeddingProvider("memory-test-embed");
       const context = await ctx();
-      const first = await runSemanticAnalysis(context, { provider, forceEmbedPath: true });
+      const first = await runSemanticAnalysis(context, { provider });
       const triple = first.findings.find((f) => {
         const names = new Set(f.locations.map((l) => l.symbol));
         return names.has("totalOf") && names.has("accumulate") && names.has("foldSum");
@@ -67,7 +67,7 @@ describe("semantic adapter fixture", () => {
       expect(triple!.locations.length).toBeGreaterThanOrEqual(3);
       expect(first.stats.newEmbeddings).toBeGreaterThan(0);
 
-      const second = await runSemanticAnalysis(context, { provider, forceEmbedPath: true });
+      const second = await runSemanticAnalysis(context, { provider });
       expect(second.stats.newEmbeddings).toBe(0);
       expect(second.findings.some((f) => f.fingerprint === triple!.fingerprint)).toBe(true);
     },

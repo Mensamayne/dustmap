@@ -85,6 +85,21 @@ export type RatchetArgs = {
   json: boolean;
 };
 
+export type ModelPullArgs = {
+  command: "model-pull";
+  id: string;
+  /** Base URL serving `<id>/manifest.json` and the files it lists. */
+  from?: string;
+  modelDir?: string;
+  json: boolean;
+};
+
+export type ModelListArgs = {
+  command: "model-list";
+  modelDir?: string;
+  json: boolean;
+};
+
 export type ParsedArgs =
   | ScanArgs
   | SummaryArgs
@@ -94,6 +109,8 @@ export type ParsedArgs =
   | DecideArgs
   | ExportArgs
   | RatchetArgs
+  | ModelPullArgs
+  | ModelListArgs
   | { command: "help" };
 
 export class UsageError extends Error {
@@ -394,8 +411,35 @@ export function parseArgs(argv: string[]): ParsedArgs {
     };
   }
 
+  if (command === "model") {
+    const h = stripHelp(rest);
+    if (h.help) return { command: "help" };
+    rest = h.rest;
+    const from = takeFlag(rest, "--from");
+    rest = from.rest;
+    const modelDir = takeFlag(rest, "--model-dir");
+    rest = modelDir.rest;
+    const json = takeBool(rest, "--json");
+    rest = json.rest;
+    const unknown = rest.filter((a) => a.startsWith("-"));
+    if (unknown.length) throw new UsageError(`Unknown flag: ${unknown[0]}`);
+    const [verb, id, ...extra] = rest;
+    if (extra.length) throw new UsageError(`Unexpected argument: ${extra[0]}`);
+    const dirOpt = modelDir.value !== undefined ? { modelDir: modelDir.value } : {};
+    if (verb === "pull") {
+      if (!id) throw new UsageError("dustmap model pull needs a model id");
+      return { command: "model-pull", id, ...(from.value !== undefined ? { from: from.value } : {}), ...dirOpt, json: json.on };
+    }
+    if (verb === "list") {
+      if (id) throw new UsageError(`Unexpected argument: ${id}`);
+      if (from.value !== undefined) throw new UsageError("--from is only for model pull");
+      return { command: "model-list", ...dirOpt, json: json.on };
+    }
+    throw new UsageError(`Unknown model command: ${verb ?? "(none)"}. Try: dustmap model pull <id> | dustmap model list`);
+  }
+
   throw new UsageError(
-    `Unknown command: ${command}. Try: dustmap init|scan|summary|list|show|decide|export|ratchet`,
+    `Unknown command: ${command}. Try: dustmap init|scan|summary|list|show|decide|export|ratchet|model`,
   );
 }
 
@@ -410,6 +454,12 @@ Usage:
   dustmap decide <fingerprint> keep|fix|wontfix --reason "…" [--by <who>] [--report full|diff] [--out <dir>] [--json]
   dustmap export --to markdown|sarif [--report full|diff] [--out <dir>] [--file <path>]
   dustmap ratchet [--update-baseline] [--report full|diff] [--out <dir>] [--json]
+  dustmap model pull <id> [--from <url>] [--model-dir <dir>] [--json]
+  dustmap model list [--model-dir <dir>] [--json]
+
+Models: semantic.provider "onnx" runs a model package from the user's model directory, offline.
+"model pull" is the only command that uses the network — only when you run it — and it refuses
+private packages and any file whose SHA-256 differs from the package manifest.
 
 Reports: a full scan writes report.json (the map of the whole repo); scan --diff writes
 report.diff.json and never touches the map. Readers use the map unless --report diff.

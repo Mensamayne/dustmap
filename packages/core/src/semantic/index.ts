@@ -20,6 +20,7 @@ export {
 } from "./cluster.js";
 export { extractFunctions, type ExtractedFunction } from "./extract.js";
 export { confidenceFor, lowerConfidence, reportFloor, sharedPattern, type Calibration, type Confidence } from "./calibration.js";
+
 export {
   loadModelPackage,
   openOnnxProvider,
@@ -28,7 +29,6 @@ export {
   type ModelManifest,
   type OnnxProvider,
 } from "./onnx-provider.js";
-export { runJscpdSemanticPairs, type JscpdSemanticOptions } from "./jscpd-semantic.js";
 export { dedupeSemanticAgainstClones, isFullyCoveredByClone } from "./dedupe-vs-clones.js";
 export {
   runSemanticAnalysis,

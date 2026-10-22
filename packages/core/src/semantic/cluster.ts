@@ -1,6 +1,6 @@
 /**
  * Build semantic-cluster findings from scored function pairs, as decided in DUST-15: functions linked
- * by similarity form groups (union-find) — one function in N copies is one finding with N places; and
+ * by similarity form groups (average linkage) — one function in N copies is one finding with N places; and
  * several separate pairs between the same two files become one finding, "two parallel systems".
  * Pairs come from every function pair (similarity.ts, exact). Confidence: from the model's calibrated
  * bands (calibration.ts) when it has them, else ≥0.85 medium / low (DUST-15 spike, uncalibrated
@@ -52,41 +52,44 @@ export async function pairsAboveThreshold(
   return (await pairsAtLeast(unit, threshold)).map(({ i, j, similarity }) => ({ a: fns[i]!, b: fns[j]!, similarity }));
 }
 
-class UnionFind {
-  private readonly parent = new Map<string, string>();
-  add(id: string): void {
-    if (!this.parent.has(id)) this.parent.set(id, id);
-  }
-  find(id: string): string {
-    let cur = id;
-    while (this.parent.get(cur) !== cur) {
-      const p = this.parent.get(cur);
-      if (p === undefined) {
-        this.parent.set(cur, cur);
-        return cur;
+/**
+ * Groups of functions by average linkage: links are visited strongest first, and two groups merge
+ * only when the mean similarity over every cross pair reaches the threshold. Cross pairs below the
+ * threshold come from `similarity` (exact, from the vectors) or count as 0 when it is not given. One
+ * weak link can no longer chain two unrelated families into one finding (single linkage did: two
+ * families of three bridged by one 0.42 link became seven places).
+ */
+function averageLinkageGroups(
+  edges: ReadonlyMap<string, number>,
+  threshold: number,
+  similarity: ((a: string, b: string) => number) | null,
+): string[][] {
+  const group = new Map<string, number>();
+  const members = new Map<number, string[]>();
+  const sim = (a: string, b: string) => edges.get(a < b ? `${a}\n${b}` : `${b}\n${a}`) ?? (similarity ? similarity(a, b) : 0);
+  const ordered = [...edges.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1));
+  let next = 0;
+  for (const [key] of ordered) {
+    const [a, b] = key.split("\n") as [string, string];
+    for (const k of [a, b]) {
+      if (!group.has(k)) {
+        group.set(k, next);
+        members.set(next++, [k]);
       }
-      this.parent.set(cur, this.parent.get(p) ?? p);
-      cur = this.parent.get(cur)!;
     }
-    return cur;
+    const ga = group.get(a)!;
+    const gb = group.get(b)!;
+    if (ga === gb) continue;
+    const ma = members.get(ga)!;
+    const mb = members.get(gb)!;
+    let total = 0;
+    for (const x of ma) for (const y of mb) total += sim(x, y);
+    if (total / (ma.length * mb.length) < threshold) continue;
+    for (const y of mb) group.set(y, ga);
+    members.set(ga, [...ma, ...mb]);
+    members.delete(gb);
   }
-  union(a: string, b: string): void {
-    this.add(a);
-    this.add(b);
-    const ra = this.find(a);
-    const rb = this.find(b);
-    if (ra !== rb) this.parent.set(ra, rb);
-  }
-  components(): Map<string, string[]> {
-    const g = new Map<string, string[]>();
-    for (const id of this.parent.keys()) {
-      const r = this.find(id);
-      const list = g.get(r);
-      if (list) list.push(id);
-      else g.set(r, [id]);
-    }
-    return g;
-  }
+  return [...members.values()].filter((m) => m.length >= 2).map((m) => m.sort());
 }
 
 function fnKey(f: SemanticFunctionRef): string {
@@ -121,10 +124,15 @@ function groups(components: string[][], byKey: Map<string, SemanticFunctionRef>)
  * Cluster pairs into semantic-cluster findings: a group of N copies of one function, or two files
  * with several matching functions (parallel systems).
  */
-export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: number, calibration: Calibration | null = null): FindingType[] {
+export function clusterSemanticPairs(
+  pairs: readonly SemanticPair[],
+  threshold: number,
+  calibration: Calibration | null = null,
+  /** Exact similarity of any two functions (from their vectors) for the linkage test; else unlinked = 0. */
+  similarity: ((a: SemanticFunctionRef, b: SemanticFunctionRef) => number) | null = null,
+): FindingType[] {
   if (pairs.length === 0) return [];
 
-  const uf = new UnionFind();
   const byKey = new Map<string, SemanticFunctionRef>();
   const edgeSims = new Map<string, number>(); // unordered pair of fn keys → max sim
 
@@ -134,12 +142,11 @@ export function clusterSemanticPairs(pairs: readonly SemanticPair[], threshold: 
     const kb = fnKey(p.b);
     byKey.set(ka, p.a);
     byKey.set(kb, p.b);
-    uf.union(ka, kb);
     const ek = ka < kb ? `${ka}\n${kb}` : `${kb}\n${ka}`;
     edgeSims.set(ek, Math.max(edgeSims.get(ek) ?? 0, p.similarity));
   }
 
-  const components = [...uf.components().values()].filter((m) => m.length >= 2);
+  const components = averageLinkageGroups(edgeSims, threshold, similarity ? (a, b) => similarity(byKey.get(a)!, byKey.get(b)!) : null);
   const findings: FindingType[] = [];
   for (const { members, shape } of groups(components, byKey)) {
     const fns = members.map((k) => byKey.get(k)!);

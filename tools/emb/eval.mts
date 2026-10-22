@@ -156,7 +156,7 @@ async function main(): Promise<void> {
 
   const provider = arg("provider", "onnx")!;
   const threshold = Number(arg("threshold", "0.82"));
-  const model = arg("model", provider === "onnx" ? "dustmap-same-meaning-public" : undefined);
+  const model = arg("model", provider === "onnx" ? "dustmap-same-meaning-private" : undefined);
   const t0 = Date.now();
   let scored: Scored[];
   let size = "—";

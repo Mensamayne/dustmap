@@ -7,6 +7,7 @@ import { runDecideCommand } from "./decide-cmd.js";
 import { runExportCommand } from "./export/export-cmd.js";
 import { runInitCommand } from "./init-cmd.js";
 import { runListCommand } from "./list-cmd.js";
+import { runModelList, runModelPull } from "./model-cmd.js";
 import { runRatchetCommand } from "./ratchet-cmd.js";
 import { runScanCommand } from "./scan-cmd.js";
 import { runShowCommand } from "./show-cmd.js";
@@ -51,6 +52,10 @@ async function main(argv: string[]): Promise<number> {
         return write(runExportCommand(parsed));
       case "ratchet":
         return write(runRatchetCommand(parsed));
+      case "model-pull":
+        return write(await runModelPull(parsed));
+      case "model-list":
+        return write(runModelList(parsed));
       default:
         process.stderr.write(HELP);
         return 2;

@@ -1,7 +1,7 @@
 /**
- * Embedding providers for semantic duplicate detection. Local path uses jscpd's built-in model
- * (pair detection, not raw vectors); HTTP path uses an OpenAI-compatible embeddings API; the `onnx`
- * path (a Dustmap model package in-process) lives in onnx-provider.ts.
+ * Embedding providers for semantic duplicate detection: HTTP (an OpenAI-compatible embeddings API)
+ * and a deterministic memory embedder for tests. The default `onnx` provider (a Dustmap model
+ * package in-process) lives in onnx-provider.ts.
  * Non-loopback URLs require explicit `allowRemote: true` — otherwise zero network calls.
  */
 import type { SemanticConfig } from "../config/schema.js";
@@ -163,30 +163,19 @@ function bagOfTokensVector(text: string): number[] {
   return v.map((x) => x / norm);
 }
 
-export type ProviderKind = "local" | "http" | "onnx" | "none" | "memory";
+export type ProviderKind = "http" | "onnx" | "none" | "memory";
 
-/**
- * Build an embedding provider from config. `local` uses a memory embedder for unit fixtures;
- * production local pair-finding goes through jscpd (see `jscpd-semantic.ts`). `memory` is tests-only.
- */
+/** Build an embedding provider from config: `http`, or `memory` (tests); `onnx` opens asynchronously. */
 export function createEmbeddingProvider(
   cfg: SemanticConfig,
   opts?: { fetch?: FetchLike; kind?: ProviderKind },
 ): EmbeddingProvider | null {
   const kind = opts?.kind ?? cfg.provider;
   if (kind === "none") return null;
-  if (kind === "http") {
-    return createOpenAiCompatibleProvider(cfg, opts?.fetch);
-  }
-  if (kind === "memory") {
-    return createMemoryEmbeddingProvider(cfg.model);
-  }
-  if (kind === "onnx") {
-    // Loading and verifying a model package is asynchronous — see openOnnxProvider (onnx-provider.ts).
-    throw new SemanticProviderConfigError('semantic.provider "onnx" is opened with openOnnxProvider(), not createEmbeddingProvider().');
-  }
-  // local: vector path for tests / small fixtures; jscpd semantic is preferred in the adapter.
-  return createMemoryEmbeddingProvider(`local:${cfg.model}`);
+  if (kind === "http") return createOpenAiCompatibleProvider(cfg, opts?.fetch);
+  if (kind === "memory") return createMemoryEmbeddingProvider(cfg.model);
+  // Loading and verifying a model package is asynchronous — see openOnnxProvider (onnx-provider.ts).
+  throw new SemanticProviderConfigError('semantic.provider "onnx" is opened with openOnnxProvider(), not createEmbeddingProvider().');
 }
 
 /** Assert http config before any fetch — used by tests that must prove zero requests. */

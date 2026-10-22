@@ -54,6 +54,17 @@ Po CON-01 miernik liczy AP na trzech etykietach pozytywnych (`same` + `contains`
 
 Progi (walidacja): high 0,812 / medium 0,787 / low 0,301. Cele EMB-09 na części test: spełnione. Szybkość CPU ~2,3 funkcji/s (16 wątków; model większy niż UniXcoder). Publiczna paczka nadal zablokowana (EMB-11).
 
+## Pomiar i domyślny EMB-10 (22.10.2026)
+
+Decyzja: domyślny dostawca `onnx`, model `dustmap-same-meaning-private` (lokalna paczka; publiczna nadal EMB-11). Ścieżka `jscpd --semantic` / `local` usunięta.
+
+| Sprawdzenie | Wynik |
+|-------------|-------|
+| Lab pełny | 119 ✅ · 0 ❌ · 0 🟡 (scenariusz 03 bez znaczników EMB; próg labu 0,40 do rankingu, produkt raportuje od medium ~0,79) |
+| Service-B migawka HEAD | skan 16,6 s · 8 grup semantic-duplicate |
+| Monorepo-A `dbe35aa00cd6` | 1. skan 275 s · 2. skan 11 s (cache) · 1199 semantic-duplicate (796 high / 386 medium) |
+| Próbka 30× high | ~23/30 prawdziwe kopie lub ta sama odpowiedzialność (~0,77); reszta to celowe wzorce (np. `generateMetadata`, scenariusze edge/happy). Cel ≥0,85 nieosiągnięty — wzorce nadal za często `high` |
+
 Każdy wiersz to jeden przebieg `npm run emb:eval` na zbiorze z `tools/emb/gold` (EMB-01). Od CON-01 główna liczba **AP** traktuje `same` + `contains` + `concept` jako pozytywy; `pattern` i `different` to negatywy. „Brak wyniku” = dostawca w ogóle nie połączył pary (liczone jako 0). Zbiór `test` jest odłożony — nie trenujemy ani nie stroimy na nim progów.
 
 ## Wynik bazowy (21.10.2026, EMB-01)

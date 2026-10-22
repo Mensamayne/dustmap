@@ -59,7 +59,6 @@ export {
   RemoteEmbeddingsForbiddenError,
   createOpenAiCompatibleProvider,
   cosineSimilarity,
-  runJscpdSemanticPairs,
   openOnnxProvider,
   loadModelPackage,
   resolveModelDir,
@@ -69,7 +68,14 @@ export {
   reportFloor,
   sharedPattern,
 } from "./semantic/index.js";
-export type { EmbeddingProvider, SemanticRunResult, JscpdSemanticOptions, ModelManifest, OnnxProvider, Calibration, Confidence } from "./semantic/index.js";
+export type {
+  EmbeddingProvider,
+  SemanticRunResult,
+  ModelManifest,
+  OnnxProvider,
+  Calibration,
+  Confidence,
+} from "./semantic/index.js";
 export {
   codeSignalsAdapter,
   runCodeSignals,

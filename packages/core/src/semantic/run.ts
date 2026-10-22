@@ -1,7 +1,7 @@
 /**
- * Semantic duplicate adapter — a Dustmap ONNX model package in-process (`onnx`), local jscpd
- * embeddings, or HTTP OpenAI-compatible providers. Vector/pair caches live under
- * outputDir/cache/semantic. Never sends code off-machine without allowRemote. Never writes into the
+ * Semantic duplicate adapter — a Dustmap ONNX model package in-process (`onnx`, default) or an HTTP
+ * OpenAI-compatible provider: extract functions, embed (vector cache under outputDir/cache/semantic),
+ * score every pair, group. Never sends code off-machine without allowRemote. Never writes into the
  * scanned repo source tree.
  */
 import { createHash } from "node:crypto";
@@ -17,10 +17,8 @@ import {
   type SemanticPair,
 } from "./cluster.js";
 import { extractFunctions } from "./extract.js";
-import { runJscpdSemanticPairs } from "./jscpd-semantic.js";
 import { reportFloor, type Calibration } from "./calibration.js";
 import { openOnnxProvider } from "./onnx-provider.js";
-import { hashesMatch, readPairCache, writePairCache } from "./pair-cache.js";
 import {
   assertHttpProviderAllowed,
   createEmbeddingProvider,
@@ -29,10 +27,10 @@ import {
 } from "./provider.js";
 import { openVectorCache } from "./vector-cache.js";
 
-/** Bump when pair extraction or clustering changes; also keys pairs.json (2: per-side bodies, BUG-07; 3: parser extraction, EMB-08; 4: calibrated confidence + structural patterns, EMB-09). */
-const ADAPTER_REV = "4";
+/** Bump when extraction, scoring or clustering changes (adapter cache key): 2 per-side bodies (BUG-07), 3 parser extraction (EMB-08), 4 calibrated confidence + patterns (EMB-09), 5 onnx default, jscpd path removed (EMB-10), 6 average-linkage groups (EMB-10). */
+const ADAPTER_REV = "6";
 
-/** Report threshold for providers without calibration (DUST-15 spike, jina scale). */
+/** Report threshold for providers without calibration (HTTP; DUST-15 spike value). */
 const UNCALIBRATED_THRESHOLD = 0.82;
 
 export type SemanticRunStats = {
@@ -55,10 +53,9 @@ function hashBody(body: string): string {
   return createHash("sha256").update(body, "utf8").digest("hex").slice(0, 32);
 }
 
-/** Extract floor: allow smaller fixtures while production keeps config.minTokens for jscpd. */
-function extractMinTokens(cfg: SemanticConfig, embedPath: boolean): number {
-  if (embedPath) return Math.max(8, Math.min(cfg.minTokens, 20));
-  return cfg.minTokens;
+/** Token floor for extracted functions: config.minTokens, capped so small units still count. */
+function extractMinTokens(cfg: SemanticConfig): number {
+  return Math.max(8, Math.min(cfg.minTokens, 20));
 }
 
 async function listSourceFiles(ctx: AdapterContext): Promise<string[]> {
@@ -87,65 +84,9 @@ async function loadFunctions(
 }
 
 export type RunSemanticOptions = {
-  /** Override provider (tests inject memory embedder). */
+  /** Override provider (tests inject a memory embedder). */
   provider?: EmbeddingProvider | null;
-  /** Force embed+cosine path (skip jscpd), used by fixtures/tests. */
-  forceEmbedPath?: boolean;
 };
-
-function wantsEmbedPath(ctx: AdapterContext, opts: RunSemanticOptions): boolean {
-  if (opts.provider || opts.forceEmbedPath) return true;
-  if (ctx.config.semantic.provider === "http" || ctx.config.semantic.provider === "onnx") return true;
-  const engine = (ctx.config.adapters.semantic?.options as { engine?: string } | undefined)?.engine;
-  return engine === "embed";
-}
-
-async function runViaJscpd(
-  ctx: AdapterContext,
-  cfg: SemanticConfig,
-  files: readonly string[],
-  hashes: string[],
-  cacheDir: string,
-): Promise<SemanticRunResult> {
-  const threshold = cfg.threshold ?? UNCALIBRATED_THRESHOLD;
-  const cached = readPairCache(cacheDir);
-  if (
-    cached &&
-    cached.rev === ADAPTER_REV &&
-    cached.modelId === cfg.model &&
-    cached.threshold === threshold &&
-    hashesMatch(cached.functionHashes, hashes)
-  ) {
-    return {
-      findings: clusterSemanticPairs(cached.pairs, threshold),
-      stats: { newEmbeddings: 0, functions: hashes.length, pairs: cached.pairs.length },
-    };
-  }
-
-  const rawPairs = await runJscpdSemanticPairs(ctx.repoRoot, files, {
-    model: cfg.model,
-    sameThreshold: Math.min(threshold, 0.7),
-    minTokens: cfg.minTokens,
-    minLines: 5,
-  });
-  const pairs = rawPairs.filter((p) => p.similarity >= threshold);
-  writePairCache(cacheDir, {
-    rev: ADAPTER_REV,
-    modelId: cfg.model,
-    threshold,
-    functionHashes: hashes,
-    pairs,
-  });
-  return {
-    findings: clusterSemanticPairs(pairs, threshold),
-    stats: {
-      // jscpd embeds every function on a cache miss; treat as N new embeddings.
-      newEmbeddings: hashes.length,
-      functions: hashes.length,
-      pairs: pairs.length,
-    },
-  };
-}
 
 /** `fns` were extracted once by runSemanticAnalysis with the embed-path token floor. */
 async function runViaEmbed(
@@ -163,66 +104,50 @@ async function runViaEmbed(
   vcache.flush();
 
   const pairs: SemanticPair[] = await pairsAboveThreshold(fns, vectors, threshold);
-  writePairCache(cacheDir, {
-    rev: ADAPTER_REV,
-    modelId: provider.modelId,
-    threshold,
-    functionHashes: embedItems.map((i) => i.contentHash).sort(),
-    pairs,
-  });
+  const index = new Map(fns.map((f, i) => [f, i]));
+  const norms = vectors.map((v) => Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1);
+  const similarity = (a: SemanticFunctionRef, b: SemanticFunctionRef): number => {
+    const [i, j] = [index.get(a)!, index.get(b)!];
+    const [va, vb] = [vectors[i]!, vectors[j]!];
+    let dot = 0;
+    for (let k = 0; k < va.length; k++) dot += va[k]! * vb[k]!;
+    return dot / (norms[i]! * norms[j]!);
+  };
 
   return {
-    findings: clusterSemanticPairs(pairs, threshold, calibration),
+    findings: clusterSemanticPairs(pairs, threshold, calibration, similarity),
     stats: { newEmbeddings, functions: fns.length, pairs: pairs.length },
   };
 }
 
 /**
- * Run semantic analysis for a scan context.
- * - `onnx` / `http` / injected provider / `engine: embed` → extract + embed + cosine
- * - `local` → jscpd `--semantic` + pair cache
- * - `none` → empty (unless provider injected for tests)
+ * Run semantic analysis for a scan context: `onnx` (model package) or `http` (or an injected
+ * provider) → extract + embed + every pair + groups; `none` → nothing.
  */
 export async function runSemanticAnalysis(
   ctx: AdapterContext,
   opts: RunSemanticOptions = {},
 ): Promise<SemanticRunResult> {
   const cfg = ctx.config.semantic;
-  if (cfg.provider === "none" && !opts.provider && !opts.forceEmbedPath) {
+  if (cfg.provider === "none" && !opts.provider) {
     return { findings: [], stats: { newEmbeddings: 0, functions: 0, pairs: 0 } };
   }
-
-  if (cfg.provider === "http") {
-    assertHttpProviderAllowed(cfg);
-  }
+  if (!opts.provider && cfg.provider === "http") assertHttpProviderAllowed(cfg);
 
   const files = await listSourceFiles(ctx);
   const cacheDir = semanticCacheDir(ctx);
-  const hashFloor = extractMinTokens(cfg, wantsEmbedPath(ctx, opts));
-  const fnsForHash = await loadFunctions(ctx, files, hashFloor);
-  const hashes = fnsForHash.map((f) => hashBody(f.body)).sort();
+  const fns = await loadFunctions(ctx, files, extractMinTokens(cfg));
 
-  if (wantsEmbedPath(ctx, opts)) {
-    if (!opts.provider && cfg.provider === "onnx") {
-      const onnx = await openOnnxProvider(cfg);
-      try {
-        return await runViaEmbed(cfg, fnsForHash, cacheDir, onnx, onnx.calibration);
-      } finally {
-        await onnx.release();
-      }
+  if (!opts.provider && cfg.provider === "onnx") {
+    const onnx = await openOnnxProvider(cfg);
+    try {
+      return await runViaEmbed(cfg, fns, cacheDir, onnx, onnx.calibration);
+    } finally {
+      await onnx.release();
     }
-    const provider =
-      opts.provider ??
-      createEmbeddingProvider(cfg) ??
-      createMemoryEmbeddingProvider(cfg.model);
-    return runViaEmbed(cfg, fnsForHash, cacheDir, provider);
   }
-
-  if (cfg.provider === "local") {
-    return runViaJscpd(ctx, cfg, files, hashes, cacheDir);
-  }
-
-  return { findings: [], stats: { newEmbeddings: 0, functions: 0, pairs: 0 } };
+  const provider = opts.provider ?? createEmbeddingProvider(cfg) ?? createMemoryEmbeddingProvider(cfg.model);
+  return runViaEmbed(cfg, fns, cacheDir, provider);
 }
 
 export async function runSemanticAdapter(ctx: AdapterContext): Promise<FindingType[]> {

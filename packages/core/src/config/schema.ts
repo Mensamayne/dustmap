@@ -26,19 +26,19 @@ export const AdapterConfig = z
 export type AdapterConfig = z.infer<typeof AdapterConfig>;
 
 /**
- * Semantic (embedding) duplicate detection — defaults follow the DUST-15 spike decision:
- * local jina model via jscpd, threshold 0.82, confidence medium/low only; an `onnx` model package
- * brings its own calibrated bands (EMB-09).
+ * Semantic (embedding) duplicate detection — default (EMB-10): Dustmap's own ONNX model package
+ * in-process, offline, with calibrated bands (EMB-09). Until EMB-11 publishes a public package the
+ * default id is the private one (local install only).
  */
 export const SemanticConfig = z
   .object({
     /**
-     * `local` = jscpd built-in model; `http` = OpenAI-compatible embeddings URL; `onnx` = a Dustmap
-     * model package run in-process (ONNX Runtime, no network); `none` = off.
+     * `onnx` = a Dustmap model package run in-process (ONNX Runtime, no network); `http` = an
+     * OpenAI-compatible embeddings URL; `none` = off.
      */
-    provider: z.enum(["local", "http", "onnx", "none"]).default("local"),
-    /** Embedding model id (local jscpd model name, HTTP model field, or onnx package id). */
-    model: z.string().min(1).default("jina-embeddings-v2-base-code"),
+    provider: z.enum(["onnx", "http", "none"]).default("onnx"),
+    /** Model: onnx package id (installed under modelDir), or the HTTP model field. */
+    model: z.string().min(1).default("dustmap-same-meaning-private"),
     /**
      * `onnx` only: where model packages live (`<modelDir>/<model>/manifest.json`). Default: the user
      * cache, `$DUSTMAP_MODELS_DIR` or `~/.cache/dustmap/models`. Never inside the scanned repo's source.
@@ -51,10 +51,10 @@ export const SemanticConfig = z
     device: z.enum(["auto", "gpu", "cpu"]).default("auto"),
     /**
      * Minimum cosine similarity to report. Unset: `onnx` uses the model package's calibration (its
-     * `medium` band, EMB-09 — every model has its own scale); `local` / `http` use 0.82 (DUST-15 spike).
+     * `medium` band, EMB-09 — every model has its own scale); `http` uses 0.82 (DUST-15 spike).
      */
     threshold: z.number().gt(0).lte(1).optional(),
-    /** Minimum function tokens before a function is considered (passed to jscpd / extractors). */
+    /** Minimum function tokens before a function is considered by extractors. */
     minTokens: z.number().int().positive().default(50),
     /** OpenAI-compatible embeddings base URL (e.g. http://127.0.0.1:11434/v1). Required for `http`. */
     url: z.string().url().optional(),

@@ -8,7 +8,7 @@ function fn(path: string, name: string, body: string, startLine = 1): SemanticFu
 }
 
 describe("semantic cluster", () => {
-  it("merges A≈B and B≈C into one three-function cluster", () => {
+  it("merges A≈B and B≈C into one three-function cluster when A and C are close too", () => {
     const a = fn("src/a.ts", "a", "function a(){ return 1 }");
     const b = fn("src/b.ts", "b", "function b(){ return 2 }");
     const c = fn("src/c.ts", "c", "function c(){ return 3 }");
@@ -18,6 +18,8 @@ describe("semantic cluster", () => {
         { a: b, b: c, similarity: 0.88 },
       ],
       0.82,
+      null,
+      () => 0.8,
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]?.kind).toBe("semantic-cluster");
@@ -40,6 +42,28 @@ describe("semantic cluster", () => {
     expect(parallel.evidence.find((e) => e.label === "shape")?.value).toBe("parallel files: 3 matching function pairs between 2 files");
     expect(parallel.evidence.find((e) => e.label === "similarity-min")?.value).toBe("0.860");
     expect(findings.find((f) => f.locations.length === 2)?.evidence.find((e) => e.label === "shape")?.value).toBe("copies: 2 functions");
+  });
+
+  it("one weak link does not chain two families into one group (average linkage)", () => {
+    const fam = (tag: string) => [0, 1, 2].map((k) => fn(`src/${tag}${k}.ts`, `${tag}${k}`, `function ${tag}${k}(){}`));
+    const [a, b] = [fam("loop"), fam("sum")];
+    const strong = (xs: SemanticFunctionRef[]) => [
+      { a: xs[0]!, b: xs[1]!, similarity: 0.94 },
+      { a: xs[1]!, b: xs[2]!, similarity: 0.93 },
+      { a: xs[0]!, b: xs[2]!, similarity: 0.92 },
+    ];
+    const findings = clusterSemanticPairs([...strong(a), ...strong(b), { a: a[0]!, b: b[0]!, similarity: 0.45 }], 0.4);
+    expect(findings.map((f) => f.locations.length).sort()).toEqual([3, 3]);
+  });
+
+  it("each place carries its own function; editing any member's code changes the fingerprint (BUG-07)", () => {
+    const a = fn("src/total-of.ts", "totalOf", "function totalOf(v){ let s=0; for (const x of v) s+=x; return s }");
+    const b = fn("src/fold-sum.ts", "foldSum", "function foldSum(l){ let r=0; for (const i of l) r+=i; return r }");
+    const [before] = clusterSemanticPairs([{ a, b, similarity: 0.9 }], 0.82);
+    expect(before!.locations.map((l) => [l.path, l.symbol])).toEqual([["src/fold-sum.ts", "foldSum"], ["src/total-of.ts", "totalOf"]]);
+    const edited = { ...b, body: b.body.replace("r+=i", "r+=i*1") };
+    const [after] = clusterSemanticPairs([{ a, b: edited, similarity: 0.9 }], 0.82);
+    expect(after!.fingerprint).not.toBe(before!.fingerprint);
   });
 
   it("builds pairs from vectors above threshold (vectors normalised)", async () => {

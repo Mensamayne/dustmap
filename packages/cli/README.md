@@ -65,6 +65,18 @@ Markdown for PRs/issues; SARIF 2.1.0 for GitHub code scanning. Prints to stdout 
 
 Fails with exit **1** when there are **new** findings above the configured confidence floor. `--update-baseline` records the current set from the full map (explicit only; not allowed with `--report diff`).
 
+### Duplicates by meaning
+
+Duplicates by meaning (`semantic-duplicate`) come from a small model that runs on this machine, offline: on the graphics card when there is one (DirectML on Windows, CUDA on Linux), otherwise on the CPU. The model package lives in the user's model directory (`semantic.modelDir`, `$DUSTMAP_MODELS_DIR` or `~/.cache/dustmap/models`) and is checked against the SHA-256 in its manifest before use; Dustmap never downloads it on its own. Without an installed model a scan still runs, reports the missing model under the semantic tool, and skips meaning-based duplicates.
+
+Config (`dustmap.config.json`, all optional):
+
+```json
+{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning-private", "device": "auto" } }
+```
+
+`provider`: `onnx` (default), `http` (an OpenAI-compatible embeddings URL — code leaves the machine only with `allowRemote: true`) or `none`. Until a public package is published (EMB-11), the default model id is the private one — install it under the model directory (copy from `dustmap-emb/dist/…` or `dustmap model pull` when a public URL exists). `device`: `auto` (GPU when it works, else CPU), `gpu` or `cpu`. `threshold`: unset = the model's calibrated report floor; confidence `high` / `medium` comes from the model's calibrated bands, and deliberate patterns (same registration call, same switch skeleton, same catch block…) get one level less.
+
 ## Categories
 
 | Category | Meaning |
