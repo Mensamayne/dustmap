@@ -1,5 +1,19 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-11: trening v2 vs EMB-15 (23.10.2026)
+
+Przepis: W2 z checkpointu EMB-15 (`private-w2-20261022-0107/best`), dane CON-09 (pin), wybór po **AP na prawdziwym kodzie tylko walidacja** (`apRealVal`, etykiety same+contains+concept). Miernik treningu: `gold_meter.py`.
+
+| Przebieg | train rows | best step | apRealVal | apTest (gold meter) | contains/concept AP test |
+|----------|----------:|----------:|----------:|--------------------:|--------------------------|
+| surowa W2 (abort) | 57 963 | 0 | 0,411 | 0,562 | 0,059 / 0,031 |
+| + EMB-15 init, rewrite 35% | 13 081 | 0 (=EMB-15) | 0,326 | 0,514 | 0,052 / 0,030 |
+| + EMB-15 init, **bez rewrite** | 8 503 | **200** | **0,328** | 0,490 | 0,056 / 0,029 |
+
+Douczanie na parach CON nie podnosi rankingu na złocie v2 względem startu EMB-15 (różnica apRealVal < 0,01). Contains/concept zostają ~0,05. ONNX baza CON-09 (EMB-15): AP test **0,499**.
+
+**Werdykt:** v2 **nie** jest nowym domyślnym prywatnym. Zostaje `dustmap-same-meaning-private` z EMB-15. Checkpoint eksperymentalny: `E:\dustmap-emb-data\runs\private-w2-con11-norewrite-20261023-0830\best` (bez nowej paczki ONNX — nie ma sensu publikować gorszego/równego modelu). Następny skok wymaga innego przepisu (np. strata pod contains, inne próbkowanie), nie kolejnego pełnego przebiegu tym samym BCE.
+
 ## CON-09: paczka danych + baza EMB-15 na złocie v2 (23.10.2026)
 
 Prywatny zbiór przypięty: `E:\dustmap-emb-data\data\dataset\private\pin.json` (SHA-256 plików train/validation + wejść). `py data/pin_dataset.py --verify` → OK.

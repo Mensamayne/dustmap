@@ -71,11 +71,11 @@ Kolejność pracy: CON-01 i CON-02 równolegle, potem CON-03 i CON-04, CON-10 (h
 - Żadna funkcja ani fragment z zestawu testowego nie może trafić do treningu, także jako fragment większego kawałka (bramka CON-08).
 - Bez ręcznie prowadzonych list wyjątków. Reguła, której nie da się zapisać ogólnie, nie wchodzi.
 
-## Stan (23.10.2026)
+## Wynik epiku (23.10.2026)
 
 - **Dane:** korpus CON-04…07, bramki CON-08 zielone, prywatny zbiór przypięty (`pin.json`, CON-09).
-- **Baza EMB-15 na złocie v2 (CON-09):** AP test **0,499**; same 0,467 · contains **0,051** · concept **0,030**. Słabość: contains/concept. CSS w mierniku: 102 pary poza migawką (nie w `git archive`).
-- **CON-11:** trening v2 + porównanie z EMB-15 (w toku / następny).
+- **Baza EMB-15 na złocie v2 (CON-09):** AP test **0,499**; same 0,467 · contains **0,051** · concept **0,030**. CSS: 102 pary poza migawką.
+- **CON-11:** douczanie na danych CON nie przebija EMB-15 (apRealVal ~0,33 vs start). **Domyślny prywatny = nadal EMB-15.** Epik CON (dane + pomiar + próba v2) domknięty; Skan v2 może iść na EMB-15 albo czekać na lepszy przepis treningu.
 
 ## Gotowe, gdy
 

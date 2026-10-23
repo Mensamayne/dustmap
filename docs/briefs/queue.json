@@ -1114,10 +1114,13 @@
         "CON-04"
       ],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-23T03:20:42.250Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T03:29:25.679Z",
+      "gitProofSha": "90e4fdbb536bd82d61491accd4b720f3872a9a60",
+      "closureNotes": "189 siblings to gold; concept/class/css/sibling negatives; check_labels OK"
     },
     {
       "id": "CON-08",
@@ -1132,8 +1135,13 @@
         "CON-07"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "startedAt": "2026-10-23T03:30:02.111Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T04:43:53.277Z",
+      "gitProofSha": "9b29b00ae4ed62402f8583e6c9d3bd3f024900cd",
+      "closureNotes": "Bramki etykiet/przecieku/bilansu zielone (selftesty czerwone na plantach); filtr zawierania + limity zrodel; karta CON-08"
     },
     {
       "id": "CON-09",
@@ -1146,8 +1154,13 @@
         "EMB-15"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "startedAt": "2026-10-23T04:44:21.294Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T04:54:46.117Z",
+      "gitProofSha": "d8bb4d6739f625b9bdea0c5184d2a8a88609d992",
+      "closureNotes": "Prywatny zbior przypiety pin.json; baza EMB-15 AP test 0.499 (contains/concept ~0.05); miernik per jednostka"
     },
     {
       "id": "CON-10",
@@ -1176,8 +1189,10 @@
         "CON-09"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-23T04:54:53.392Z",
+      "startedBy": "agent"
     }
   ]
 }
