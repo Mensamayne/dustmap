@@ -10,6 +10,7 @@
  */
 import { fingerprint, type FindingType } from "@dustmap/contract";
 import { confidenceFor, lowerConfidence, sharedPattern, type Calibration, type Confidence } from "./calibration.js";
+import type { PairHeadClass } from "./pair-head.js";
 import { pairsAtLeast } from "./similarity.js";
 
 export type SemanticFunctionRef = {
@@ -24,6 +25,8 @@ export type SemanticPair = {
   a: SemanticFunctionRef;
   b: SemanticFunctionRef;
   similarity: number;
+  /** When set by the PAIR head: `pattern` demotes confidence like sharedPattern. */
+  pairClass?: PairHeadClass;
 };
 
 export function cosineSimilarity(a: number[], b: number[]): number {
@@ -144,17 +147,22 @@ export function clusterSemanticPairs(
 
   const byKey = new Map<string, SemanticFunctionRef>();
   const edgeSims = new Map<string, number>(); // unordered pair of fn keys → max sim
+  const pairClassByEdge = new Map<string, PairHeadClass>();
 
   for (const p of pairs) {
     if (p.similarity < threshold) continue;
-    // Nested helper vs its outer function in the same file is not a duplicate (false high on Monorepo-A).
+    // Nested helper vs its outer function in the same file is not a duplicate (false high on large apps).
     if (isNestedSpanPair(p.a, p.b)) continue;
     const ka = fnKey(p.a);
     const kb = fnKey(p.b);
     byKey.set(ka, p.a);
     byKey.set(kb, p.b);
     const ek = ka < kb ? `${ka}\n${kb}` : `${kb}\n${ka}`;
-    edgeSims.set(ek, Math.max(edgeSims.get(ek) ?? 0, p.similarity));
+    const prev = edgeSims.get(ek) ?? 0;
+    if (p.similarity >= prev) {
+      edgeSims.set(ek, p.similarity);
+      if (p.pairClass) pairClassByEdge.set(ek, p.pairClass);
+    }
   }
 
   const components = averageLinkageGroups(edgeSims, threshold, similarity ? (a, b) => similarity(byKey.get(a)!, byKey.get(b)!) : null);
@@ -192,9 +200,15 @@ export function clusterSemanticPairs(
     }
     const patterns = linked.map(([a, b]) => sharedPattern(a.body, b.body));
     const pattern = patterns.length > 0 && patterns.every((x) => x !== null) ? patterns[0]! : null;
+    const pairHeadPattern =
+      linked.length > 0 &&
+      linked.every(([a, b]) => {
+        const key = fnKey(a) < fnKey(b) ? `${fnKey(a)}\n${fnKey(b)}` : `${fnKey(b)}\n${fnKey(a)}`;
+        return pairClassByEdge.get(key) === "pattern";
+      });
     // Parallel files already means ≥2 cross-file pairs (groups()); demote once even without a syntax pattern.
     const parallelTwins = shape === "parallel-files";
-    if (pattern || parallelTwins) confidence = lowerConfidence(confidence);
+    if (pattern || parallelTwins || pairHeadPattern) confidence = lowerConfidence(confidence);
 
     findings.push({
       fingerprint: fp,
@@ -218,6 +232,7 @@ export function clusterSemanticPairs(
         { label: "files", value: String(paths.length) },
         ...(pattern ? [{ label: "shared-pattern", value: pattern }] : []),
         ...(parallelTwins && !pattern ? [{ label: "shared-pattern", value: "parallel file twins (≥2 matched functions between two files)" }] : []),
+        ...(pairHeadPattern && !pattern ? [{ label: "shared-pattern", value: "pair-head: pattern (same skeleton, different job)" }] : []),
       ],
       confidence,
       suggestedAction: "review",

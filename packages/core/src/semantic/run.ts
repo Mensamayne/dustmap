@@ -18,7 +18,7 @@ import {
 } from "./cluster.js";
 import { extractFunctions } from "./extract.js";
 import { reportFloor, type Calibration } from "./calibration.js";
-import { openOnnxProvider } from "./onnx-provider.js";
+import { openOnnxProvider, type OnnxProvider } from "./onnx-provider.js";
 import {
   assertHttpProviderAllowed,
   createEmbeddingProvider,
@@ -27,8 +27,8 @@ import {
 } from "./provider.js";
 import { openVectorCache } from "./vector-cache.js";
 
-/** Bump when extraction, scoring or clustering changes (adapter cache key): 2 per-side bodies (BUG-07), 3 parser extraction (EMB-08), 4 calibrated confidence + patterns (EMB-09), 5 onnx default, jscpd path removed (EMB-10), 6 average-linkage groups (EMB-10). */
-const ADAPTER_REV = "6";
+/** Bump when extraction, scoring or clustering changes (adapter cache key): 2 per-side bodies (BUG-07), 3 parser extraction (EMB-08), 4 calibrated confidence + patterns (EMB-09), 5 onnx default, jscpd path removed (EMB-10), 6 average-linkage groups (EMB-10), 7 PAIR pair-head filter. */
+const ADAPTER_REV = "7";
 
 /** Report threshold for providers without calibration (HTTP; DUST-15 spike value). */
 const UNCALIBRATED_THRESHOLD = 0.82;
@@ -95,6 +95,7 @@ async function runViaEmbed(
   cacheDir: string,
   provider: EmbeddingProvider,
   calibration: Calibration | null = null,
+  onnx: OnnxProvider | null = null,
 ): Promise<SemanticRunResult> {
   // Explicit config wins; a calibrated model reports from its own floor; anything else uses the spike value.
   const threshold = cfg.threshold ?? (calibration ? reportFloor(calibration) : null) ?? UNCALIBRATED_THRESHOLD;
@@ -103,7 +104,8 @@ async function runViaEmbed(
   const { vectors, newEmbeddings } = await vcache.embedMissing(embedItems, provider);
   vcache.flush();
 
-  const pairs: SemanticPair[] = await pairsAboveThreshold(fns, vectors, threshold);
+  // Pair head re-scores cosine candidates; keep the same floor (widening to 0.25 explodes pair count).
+  let pairs: SemanticPair[] = await pairsAboveThreshold(fns, vectors, threshold);
   const index = new Map(fns.map((f, i) => [f, i]));
   const norms = vectors.map((v) => Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1);
   const similarity = (a: SemanticFunctionRef, b: SemanticFunctionRef): number => {
@@ -113,6 +115,23 @@ async function runViaEmbed(
     for (let k = 0; k < va.length; k++) dot += va[k]! * vb[k]!;
     return dot / (norms[i]! * norms[j]!);
   };
+
+  if (onnx?.scorePair && onnx.pairHeadSameMinProb != null) {
+    const minP = onnx.pairHeadSameMinProb;
+    const scorePair = onnx.scorePair;
+    const scored: SemanticPair[] = [];
+    for (const p of pairs) {
+      const i = index.get(p.a)!;
+      const j = index.get(p.b)!;
+      const head = await scorePair(vectors[i]!, vectors[j]!);
+      if (head.predicted === "other") continue;
+      if (head.predicted === "same" && head.pSame < minP) continue;
+      // Keep pattern edges for demotion; score at least the report floor so clustering retains them.
+      const sim = head.predicted === "same" ? head.pSame : Math.max(head.pSame, threshold);
+      scored.push({ a: p.a, b: p.b, similarity: Math.max(sim, threshold), pairClass: head.predicted });
+    }
+    pairs = scored;
+  }
 
   return {
     findings: clusterSemanticPairs(pairs, threshold, calibration, similarity),
@@ -141,7 +160,7 @@ export async function runSemanticAnalysis(
   if (!opts.provider && cfg.provider === "onnx") {
     const onnx = await openOnnxProvider(cfg);
     try {
-      return await runViaEmbed(cfg, fns, cacheDir, onnx, onnx.calibration);
+      return await runViaEmbed(cfg, fns, cacheDir, onnx, onnx.calibration, onnx);
     } finally {
       await onnx.release();
     }
