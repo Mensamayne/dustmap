@@ -13,12 +13,12 @@ Model z epiku EMB łapie dwie funkcje z tą samą odpowiedzialnością. Maintain
 5. **Reguły CSS:** te same deklaracje pod innymi selektorami albo zapisane inaczej (skrót a pełny zapis).
 6. **Koncepcja rozłożona inaczej:** ten sam pomysł zrobiony jako jedna długa funkcja w jednym miejscu, a jako trzy pomocnicze w innym.
 
-Model uczy się wyłącznie z danych. Ten epik buduje więc **dane i miarę**: definicję z przykładami, sposób cięcia kodu na kawałki, zestaw testowy z prawdziwego kodu i duży, spójny zbiór treningowy. Trening i zmiany w raporcie Dustmapa to osobne epiki (niżej).
+Model uczy się wyłącznie z danych. Ten epik buduje **dane, miarę i model v2**: definicję z przykładami, wspólne cięcie kodu, zestaw testowy, zbiór treningowy, trening prywatnego modelu na tych danych (CON-11) oraz porównanie z modelem z EMB-15. Wpięcie nowych kształtów znalezisk do raportu Dustmapa to osobny epik (Skan v2).
 
 ## Zakres v1 i to, co później
 
-- **v1 (ten epik + następny treningowy):** znaleźć powielone koncepcje i redundancję, z dowodem: które miejsca, które linie, jak bardzo podobne, kto zawiera kogo.
-- **v2 (później, osobny epik):** ocena „czy da się scalić i ile to da”, np. „x pokrywa zachowanie y poza tymi różnicami; y ma 500 linii i 8 testów”. Tego model sensu sam nie policzy. To robi agent albo lokalny model językowy na kandydatach z v1. Dane do v2 zbieramy już tutaj tanim kosztem (CON-05: commity scalające, ile linii i testów zniknęło), ale ich nie używamy.
+- **v1 (ten epik, do CON-11 włącznie):** znaleźć powielone koncepcje i redundancję (dane + model), z dowodem: które miejsca, które linie, jak bardzo podobne, kto zawiera kogo; mieć zmierzony model v2 względem EMB-15.
+- **Później (osobny epik produktu):** ocena „czy da się scalić i ile to da”, np. „x pokrywa zachowanie y poza tymi różnicami; y ma 500 linii i 8 testów”. Tego model sensu sam nie policzy. To robi agent albo lokalny model językowy na kandydatach z v1. Dane pomocnicze zbieramy już tutaj tanim kosztem (CON-05: commity scalające, ile linii i testów zniknęło), ale ich tu nie używamy.
 - **Reguła produktu bez zmian:** znalezisko mówi *gdzie i jaki dowód*, nie *jak przerobić*. Wersja „dopisz 3 linie do x” wymagałaby decyzji maintainera o zmianie tej reguły. Poza zakresem.
 
 ## Definicja (wiążąca dla wszystkich briefów)
@@ -58,8 +58,9 @@ Funkcja, **fragment** (spójny ciąg instrukcji wewnątrz długiej funkcji, cię
 | CON-08 | Bramki: spójność etykiet, przeciek, bilans, karta danych | CON-03, CON-05, CON-06, CON-07 |
 | CON-09 | Paczka danych + pomiar bazowy obecnego modelu na zestawie v2 | CON-08, EMB-15 |
 | CON-10 | Szlifowanie i pielęgnacja zbioru wzorcowego | CON-03 |
+| CON-11 | Trening modelu v2 na nowych danych + porównanie z EMB-15 | CON-09 |
 
-Kolejność pracy: CON-01 i CON-02 równolegle, potem CON-03 i CON-04, CON-10 (higiena) może iść zaraz po CON-03; potem CON-05, CON-06 i CON-07 (niezależne), na koniec CON-08 i CON-09.
+Kolejność pracy: CON-01 i CON-02 równolegle, potem CON-03 i CON-04, CON-10 (higiena) może iść zaraz po CON-03; potem CON-05, CON-06 i CON-07 (niezależne), potem CON-08 i CON-09, na koniec **CON-11** (trening v2 i badanie względem poprzedniego modelu).
 
 ## Twarde zasady
 
@@ -72,12 +73,12 @@ Kolejność pracy: CON-01 i CON-02 równolegle, potem CON-03 i CON-04, CON-10 (h
 
 ## Gotowe, gdy
 
-- Zestaw testowy v2 mierzy każdą jednostkę i każdą etykietę osobno, a obecny model ma na nim zmierzony wynik bazowy.
+- Zestaw testowy v2 mierzy każdą jednostkę i każdą etykietę osobno, a obecny model (EMB-15) ma na nim zmierzony wynik bazowy (CON-09).
 - Zbiór treningowy pokrywa wszystkie pięć etykiet i cztery jednostki, w proporcjach zapisanych w karcie danych, z zerową liczbą sprzeczności i przecieków.
-- Następny epik (trening) może ruszyć bez zmian w danych.
+- Model v2 jest wytrenowany na tych danych i **porównany z EMB-15** na tym samym zestawie (CON-11); decyzja „nowy domyślny / jeszcze nie” jest zapisana liczbami.
+- Epik Skan v2 (produkt) może ruszyć bez pytań o dane ani o to, który model prywatny brać.
 
-## Następne epiki (poza zakresem)
+## Następne epiki (poza zakresem CON)
 
-- **Trening v2:** strata asymetryczna dla `contains`, pojedynek większych baz (~350 mln i ~1,5 mld parametrów, LoRA przy braku pamięci karty), wybór wersji po wyniku na zestawie v2.
-- **Skan v2:** w Dustmapie nowe kształty znalezisk („zawarta w”, „równoległe klasy”, „powielona reguła CSS”), szybki wstępny wybór kandydatów zamiast porównania wszystkiego ze wszystkim (fragmenty mnożą liczbę jednostek).
+- **Skan v2:** w Dustmapie nowe kształty znalezisk („zawarta w”, „równoległe klasy”, „powielona reguła CSS”), szybki wstępny wybór kandydatów zamiast porównania wszystkiego ze wszystkim (fragmenty mnożą liczbę jednostek); podpięcie modelu z CON-11.
 - **v2 produktu:** ocena scalenia (agent albo lokalny model językowy).

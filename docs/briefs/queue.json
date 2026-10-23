@@ -530,9 +530,7 @@
       ],
       "epic": "DUST",
       "status": "todo",
-      "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "kind": "feature"
     },
     {
       "id": "BUG-06",
@@ -991,8 +989,10 @@
       "brief": "docs/briefs/CON-00-overview.md",
       "gates": [],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-23T01:01:27.798Z",
+      "startedBy": "agent"
     },
     {
       "id": "CON-01",
@@ -1135,6 +1135,19 @@
       "completedAt": "2026-10-22T11:54:10.616Z",
       "gitProofSha": "c8d85fcf4c7fd92264d94055daee36ffdb33edde",
       "closureNotes": "Reguly higieny w README, check-hygiene + selftest w emb:gold, rytual w emb-results, 22 smieci wyrzucone (1441 real-refs)"
+    },
+    {
+      "id": "CON-11",
+      "title": "Trening modelu v2 i porównanie z poprzednim",
+      "layer": 6,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-11-train-v2-and-compare.md",
+      "gates": [
+        "CON-09"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
     }
   ]
 }
