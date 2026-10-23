@@ -16,6 +16,20 @@ Douczanie na parach CON nie podnosi rankingu na złocie v2 względem startu EMB-
 
 **Paczka (23.10.2026, dogrywka):** `dustmap-same-meaning-private-con11` v0.4.0-con11 — CPU int8 ~138 MB, GPU fp16 ~275 MB, `verify_package` OK, kalibracja zapisana w manifeście. Lokalnie: `~/.cache/dustmap/models/dustmap-same-meaning-private-con11` oraz `dustmap-emb/dist/…`. Checkpoint źródłowy: `runs/private-w2-con11-norewrite-20261023-0830/best`.
 
+### Monorepo-A: EMB-15 vs CON-11 (migawka `dbe35aa00cd6`)
+
+Dwa skany CLI na tej samej migawce (`dustmap scan … --commit dbe35aa…`), exit 0. Różni się tylko model semantyczny.
+
+| | EMB-15 (`dustmap-same-meaning-private`) | CON-11 (`…-private-con11`) |
+|--|--:|--:|
+| znaleziska łącznie | 11 511 | 10 609 |
+| semantic-duplicate | **1034** (high 603 · medium 407 · low 24) | **132** (high 109 · medium 23 · low 0) |
+| wspólne odciski semantic | 61 | 61 |
+| tylko ten model | 973 | 71 |
+| dead-code / duplicate / … | bez zmian (te same nie-semantyczne) | bez zmian |
+
+CON-11 ma ostrzejsze pasma kalibracji (high ≥ ~0,97), więc na produkcie zgłasza **dużo mniej** par „ten sam sens”. To nie znaczy „lepszy ranking na złocie” (tam EMB-15 nadal minimalnie wyżej) — znaczy: mniej hałasu w raporcie skanu, ale też mniej wykryć. Domyślny produkt: zostawić EMB-15, dopóki nie będzie świadomej decyzji „wolimy cichszy skan”.
+
 ## CON-09: paczka danych + baza EMB-15 na złocie v2 (23.10.2026)
 
 Prywatny zbiór przypięty: `E:\dustmap-emb-data\data\dataset\private\pin.json` (SHA-256 plików train/validation + wejść). `py data/pin_dataset.py --verify` → OK.
