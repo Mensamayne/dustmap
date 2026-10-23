@@ -73,3 +73,15 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | CON-08 | Bramki: spójność, przeciek, bilans, karta danych |
 | CON-09 | Paczka danych + pomiar bazowy obecnego modelu |
 | CON-10 | Szlifowanie i pielęgnacja zbioru wzorcowego (śmieć out, rytuał) |
+| CON-11 | Trening v2 vs EMB-15 (domknięte: EMB-15 zostaje domyślny) |
+
+**Epik PAIR — osobna decyzja na parach** (ten sam enkoder EMB-15 + mała głowa `same`/`pattern`/`other`). Overview: [PAIR-00-overview.md](PAIR-00-overview.md).
+
+| ID | Co |
+|----|----|
+| PAIR-00 | Overview: ten sam enkoder, głowa na parach |
+| PAIR-01 | Kontrakt klas + miernik na złocie v2 |
+| PAIR-02 | Trening głowy na GPU |
+| PAIR-03 | Paczka ONNX (enkoder + pairHead) |
+| PAIR-04 | Wpięcie w skan semantic |
+| PAIR-05 | Porównanie Monorepo-A + werdykt domyślnego |

@@ -529,8 +529,11 @@
         "BUG-05"
       ],
       "epic": "DUST",
-      "status": "todo",
-      "kind": "feature"
+      "status": "blocked",
+      "kind": "feature",
+      "startedAt": "2026-10-23T13:37:07.639Z",
+      "startedBy": "agent",
+      "closureNotes": "2026-10-23: scripted 8/8 OK; live precheck stop — claude auth loggedIn:false, ANTHROPIC_API_KEY unset. Po claude auth login (albo klucz) wznowić agent-eval:live i domknąć tabelę T01–T08 + briefy na usterki."
     },
     {
       "id": "BUG-06",
@@ -1196,6 +1199,72 @@
       "completedAt": "2026-10-23T06:42:32.962Z",
       "gitProofSha": "2df461dbc8db8c5e7ce313f53c9ceb8383896388",
       "closureNotes": "Trening na danych CON nie bije EMB-15 (apRealVal ~0.33); domyslny prywatny bez zmian"
+    },
+    {
+      "id": "PAIR-00",
+      "title": "Overview: osobna decyzja na parach (ten sam enkoder)",
+      "layer": 0,
+      "segment": "semantic",
+      "brief": "docs/briefs/PAIR-00-overview.md",
+      "gates": [],
+      "epic": "PAIR",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "PAIR-01",
+      "title": "Kontrakt głowy + miernik na złocie v2",
+      "layer": 1,
+      "segment": "semantic",
+      "brief": "docs/briefs/PAIR-01-meter.md",
+      "gates": ["PAIR-00"],
+      "epic": "PAIR",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "PAIR-02",
+      "title": "Trening głowy na GPU",
+      "layer": 2,
+      "segment": "semantic",
+      "brief": "docs/briefs/PAIR-02-train.md",
+      "gates": ["PAIR-01"],
+      "epic": "PAIR",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "PAIR-03",
+      "title": "Paczka ONNX z pairHead",
+      "layer": 3,
+      "segment": "semantic",
+      "brief": "docs/briefs/PAIR-03-package.md",
+      "gates": ["PAIR-02"],
+      "epic": "PAIR",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "PAIR-04",
+      "title": "Wpięcie głowy w skan semantic",
+      "layer": 4,
+      "segment": "semantic",
+      "brief": "docs/briefs/PAIR-04-product.md",
+      "gates": ["PAIR-03"],
+      "epic": "PAIR",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "PAIR-05",
+      "title": "Porównanie Monorepo-A EMB-15 vs PAIR + werdykt",
+      "layer": 5,
+      "segment": "semantic",
+      "brief": "docs/briefs/PAIR-05-compare.md",
+      "gates": ["PAIR-04"],
+      "epic": "PAIR",
+      "status": "todo",
+      "kind": "feature"
     }
   ]
 }
