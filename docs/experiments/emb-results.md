@@ -1,5 +1,18 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-04: korpus otwartych klonów (23.10.2026)
+
+Na `E:\dustmap-emb-data` leży **47** otwartych repo TS/JS/CSS (MIT / Apache-2.0 / BSD-3-Clause), każde z przypiętym tipem i licencją odczytaną z dysku (`data/fetch-open-clones.mjs`, rejestr `clone-registry.jsonl`). Pominięte: `date-fns` (monorepo root bez pliku LICENSE / pola licence). Kryteria: wolna licencja, historia gita (min. 1388 commitów, mediana 6985), mieszanka aplikacji z CSS, bibliotek i CLI.
+
+Cięcie wyłącznie przez wspólne jednostki Dustmapa (CON-02). Raport `corpus-report.json`:
+
+| Widoczność | Jednostki | funkcja | fragment | klasa | CSS | Funkcji (legacy JSONL) |
+|------------|----------:|--------:|---------:|------:|----:|-----------------------:|
+| publiczne (npm + 47 klonów) | 227 933 | 144 702 | 52 554 | 17 442 | 13 235 | 144 702 |
+| prywatne (cele + poligon) | 59 937 | 32 634 | 18 308 | 805 | 8 190 | 32 634 |
+
+Pliki: `units-{public,private}.jsonl`, `functions-{public,private}.jsonl`. Karta: `dustmap-emb/DATA-CARD.md`. Komenda: `node dustmap-emb/data/corpus.mjs` (tsx z dustmapa).
+
 ## CON-03 goal (22.10.2026)
 
 Cel zestawu testowego v2: **≥ 1200 kandydatów** → **≥ 800** ocenionych par z prawdziwego kodu. Kwoty docelowe po ocenie: 150 `contains`, 100 `concept`, 120 par klas, 100 CSS, 150 `pattern`. Skrypt: `tools/emb/gold/real-candidates.mts` → `.tmp/con03/candidates.json`. CSS: `git archive` pomija `.css`/`.scss`; dobrane z żywego Monorepo-A przez `git show` na tym samym SHA (`tools/emb/gold/add-css-candidates.mts`) — **180** par `css-css`, łącznie **1390** kandydatów.
