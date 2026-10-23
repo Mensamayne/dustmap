@@ -15,10 +15,12 @@ export {
   clusterSemanticPairs,
   pairsAboveThreshold,
   cosineSimilarity,
+  isNestedSpanPair,
   type SemanticPair,
   type SemanticFunctionRef,
 } from "./cluster.js";
-export { extractFunctions, type ExtractedFunction } from "./extract.js";
+export { extractFunctions, stripComments, type ExtractedFunction } from "./extract.js";
+export { extractUnits, fragmentWindows, type CodeUnit, type ExtractUnitsOptions, type UnitKind, type UnitMemberRef } from "./units.js";
 export { confidenceFor, lowerConfidence, reportFloor, sharedPattern, type Calibration, type Confidence } from "./calibration.js";
 
 export {

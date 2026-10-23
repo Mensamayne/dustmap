@@ -5,7 +5,8 @@
  * Pairs come from every function pair (similarity.ts, exact). Confidence: from the model's calibrated
  * bands (calibration.ts) when it has them, else ≥0.85 medium / low (DUST-15 spike, uncalibrated
  * models). A group whose every link is a deliberate pattern (calibration.ts sharedPattern) gets one
- * level less and the pattern as evidence.
+ * level less and the pattern as evidence. Parallel-file groups (≥2 matched function pairs between
+ * the same two files) also drop one level: twin scenario/scaffold files, not a single copied helper.
  */
 import { fingerprint, type FindingType } from "@dustmap/contract";
 import { confidenceFor, lowerConfidence, sharedPattern, type Calibration, type Confidence } from "./calibration.js";
@@ -96,6 +97,14 @@ function fnKey(f: SemanticFunctionRef): string {
   return `${f.path}\0${f.name}\0${f.startLine}\0${f.endLine}`;
 }
 
+/** True when both are in the same file and one span is strictly inside the other (nested helper vs outer). */
+export function isNestedSpanPair(a: SemanticFunctionRef, b: SemanticFunctionRef): boolean {
+  if (a.path !== b.path) return false;
+  const aInB = a.startLine > b.startLine && a.endLine < b.endLine;
+  const bInA = b.startLine > a.startLine && b.endLine < a.endLine;
+  return aInB || bInA;
+}
+
 type Group = { members: string[]; shape: "copies" | "parallel-files" };
 
 /** Components of linked functions; two-function components between the same two files merge into one. */
@@ -138,6 +147,8 @@ export function clusterSemanticPairs(
 
   for (const p of pairs) {
     if (p.similarity < threshold) continue;
+    // Nested helper vs its outer function in the same file is not a duplicate (false high on Monorepo-A).
+    if (isNestedSpanPair(p.a, p.b)) continue;
     const ka = fnKey(p.a);
     const kb = fnKey(p.b);
     byKey.set(ka, p.a);
@@ -181,7 +192,9 @@ export function clusterSemanticPairs(
     }
     const patterns = linked.map(([a, b]) => sharedPattern(a.body, b.body));
     const pattern = patterns.length > 0 && patterns.every((x) => x !== null) ? patterns[0]! : null;
-    if (pattern) confidence = lowerConfidence(confidence);
+    // Parallel files already means ≥2 cross-file pairs (groups()); demote once even without a syntax pattern.
+    const parallelTwins = shape === "parallel-files";
+    if (pattern || parallelTwins) confidence = lowerConfidence(confidence);
 
     findings.push({
       fingerprint: fp,
@@ -204,6 +217,7 @@ export function clusterSemanticPairs(
         { label: "names", value: names.join(", ") },
         { label: "files", value: String(paths.length) },
         ...(pattern ? [{ label: "shared-pattern", value: pattern }] : []),
+        ...(parallelTwins && !pattern ? [{ label: "shared-pattern", value: "parallel file twins (≥2 matched functions between two files)" }] : []),
       ],
       confidence,
       suggestedAction: "review",

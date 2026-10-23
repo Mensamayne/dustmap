@@ -28,6 +28,15 @@ describe("semantic cluster", () => {
     expect(findings[0]?.evidence.find((e) => e.label === "shape")?.value).toBe("copies: 3 functions");
   });
 
+  it("does not link a nested helper to its outer function in the same file", () => {
+    const outer = fn("src/x.ts", "outer", "function outer(){ function inner(){} }", 1);
+    outer.endLine = 20;
+    const inner = fn("src/x.ts", "inner", "function inner(){}", 5);
+    inner.endLine = 10;
+    const findings = clusterSemanticPairs([{ a: outer, b: inner, similarity: 0.95 }], 0.82);
+    expect(findings).toHaveLength(0);
+  });
+
   it("several separate pairs between the same two files are one finding: two parallel systems", () => {
     const pairs = ["load", "save", "remove"].map((n, k) => ({
       a: fn("src/store-a.ts", `${n}A`, `function ${n}A(){}`, k * 20 + 1),
@@ -41,6 +50,9 @@ describe("semantic cluster", () => {
     expect(new Set(parallel.locations.map((l) => l.path))).toEqual(new Set(["src/store-a.ts", "src/store-b.ts"]));
     expect(parallel.evidence.find((e) => e.label === "shape")?.value).toBe("parallel files: 3 matching function pairs between 2 files");
     expect(parallel.evidence.find((e) => e.label === "similarity-min")?.value).toBe("0.860");
+    // Parallel twins drop one confidence band (high→medium with cal; here uncalibrated max 0.90 → medium, then → low).
+    expect(parallel.confidence).toBe("low");
+    expect(parallel.evidence.find((e) => e.label === "shared-pattern")?.value).toMatch(/parallel file twins/);
     expect(findings.find((f) => f.locations.length === 2)?.evidence.find((e) => e.label === "shape")?.value).toBe("copies: 2 functions");
   });
 

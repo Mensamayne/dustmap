@@ -16,6 +16,20 @@ Pierwszy przegląd po CON-03 + siostrach EMB-10: wyrzucone **22** pary (3 `conta
 
 Wyrzucone id (dziennik): `bb49953ae5`, `ef97440f2e` (`.claude/skills`); `59c1e39360`, `8cdaa1f350`, `3f4d906892`, `20c8f136c9`, `255f8a7945`, `cf8ab2e1e8`, `cbf0e04e51`, `6cad81f427`, `b984493e6b`, `2807c18f23`, `54cff7e277` (trywialne lokale); `b3b67dbf32`, `a74306944b`, `babea0ec2a`, `4e7b880313`, `70583b8e69`, `d6f8143a1d`, `b6815ce930`, `10ed04fe5a`, `eaf24130ef` (backup / storyboard). Prefiks id: `real:monorepo-a:`.
 
+### Przegląd sztuka po sztuce (zamknięty, 22.10.2026)
+
+Pełny przejazd golda: każda para w `real-refs.jsonl` ma werdykt w `.tmp/gold-review/progress.json` (`keep` / `drop` / `relabel`). Batche short → concept → contains → CSS → EMB-10 → random.
+
+| | |
+|--|--:|
+| przejrzane (klucze dziennika) | 1441 |
+| wyrzucone w tej fali | ~158 |
+| przeetykietowane | ~153 |
+| zostaje w `real-refs` | **1287** |
+| nieprzejrzane | **0** |
+
+Po zamknięciu: `npm run emb:gold` → hygiene OK. Histogram etykiet w prywatnym zbiorze po przeglądzie: same 278 · contains 58 · pattern 357 · concept 57 · different 537.
+
 ### CON-03 zestaw v2 zamknięty (22.10.2026)
 
 **1349** prywatnych par w `real-refs.jsonl` przed wpięciem siostr (241 CON-01 + 1108 nowych). Kandydaci: 1390 (w tym 180 CSS z `git show`). Podział `validation`/`test` po haśle **pliku** (`file-split.mjs`); selftest łapie przeciek. Druga niezależna ocena: zgodność **75,5%**, kappa **0,67**; wszystkie **332** rozbieżności rozstrzygnięte (główny oceniający, powód w `why`).

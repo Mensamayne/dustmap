@@ -23,18 +23,22 @@
   "dependencies": {
     "@dustmap/contract": "*",
     "@huggingface/tokenizers": "0.2.0",
+    "css-tree": "^3.2.1",
     "dependency-cruiser": "^18.6.0",
     "falsegreen-js": "^0.7.0",
     "jscpd": "^5.4.1",
     "knip": "^6.16.0",
     "minimatch": "^10.0.1",
     "onnxruntime-node": "1.30.0",
+    "postcss": "^8.5.31",
+    "postcss-scss": "^4.0.9",
     "typescript": "^5.8.2",
     "yaml": "^2.9.1",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "vitest": "^3.0.9"
+    "vitest": "^3.0.9",
+    "@types/css-tree": "^3.2.0"
   },
   "engines": {
     "node": ">=20"

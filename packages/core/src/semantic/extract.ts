@@ -20,7 +20,7 @@ export type ExtractedFunction = {
 
 const SOURCE = /\.(?:[cm]?[jt]s|[jt]sx)$/i;
 
-function scriptKind(file: string): ts.ScriptKind {
+export function scriptKindOf(file: string): ts.ScriptKind {
   if (/\.tsx$/i.test(file)) return ts.ScriptKind.TSX;
   if (/\.jsx$/i.test(file)) return ts.ScriptKind.JSX;
   if (/\.[cm]?js$/i.test(file)) return ts.ScriptKind.JS;
@@ -62,7 +62,7 @@ function className(node: ts.Node, sf: ts.SourceFile): string | null {
 }
 
 /** Name of a function-like node from its declaration, or null when it is anonymous (callbacks). */
-function unitName(node: ts.Node, sf: ts.SourceFile): string | null {
+export function functionUnitName(node: ts.Node, sf: ts.SourceFile): string | null {
   if (ts.isFunctionDeclaration(node)) return node.name?.text ?? (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Default ? "default" : null);
   if (ts.isMethodDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)) {
     const own = propertyName(node.name, sf);
@@ -88,7 +88,7 @@ function unitName(node: ts.Node, sf: ts.SourceFile): string | null {
   return null;
 }
 
-function isFunctionLike(node: ts.Node): node is ts.FunctionLikeDeclaration {
+export function isFunctionLike(node: ts.Node): node is ts.FunctionLikeDeclaration {
   return (
     ts.isFunctionDeclaration(node) ||
     ts.isMethodDeclaration(node) ||
@@ -100,24 +100,28 @@ function isFunctionLike(node: ts.Node): node is ts.FunctionLikeDeclaration {
   );
 }
 
+export function functionAnchor(node: ts.FunctionLikeDeclaration): ts.Node {
+  const p = node.parent;
+  if ((ts.isArrowFunction(node) || ts.isFunctionExpression(node)) && (ts.isVariableDeclaration(p) || ts.isPropertyAssignment(p) || ts.isPropertyDeclaration(p))) {
+    if (ts.isVariableDeclaration(p) && ts.isVariableDeclarationList(p.parent) && p.parent.declarations.length === 1 && ts.isVariableStatement(p.parent.parent)) {
+      return p.parent.parent;
+    }
+    return p;
+  }
+  return node;
+}
+
 /** Extract functions from one file. `minTokens` is a whitespace-token floor (as before). */
 export function extractFunctions(path: string, source: string, minTokens: number): ExtractedFunction[] {
   if (!SOURCE.test(path)) return [];
-  const kind = scriptKind(path);
+  const kind = scriptKindOf(path);
   const sf = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, kind);
   const out: ExtractedFunction[] = [];
   const visit = (node: ts.Node): void => {
     if (isFunctionLike(node) && node.body) {
-      const name = unitName(node, sf);
+      const name = functionUnitName(node, sf);
       if (name) {
-        // A bound arrow / function expression starts at its binding (`const f = …`), like the source reads.
-        const p = node.parent;
-        const anchor =
-          (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) && (ts.isVariableDeclaration(p) || ts.isPropertyAssignment(p) || ts.isPropertyDeclaration(p))
-            ? ts.isVariableDeclaration(p) && ts.isVariableDeclarationList(p.parent) && p.parent.declarations.length === 1 && ts.isVariableStatement(p.parent.parent)
-              ? p.parent.parent
-              : p
-            : node;
+        const anchor = functionAnchor(node);
         const start = anchor.getStart(sf);
         const end = node.getEnd();
         const body = stripComments(source.slice(start, end), kind).trim();
