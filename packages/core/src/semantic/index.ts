@@ -22,6 +22,18 @@ export {
 export { extractFunctions, stripComments, type ExtractedFunction } from "./extract.js";
 export { extractUnits, fragmentWindows, type CodeUnit, type ExtractUnitsOptions, type UnitKind, type UnitMemberRef } from "./units.js";
 export { confidenceFor, lowerConfidence, reportFloor, sharedPattern, type Calibration, type Confidence } from "./calibration.js";
+export {
+  PAIR_HEAD_CLASSES,
+  mapGoldLabelToPairClass,
+  pairClassIndex,
+  pairFeatures,
+  cosinePairBaseline,
+  openPairHeadSession,
+  type PairHeadClass,
+  type PairHeadScores,
+  type PairHeadSession,
+  type GoldLikeLabel,
+} from "./pair-head.js";
 
 export {
   loadModelPackage,

@@ -26,7 +26,8 @@
     "agent-eval:live": "tsx tools/agent-eval/run.mjs --live",
     "emb:eval": "tsx tools/emb/eval.mts",
     "emb:gold": "node tools/emb/gold/validate.mjs",
-    "emb:calibrate": "tsx tools/emb/calibrate.mts"
+    "emb:calibrate": "tsx tools/emb/calibrate.mts",
+    "emb:pair-eval": "tsx tools/emb/pair-head-eval.mts"
   },
   "engines": {
     "node": ">=20"

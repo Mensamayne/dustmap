@@ -67,6 +67,12 @@ export {
   lowerConfidence,
   reportFloor,
   sharedPattern,
+  PAIR_HEAD_CLASSES,
+  mapGoldLabelToPairClass,
+  pairClassIndex,
+  pairFeatures,
+  cosinePairBaseline,
+  openPairHeadSession,
 } from "./semantic/index.js";
 export type {
   EmbeddingProvider,
@@ -75,6 +81,10 @@ export type {
   OnnxProvider,
   Calibration,
   Confidence,
+  PairHeadClass,
+  PairHeadScores,
+  PairHeadSession,
+  GoldLikeLabel,
 } from "./semantic/index.js";
 export {
   codeSignalsAdapter,

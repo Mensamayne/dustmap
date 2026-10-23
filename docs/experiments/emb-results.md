@@ -1,5 +1,33 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## PAIR: głowa na parach (23.10.2026)
+
+Enkoder = EMB-15 (`dustmap-same-meaning-private`). Nowa MLP 3-klasowa (`same`|`pattern`|`other`) na cechach `[a;b;|a−b|;a⊙b]`, trening **tylko GPU** (`pair_head.py`, run `pair-head-20261023-1610`). Soft etykiety → `other`. Paczka: `dustmap-same-meaning-private-pair` v0.5.0-pair.
+
+### Miernik PAIR-01 (`npm run emb:pair-eval`)
+
+| Tryb | split | accuracy | same prec | same recall | same AP |
+|------|-------|---------:|----------:|------------:|--------:|
+| cosinus (progi z val) | test | 0,461 | 0,309 | 0,957 | 0,488 |
+| **pair head** | test | **0,567** | **0,617** | 0,282 | **0,529** |
+| pair head | validation | 0,949 | — | — | — |
+| pair head | prawdziwy | 0,636 | 0,679 | 0,360 | 0,611 |
+
+Głowa **podnosi precyzję „same”** i accuracy względem cosinusa; recall `same` spada (cichszy raport). Val macro-F1 treningu ≈ 0,59 (holdout z validation; test nietknięty przy early-stop).
+
+### Monorepo-A (migawka `dbe35aa00cd6`)
+
+Skany CLI, exit 0; ten sam snapshot `monorepo-a@dbe35aa00cd6`. PAIR: `semantic+dm7` + `dustmap-same-meaning-private-pair`.
+
+| | EMB-15 | PAIR |
+|--|--:|--:|
+| znaleziska łącznie | 11 511 | 11 260 |
+| semantic-duplicate | **1034** (high 603 · medium 407 · low 24) | **783** (high **118** · medium 93 · low 572) |
+
+PAIR ucina high (603→118) i łączną liczbę semantic; część trafień spada do low (kalibracja nadal z pasm cosinusowych EMB-15 — osobna kalibracja P(same) to następny szlif).
+
+**Werdykt domyślnego:** na złocie PAIR wygrywa precyzją `same`; na Monorepo-A mniej high. **Nowy domyślny prywatny = jeszcze nie** (zostaje EMB-15), dopóki nie ma kalibracji pasm pod P(same) i dogfood. Paczka PAIR gotowa do świadomego `semantic.model: dustmap-same-meaning-private-pair`.
+
 ## CON-11: trening v2 vs EMB-15 (23.10.2026)
 
 Przepis: W2 z checkpointu EMB-15 (`private-w2-20261022-0107/best`), dane CON-09 (pin), wybór po **AP na prawdziwym kodzie tylko walidacja** (`apRealVal`, etykiety same+contains+concept). Miernik treningu: `gold_meter.py`.
