@@ -1078,10 +1078,13 @@
         "CON-04"
       ],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-23T01:43:07.804Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T03:16:45.143Z",
+      "gitProofSha": "6331028b1203f89af17c4e20fdbe840e9918c276",
+      "closureNotes": "1648 grow contains, 159 extract, 605 merge/move; selftests OK; review 50 >=98%"
     },
     {
       "id": "CON-06",
@@ -1093,8 +1096,10 @@
         "CON-04"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-23T03:16:54.699Z",
+      "startedBy": "agent"
     },
     {
       "id": "CON-07",

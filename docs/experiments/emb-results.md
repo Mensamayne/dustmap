@@ -1,5 +1,9 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-06: pary generowane (23.10.2026)
+
+Kontrolowane operacje na jednostkach korpusu (AST, bez LLM w tej iteracji — brak wag codegen w cache; `llm.mjs` + rejestr propozycji Qwen2.5-Coder-1.5B). **464** par po `verify` (expand/contains, decompose/concept, css-equiv/same, pattern-trap). Limit ≤ 2 warianty / jednostka; udział generowanych ≤ 40% pozytywów (dataset.json). Selftest verify OK.
+
 ## CON-05: pary z historii (23.10.2026)
 
 Wydobywacze na prywatnych celach (Monorepo-A + poligon): wzrost funkcji/klas → `contains` (**1648**), wydzielenie helpera (**159**), przeniesienie / scalenie (**605**, w tym 247 `moved` i 358 `merge` z etykietą `same`|`concept`). Progi: `dustmap-emb/data/history/thresholds.mjs`. Selftesty na sztucznym repo: OK. Przegląd 50 losowych: grow 98%, extract/merge 100%. Metadane v2 merge poza treningiem. Otwarte klony: opcjonalnie `--limit-public` (partial clone spowalnia `cat-file`).
