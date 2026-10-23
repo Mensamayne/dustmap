@@ -1,5 +1,18 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-09: paczka danych + baza EMB-15 na złocie v2 (23.10.2026)
+
+Prywatny zbiór przypięty: `E:\dustmap-emb-data\data\dataset\private\pin.json` (SHA-256 plików train/validation + wejść). `py data/pin_dataset.py --verify` → OK.
+
+Miernik: `npx tsx tools/emb/eval.mts --provider onnx --model dustmap-same-meaning-private --device cpu --calibrated` (EMB-15). Złoto v2: 1539 par (1397 prywatnych); **102 pary CSS** nie ładują się z migawki `monorepo-a@dbe35aa00cd6` (pliki poza `git archive` — osobna higiena).
+
+| Zbiór | Par | AP | same / contains / concept (AP) | function / fragment / class / mixed (AP) | Precyzja high / ≥medium | Wykrywalność ≥medium |
+|-------|----:|---:|---|---|---|---|
+| test | 1258 | **0,499** | 0,467 / 0,051 / 0,030 | 0,469 / 0,759 / 0,748 / 0,504 | 0,386 / 0,393 | 0,392 |
+| prawdziwy | 1374 | 0,466 | 0,451 / 0,049 / 0,027 | 0,435 / 0,740 / 0,737 / 0,508 | 0,323 / 0,340 | 0,440 |
+
+**Wniosek.** Na nowym złocie model z EMB-15 traci ranking: AP test ~0,50 (wcześniej ~0,74 na starym, węższym teście). Najsłabsze etykiety: **contains** i **concept** (AP ~0,05). Jednostki fragment/klasa wyglądają lepiej w AP niż funkcje, ale to często łatwiejsze pary `same`. Cele EMB-09 na teście: nie spełnione. CON-11 ma podnieść contains/concept i utrzymać same.
+
 ## CON-08: bramki zbioru (23.10.2026)
 
 Selftesty: `check_labels` / `check_leakage` (w tym zawieranie) / `check_balance` — czerwone na podłożonych błędach. Budowa filtruje przeciek fragmentów ze zbioru testowego i ucina źródła > 50% (synthetic zwolniony). Po przebudowie: etykiety OK, przeciek 0, bilans OK. Karta: `dustmap-emb/DATA-CARD.md` § CON-08.
@@ -404,3 +417,9 @@ Reguły projektowałem wyłącznie na części walidacyjnej. Rozpoznają 8 z 13 
 | 2026-10-22 | onnx · dustmap-same-meaning-private | test | 232 | 0.743 | 0.818 | 0.212 | 0.948 | 0.507 (F1 0.70) | 0 | 0.61 / 0.43 / 0.24 | 143 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |
 | 2026-10-22 | onnx · dustmap-same-meaning-private | prawdziwy | 241 | 0.771 | 0.871 | 0.333 | 0.943 | 0.506 (F1 0.72) | 0 | 0.75 / 0.53 / 0.28 | 143 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |
 | 2026-10-22 | onnx · dustmap-same-meaning-private | całość | 406 | 0.715 | 0.857 | 0.205 | 0.960 | 0.388 (F1 0.69) | 0 | 0.62 / 0.45 / 0.25 | 143 s | 132 MB | EMB-15 W2 CodeRankEmbed private ONNX int8, po kalibracji; wariant cpu |
+| 2026-10-23 | onnx · dustmap-same-meaning-private | test | 1258 | 0.499 | 0.419 | 0.325 | 0.788 | 0.412 (F1 0.56) | 0 | 0.74 / 0.63 / 0.35 | 18 s | 262 MB | wariant gpu; 102 par prywatnych pominiętych: kod pod odnośnikiem się zmienił lub nie ma migawki |
+| 2026-10-23 | onnx · dustmap-same-meaning-private | prawdziwy | 1374 | 0.466 | 0.353 | 0.352 | 0.755 | 0.488 (F1 0.52) | 0 | 0.78 / 0.66 / 0.39 | 18 s | 262 MB | wariant gpu; 102 par prywatnych pominiętych: kod pod odnośnikiem się zmienił lub nie ma migawki |
+| 2026-10-23 | onnx · dustmap-same-meaning-private | całość | 1539 | 0.458 | 0.358 | 0.305 | 0.777 | 0.412 (F1 0.53) | 0 | 0.72 / 0.63 / 0.37 | 18 s | 262 MB | wariant gpu; 102 par prywatnych pominiętych: kod pod odnośnikiem się zmienił lub nie ma migawki |
+| 2026-10-23 | onnx · dustmap-same-meaning-private | test | 1258 | 0.499 | 0.414 | 0.325 | 0.785 | 0.388 (F1 0.56) | 0 | 0.74 / 0.63 / 0.35 | 362 s | 132 MB | CON-09 baseline EMB-15 on gold v2; wariant cpu; 102 par prywatnych pominiętych: kod pod odnośnikiem się zmienił lub nie ma migawki |
+| 2026-10-23 | onnx · dustmap-same-meaning-private | prawdziwy | 1374 | 0.466 | 0.353 | 0.352 | 0.757 | 0.489 (F1 0.52) | 0 | 0.78 / 0.66 / 0.39 | 362 s | 132 MB | CON-09 baseline EMB-15 on gold v2; wariant cpu; 102 par prywatnych pominiętych: kod pod odnośnikiem się zmienił lub nie ma migawki |
+| 2026-10-23 | onnx · dustmap-same-meaning-private | całość | 1539 | 0.459 | 0.358 | 0.305 | 0.779 | 0.397 (F1 0.54) | 0 | 0.73 / 0.63 / 0.38 | 362 s | 132 MB | CON-09 baseline EMB-15 on gold v2; wariant cpu; 102 par prywatnych pominiętych: kod pod odnośnikiem się zmienił lub nie ma migawki |

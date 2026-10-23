@@ -1,15 +1,17 @@
 /**
- * Metrics for the EMB meter, pure functions over scored pairs {score, label}. `same` is the positive
- * class; `pattern` and `different` are negatives. A missing score (provider produced no link) counts
- * as 0 — "not reported" is exactly what a user would see.
+ * Metrics for the EMB/CON meter, pure functions over scored pairs {score, label}. Positives are
+ * `same` + `contains` + `concept` (CON-01); `pattern` and `different` are negatives. A missing score
+ * (provider produced no link) counts as 0 — "not reported" is exactly what a user would see.
  */
 
 const scoreOf = (p) => (typeof p.score === "number" && Number.isFinite(p.score) ? p.score : 0);
-const positive = (p) => p.label === "same";
+const POSITIVE_LABELS = new Set(["same", "contains", "concept"]);
+const positive = (p) => POSITIVE_LABELS.has(p.label);
 
-/** Average precision of ranking pairs by score (higher = more likely `same`). Ties keep input order. */
-export function averagePrecision(pairs) {
-  const ranked = pairs.map((p, i) => ({ s: scoreOf(p), pos: positive(p), i })).sort((a, b) => b.s - a.s || a.i - b.i);
+/** Average precision of ranking pairs by score (higher = more likely positive). Ties keep input order. */
+export function averagePrecision(pairs, { positiveLabel = null } = {}) {
+  const isPos = positiveLabel ? (p) => p.label === positiveLabel : positive;
+  const ranked = pairs.map((p, i) => ({ s: scoreOf(p), pos: isPos(p), i })).sort((a, b) => b.s - a.s || a.i - b.i);
   const totalPos = ranked.filter((r) => r.pos).length;
   if (totalPos === 0) return 0;
   let hits = 0;
@@ -21,6 +23,15 @@ export function averagePrecision(pairs) {
     }
   });
   return sum / totalPos;
+}
+
+/** AP treating each positive label alone as the positive class (rest negative), for CON-01 reporting. */
+export function averagePrecisionByPositiveLabel(pairs) {
+  const out = {};
+  for (const label of ["same", "contains", "concept"]) {
+    out[label] = pairs.some((p) => p.label === label) ? averagePrecision(pairs, { positiveLabel: label }) : null;
+  }
+  return out;
 }
 
 /** Precision / recall of "report when score ≥ t", and how many `pattern` pairs stay below t. */
@@ -79,21 +90,37 @@ export function recallAtPrecision(pairs, minPrecision) {
 
 export function meanByLabel(pairs) {
   const out = {};
-  for (const label of ["same", "pattern", "different"]) {
+  for (const label of ["same", "contains", "concept", "pattern", "different"]) {
     const xs = pairs.filter((p) => p.label === label).map(scoreOf);
     out[label] = xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
   }
   return out;
 }
 
-export function summarize(pairs, threshold) {
+function summarizeCore(pairs, threshold) {
   return {
     pairs: pairs.length,
     positives: pairs.filter(positive).length,
     noScore: pairs.filter((p) => typeof p.score !== "number").length,
     ap: averagePrecision(pairs),
+    apByLabel: averagePrecisionByPositiveLabel(pairs),
     at: atThreshold(pairs, threshold),
     best: bestF1(pairs),
     mean: meanByLabel(pairs),
   };
+}
+
+/** AP / threshold metrics sliced by CON unit (`function` | `fragment` | `class` | `css` | `mixed`). */
+export function summarizeByUnit(pairs, threshold) {
+  const units = ["function", "fragment", "class", "css", "mixed"];
+  const out = {};
+  for (const unit of units) {
+    const slice = pairs.filter((p) => (p.unit ?? "function") === unit);
+    out[unit] = slice.length ? summarizeCore(slice, threshold) : null;
+  }
+  return out;
+}
+
+export function summarize(pairs, threshold) {
+  return { ...summarizeCore(pairs, threshold), byUnit: summarizeByUnit(pairs, threshold) };
 }

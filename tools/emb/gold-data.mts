@@ -10,7 +10,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export type GoldLabel = "same" | "contains" | "concept" | "pattern" | "different";
-export type Side = { name: string; code: string };
+/** CON unit bucket for meter breakdowns (function / fragment / class / css). */
+export type UnitKind = "function" | "fragment" | "class" | "css" | "mixed";
+export type Side = { name: string; code: string; kind?: string };
 export type GoldPair = {
   id: string;
   label: GoldLabel;
@@ -20,6 +22,8 @@ export type GoldPair = {
   b: Side;
   /** Required when label is `contains`: which side is the expanded / containing one. */
   larger?: "a" | "b";
+  /** Pair unit for CON-09+ reporting; derived from side kinds when present. */
+  unit?: UnitKind;
 };
 export type Scored = GoldPair & { score: number | null };
 type PrivateRef = { repo: string; sha: string; path: string; startLine: number; endLine: number; name: string; kind: string; sha256: string };
@@ -40,7 +44,23 @@ export const REAL_SOURCE_PREFIXES = [
   "CON-01 relabel",
   "CON-03 real",
   "EMB-10 same-file siblings",
+  "CON-07 sibling label",
 ] as const;
+
+/** Map extractor / ref `kind` onto the four CON training units. */
+export function unitBucket(kind: string | undefined): Exclude<UnitKind, "mixed"> {
+  if (!kind) return "function";
+  if (kind === "css-rule" || kind === "css") return "css";
+  if (kind === "fragment") return "fragment";
+  if (kind === "class" || kind === "class-member" || kind === "object" || kind === "object-property") return "class";
+  return "function";
+}
+
+export function pairUnit(aKind: string | undefined, bKind: string | undefined): UnitKind {
+  const a = unitBucket(aKind);
+  const b = unitBucket(bKind);
+  return a === b ? a : "mixed";
+}
 
 /** @deprecated prefer isRealSource — kept for call sites that listed exact strings */
 export const REAL_SOURCES = new Set<string>(REAL_SOURCE_PREFIXES);
@@ -66,7 +86,7 @@ export function loadPrivate(): { pairs: GoldPair[]; note: string } {
     // Class members and object properties are not valid on their own; wrap them for parsers.
     const code =
       r.kind === "class-member" ? `class GoldWrapper {\n${span}\n}` : r.kind === "object-property" ? `const goldWrapper = {\n${span}\n};` : span;
-    return { name: r.name, code };
+    return { name: r.name, code, kind: r.kind };
   };
   const pairs: GoldPair[] = [];
   let drifted = 0;
@@ -74,7 +94,7 @@ export function loadPrivate(): { pairs: GoldPair[]; note: string } {
     const a = read(r.a);
     const b = read(r.b);
     if (!a || !b) drifted++;
-    else pairs.push({ ...r, a, b });
+    else pairs.push({ ...r, a, b, unit: pairUnit(r.a.kind, r.b.kind) });
   }
   const notes = [
     missing.length ? `brak migawki: ${missing.join("; ")}` : "",

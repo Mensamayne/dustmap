@@ -29,7 +29,7 @@ import {
   type Confidence,
 } from "@dustmap/core";
 import { isRealSource, goldDir, jsonl, loadPrivate, repo, type GoldPair, type Scored } from "./gold-data.mts";
-import { summarize } from "./metrics.mjs";
+import { summarize, summarizeByUnit } from "./metrics.mjs";
 
 const argv = process.argv.slice(2);
 const arg = (name: string, fallback?: string) => {
@@ -205,6 +205,11 @@ async function main(): Promise<void> {
     console.log(
       `           średnio: same ${fmt(s.mean.same)} · contains ${fmt(s.mean.contains)} · concept ${fmt(s.mean.concept)} · pattern ${fmt(s.mean.pattern)} · different ${fmt(s.mean.different)}`,
     );
+    const byUnit = s.byUnit ?? summarizeByUnit(set, threshold);
+    const unitParts = (["function", "fragment", "class", "css", "mixed"] as const)
+      .filter((u) => byUnit[u])
+      .map((u) => `${u} AP ${fmt(byUnit[u].ap)} (n=${byUnit[u].pairs})`);
+    if (unitParts.length) console.log(`           AP per jednostka: ${unitParts.join(" · ")}`);
     if (!has("no-write")) {
       appendResults(
         `| ${new Date().toLocaleDateString("sv-SE")} | ${label} | ${name} | ${s.pairs} | ${fmt(s.ap)} | ${fmt(s.at.precision)} | ${fmt(s.at.recall)} | ${fmt(s.at.patternBelow)} | ${fmt(s.best.threshold)} (F1 ${fmt(s.best.f1, 2)}) | ${s.noScore} | ${fmt(s.mean.same, 2)} / ${fmt(s.mean.pattern, 2)} / ${fmt(s.mean.different, 2)} | ${seconds.toFixed(0)} s | ${size} | ${notes} |`,
