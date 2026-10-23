@@ -1060,8 +1060,13 @@
         "CON-02"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "startedAt": "2026-10-23T01:04:56.022Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T01:42:43.636Z",
+      "gitProofSha": "b20cc441488b1fa4ce7003181c621bf05b2956bc",
+      "closureNotes": "47 open clones on E:, 227933 public units (fn/frag/class/css), registry+DATA-CARD+emb-results; date-fns skipped missing licence"
     },
     {
       "id": "CON-05",
@@ -1073,8 +1078,10 @@
         "CON-04"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-23T01:43:07.804Z",
+      "startedBy": "agent"
     },
     {
       "id": "CON-06",

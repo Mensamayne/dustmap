@@ -1,5 +1,9 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-05: pary z historii (23.10.2026)
+
+Wydobywacze na prywatnych celach (Monorepo-A + poligon): wzrost funkcji/klas → `contains` (**1648**), wydzielenie helpera (**159**), przeniesienie / scalenie (**605**, w tym 247 `moved` i 358 `merge` z etykietą `same`|`concept`). Progi: `dustmap-emb/data/history/thresholds.mjs`. Selftesty na sztucznym repo: OK. Przegląd 50 losowych: grow 98%, extract/merge 100%. Metadane v2 merge poza treningiem. Otwarte klony: opcjonalnie `--limit-public` (partial clone spowalnia `cat-file`).
+
 ## CON-04: korpus otwartych klonów (23.10.2026)
 
 Na `E:\dustmap-emb-data` leży **47** otwartych repo TS/JS/CSS (MIT / Apache-2.0 / BSD-3-Clause), każde z przypiętym tipem i licencją odczytaną z dysku (`data/fetch-open-clones.mjs`, rejestr `clone-registry.jsonl`). Pominięte: `date-fns` (monorepo root bez pliku LICENSE / pola licence). Kryteria: wolna licencja, historia gita (min. 1388 commitów, mediana 6985), mieszanka aplikacji z CSS, bibliotek i CLI.
