@@ -15,6 +15,7 @@ import { z } from "zod";
 import type { SemanticConfig } from "../config/schema.js";
 import type { Calibration } from "./calibration.js";
 import type { EmbeddingProvider } from "./provider.js";
+import { openPairHeadSession, type PairHeadScores, type PairHeadSession } from "./pair-head.js";
 import { loadOrt } from "./similarity.js";
 
 const Bands = z.object({ high: z.number().nullable(), medium: z.number().nullable(), low: z.number().nullable() });
@@ -23,6 +24,16 @@ const Variant = z.object({
   sessionConfig: z.record(z.string()).optional(),
   /** Similarity bands from tools/emb/calibrate.mts (EMB-09); absent on uncalibrated packages. */
   calibration: z.object({ bands: Bands }).passthrough().optional(),
+});
+
+/** Optional PAIR epic head: frozen encoder + small 3-class ONNX on pair features. */
+const PairHead = z.object({
+  file: z.string().min(1),
+  classes: z.tuple([z.literal("same"), z.literal("pattern"), z.literal("other")]),
+  /** Embedding dimension (features length = 4 * embeddingDim). */
+  embeddingDim: z.number().int().positive(),
+  /** Minimum P(same) to keep a pair as a report candidate (else drop). */
+  sameMinProb: z.number().min(0).max(1).default(0.35),
 });
 
 const Manifest = z.object({
@@ -44,6 +55,7 @@ const Manifest = z.object({
     })
     .passthrough(),
   files: z.record(z.object({ sha256: z.string().regex(/^[0-9a-f]{64}$/), bytes: z.number().int().nonnegative() })),
+  pairHead: PairHead.optional(),
 });
 export type ModelManifest = z.infer<typeof Manifest>;
 
@@ -84,7 +96,12 @@ export function loadModelPackage(dir: string, id: string): ModelManifest {
   if (manifest.id !== id) {
     throw new OnnxModelError("onnx_model_corrupt", `Semantic model "${id}": manifest says id "${manifest.id}".`);
   }
-  const needed = [manifest.input.tokenizer, manifest.variants.cpu.file, ...(manifest.variants.gpu ? [manifest.variants.gpu.file] : [])];
+  const needed = [
+    manifest.input.tokenizer,
+    manifest.variants.cpu.file,
+    ...(manifest.variants.gpu ? [manifest.variants.gpu.file] : []),
+    ...(manifest.pairHead ? [manifest.pairHead.file] : []),
+  ];
   for (const f of needed) {
     if (!manifest.files[f]) throw new OnnxModelError("onnx_model_corrupt", `Semantic model "${id}": ${f} is not listed in manifest.files.`);
   }
@@ -125,8 +142,12 @@ export type OnnxProvider = EmbeddingProvider & {
   readonly manifest: ModelManifest;
   /** Calibration of the variant in use, or null when the package has none. */
   readonly calibration: Calibration | null;
+  /** PAIR head when the package includes one; null = cosine-only (EMB-15 behaviour). */
+  readonly pairHead: PairHeadSession | null;
+  readonly pairHeadSameMinProb: number | null;
   /** Tokens cut by truncation across all calls (inputs longer than input.maxTokens). */
   readonly truncated: { count: number };
+  scorePair: ((a: readonly number[], b: readonly number[]) => Promise<PairHeadScores>) | null;
   release: () => Promise<void>;
 };
 
@@ -223,6 +244,18 @@ export async function openOnnxProvider(
   const calibration: Calibration | null = cal ? { bands: cal } : null;
   const dims = manifest.output.dimensions;
   const embedCalls = { count: 0 };
+  let pairHead: PairHeadSession | null = null;
+  let pairHeadSameMinProb: number | null = null;
+  if (manifest.pairHead) {
+    if (manifest.pairHead.embeddingDim !== dims) {
+      throw new OnnxModelError(
+        "onnx_model_corrupt",
+        `Semantic model "${cfg.model}": pairHead.embeddingDim ${manifest.pairHead.embeddingDim} != output.dimensions ${dims}.`,
+      );
+    }
+    pairHead = await openPairHeadSession(path.join(pkg, manifest.pairHead.file), dims, ["cpu"]);
+    pairHeadSameMinProb = manifest.pairHead.sameMinProb;
+  }
   return {
     modelId: `${manifest.id}@${manifest.version}:${variant}`,
     embedCalls,
@@ -230,7 +263,10 @@ export async function openOnnxProvider(
     gpuFallbackReason,
     manifest,
     calibration,
+    pairHead,
+    pairHeadSameMinProb,
     truncated,
+    scorePair: pairHead ? (a, b) => pairHead!.score(a, b) : null,
     async embed(texts: readonly string[]) {
       if (texts.length === 0) return [];
       embedCalls.count += 1;
@@ -261,7 +297,10 @@ export async function openOnnxProvider(
       }
       return out;
     },
-    release: () => active.release(),
+    release: async () => {
+      await pairHead?.release();
+      await active.release();
+    },
   };
 }
 
