@@ -1189,10 +1189,13 @@
         "CON-09"
       ],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-23T04:54:53.392Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T06:42:32.962Z",
+      "gitProofSha": "2df461dbc8db8c5e7ce313f53c9ceb8383896388",
+      "closureNotes": "Trening na danych CON nie bije EMB-15 (apRealVal ~0.33); domyslny prywatny bez zmian"
     }
   ]
 }
