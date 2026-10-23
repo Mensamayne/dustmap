@@ -28,7 +28,7 @@ import {
   type Calibration,
   type Confidence,
 } from "@dustmap/core";
-import { REAL_SOURCES, goldDir, jsonl, loadPrivate, repo, type GoldPair, type Scored } from "./gold-data.mts";
+import { isRealSource, goldDir, jsonl, loadPrivate, repo, type GoldPair, type Scored } from "./gold-data.mts";
 import { summarize } from "./metrics.mjs";
 
 const argv = process.argv.slice(2);
@@ -139,7 +139,7 @@ function appendResults(row: string): void {
   const header = [
     "# Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)",
     "",
-    "Każdy wiersz to jeden przebieg `npm run emb:eval` na zbiorze z `tools/emb/gold` (EMB-01 / CON-01). Pozytywy: **same** + **contains** + **concept**; negatywy: **pattern** i **different**. Główna liczba to **AP** (średnia precyzja rankingu; los ≈ odsetek pozytywów). „Brak wyniku” = dostawca w ogóle nie połączył pary (liczone jako 0). Zbiór `test` jest odłożony — nie trenujemy ani nie stroimy na nim progów.",
+    "Każdy wiersz to jeden przebieg `npm run emb:eval` na zbiorze z `tools/emb/gold` (EMB-01 / CON / EMB-10 siblings). Pozytywy: **same** + **contains** + **concept**; negatywy: **pattern** i **different**. Główna liczba to **AP** (średnia precyzja rankingu; los ≈ odsetek pozytywów). „Brak wyniku” = dostawca w ogóle nie połączył pary (liczone jako 0). Zbiór `test` jest odłożony — nie trenujemy ani nie stroimy na nim progów. Zestaw „prawdziwy” = pary z prawdziwego kodu (`isRealSource`: EMB-12, CON-01, CON-03, EMB-10 siostry).",
     "",
     "| Data | Dostawca / model | Zbiór | Par | AP | Precyzja @próg | Wykrywalność @próg | `pattern` pod progiem | Najlepszy próg (F1) | Brak wyniku | Śr. same / pattern / different | Czas | Rozmiar modelu | Uwagi |",
     "|---|---|---|--:|--:|--:|--:|--:|---|--:|---|--:|--:|---|",
@@ -181,7 +181,7 @@ async function main(): Promise<void> {
   }
   const seconds = (Date.now() - t0) / 1000;
 
-  const real = scored.filter((p) => REAL_SOURCES.has(p.source));
+  const real = scored.filter((p) => isRealSource(p.source));
   const sets: Array<[string, Scored[]]> = [
     ["test", scored.filter((p) => p.split === "test")],
     ["prawdziwy", real],

@@ -1007,8 +1007,10 @@
         "CON-00"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-23T01:02:21.799Z",
+      "startedBy": "agent"
     },
     {
       "id": "CON-02",

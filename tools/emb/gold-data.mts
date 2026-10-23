@@ -2,7 +2,7 @@
  * The EMB gold set as the meter and the calibration read it: public pairs from tools/emb/gold, private
  * pairs read back from the pinned snapshots (a drifted side drops the pair, never the run). Private
  * refs come from two files: private-refs.jsonl (DUST-15 groups, hand-picked) and real-refs.jsonl
- * (EMB-12: pairs drawn across every similarity band of Monorepo-A and Service-B and labelled by hand).
+ * (EMB-12 / CON-01 bands + EMB-10 same-file siblings merged via merge-same-file-siblings.mts).
  */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -30,8 +30,24 @@ export const goldDir = path.join(repo, "tools/emb/gold");
 export const jsonl = <T,>(file: string): T[] =>
   readFileSync(file, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l) as T);
 
-/** Real-code holdout (EMB-12). CON-01 rewrote labels and set `source` to `CON-01 relabel`. */
-export const REAL_SOURCES = new Set(["EMB-12 real", "CON-01 relabel"]);
+/**
+ * Real-code holdout source prefixes (EMB-12 / CON-01 / CON-03 / EMB-10 siblings).
+ * Eval's „prawdziwy” slice counts pairs whose `source` equals or starts with one of these
+ * (second-opinion resolve may append " + second-opinion resolve").
+ */
+export const REAL_SOURCE_PREFIXES = [
+  "EMB-12 real",
+  "CON-01 relabel",
+  "CON-03 real",
+  "EMB-10 same-file siblings",
+] as const;
+
+/** @deprecated prefer isRealSource — kept for call sites that listed exact strings */
+export const REAL_SOURCES = new Set<string>(REAL_SOURCE_PREFIXES);
+
+export function isRealSource(source: string): boolean {
+  return REAL_SOURCE_PREFIXES.some((p) => source === p || source.startsWith(`${p} +`));
+}
 
 /** Private sides read back from the pinned snapshots; a drifted or missing side drops the pair. */
 export function loadPrivate(): { pairs: GoldPair[]; note: string } {
