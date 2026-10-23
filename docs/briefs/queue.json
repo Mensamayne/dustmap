@@ -1025,10 +1025,13 @@
         "CON-00"
       ],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-23T01:03:24.938Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T01:04:39.497Z",
+      "gitProofSha": "700ae1fdea9ab116f62c70faf89334686d30cc68",
+      "closureNotes": "Jednostki w core + parity 0 na Monorepo-A; potok emb woła extractUnits"
     },
     {
       "id": "CON-03",
