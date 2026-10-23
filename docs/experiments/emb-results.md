@@ -1,5 +1,9 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-08: bramki zbioru (23.10.2026)
+
+Selftesty: `check_labels` / `check_leakage` (w tym zawieranie) / `check_balance` — czerwone na podłożonych błędach. Budowa filtruje przeciek fragmentów ze zbioru testowego i ucina źródła > 50% (synthetic zwolniony). Po przebudowie: etykiety OK, przeciek 0, bilans OK. Karta: `dustmap-emb/DATA-CARD.md` § CON-08.
+
 ## CON-07: trudne negatywy (23.10.2026)
 
 Siostry EMB-10: 201× `pattern` do seed, 189 w `real-refs` ( emb:gold OK, 1499 prywatnych). Minery: concept (caller/sibling/fragment), class-shape, CSS same-props, gold-sibling. `check_labels.py` bez sprzeczności. Odłożone: 1 para bez ciała na migawce.
