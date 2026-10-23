@@ -1007,10 +1007,13 @@
         "CON-00"
       ],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-23T01:02:21.799Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T01:03:08.744Z",
+      "gitProofSha": "590f9bec7d2d4a89c1a1672b4d9717e563e4ce54",
+      "closureNotes": "README 5 etykiet z przykladami; 241 par ocenionych (61 zmian); validate+eval selftest OK"
     },
     {
       "id": "CON-02",
