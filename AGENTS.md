@@ -76,3 +76,5 @@ Assume any delegated executor (cheaper model, subagent) overstates success, adds
 ## Stack
 
 TypeScript, Node ≥ 20, npm workspaces (`packages/*`), Zod for contracts, Vitest for tests. Code, identifiers, commits and tracked technical docs in English; briefs and maintainer-facing docs may be Polish. New non-trivial files start with a one-paragraph header comment saying what the module owns.
+
+**Embedding training** (`dustmap-emb`): weight updates **GPU/CUDA only** — never train on CPU. Details: [docs/experiments/emb-env.md](docs/experiments/emb-env.md), [docs/agent/RULES.md](docs/agent/RULES.md) § Embedding training.

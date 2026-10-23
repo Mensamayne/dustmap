@@ -62,6 +62,7 @@ Kolejność: EMB-01 i EMB-02 równolegle → EMB-03 → EMB-04 i EMB-05 równole
 - Dustmap nadal report-only; model nie wprowadza żadnego zapisu poza `outputDir` (cache wektorów) i katalogiem modeli użytkownika
 - Domyślnie zero sieci; pobranie modelu tylko jawną komendą
 - Żadnych wag ani danych prywatnych w tym repo
+- **Uczenie wag tylko na GPU (CUDA).** Brak karty = stop; zakaz treningu na CPU. Eval / ONNX / skan na CPU OK. Szczegóły: `docs/experiments/emb-env.md`, `dustmap-emb/README.md`
 
 ## Pliki (scope)
 

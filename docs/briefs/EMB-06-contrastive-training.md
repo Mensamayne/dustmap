@@ -28,6 +28,8 @@ Model bazowy z EMB-03 douczony kontrastowo (pary „ten sam sens” przyciągane
 
 ## Constraints
 
+- Uczenie wag **tylko na GPU (CUDA)**; brak karty = stop (`train.py` / `smoke.py`). Zakaz ścieżki CPU.
+
 - Model prywatny nigdy nie opuszcza tego komputera (nie trafia do gita, wydań ani rejestrów)
 - Dysk: checkpointy rotowane, łącznie w budżecie z EMB-02
 

@@ -70,6 +70,7 @@ Kolejność pracy: CON-01 i CON-02 równolegle, potem CON-03 i CON-04, CON-10 (h
 - Pracujemy tylko nad wariantem prywatnym modelu. Publiczny czeka na decyzję maintainera.
 - Żadna funkcja ani fragment z zestawu testowego nie może trafić do treningu, także jako fragment większego kawałka (bramka CON-08).
 - Bez ręcznie prowadzonych list wyjątków. Reguła, której nie da się zapisać ogólnie, nie wchodzi.
+- **Uczenie wag tylko na GPU (CUDA)** — jak w EMB (`docs/experiments/emb-env.md`). Brak karty = stop; zakaz treningu na CPU.
 
 ## Wynik epiku (23.10.2026)
 

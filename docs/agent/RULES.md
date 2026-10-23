@@ -69,7 +69,11 @@ Plan the whole epic up front: `{EPIC}-00-overview.md` with a brief table, bindin
 - Commits: queue closes (`Fixes {ID}`) or when asked. Push: only when asked.
 - Never cite another brief's id in a commit message — the git-proof gate matches ids in messages.
 
-## 10. Delegation
+## 10. Embedding training — GPU only
+
+Any run that **updates model weights** (`dustmap-emb/train.py`, `smoke.py`, future trainers) must use **CUDA**. No CPU training fallback, no overnight CPU “just this once”. If `env-check.py` is not ready for GPU, stop. CPU is fine for dataset build, ONNX export/quantize, `emb:eval`, calibrate, and product scans. See `docs/experiments/emb-env.md` and `.cursor/rules/emb-train-gpu-only.mdc`.
+
+## 11. Delegation
 
 Delegated executors (cheaper models, subagents) are assumed to: break adjacent behavior, overstate results, add without deleting, leave debug probes, creep scope, die mid-task.
 

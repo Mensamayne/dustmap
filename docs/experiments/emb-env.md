@@ -73,6 +73,14 @@ Pobierane są tylko wagi `safetensors`, tokenizer, konfiguracja, karta modelu i 
 
 - [x] zgoda na pobranie `einops` (MIT, ~60 KB) — potrzebne tylko dla W2. Maintainer 21.10.2026: „Zgoda na einops dla W2.” Zainstalowane: `einops==0.8.2`.
 
+## Uczenie tylko na GPU (twarda reguła)
+
+- Każdy przebieg, który **aktualizuje wagi** (`train.py`, `smoke.py`, kolejne skrypty uczące), **musi** iść na CUDA.
+- Brak karty / PyTorch bez CUDA / ukryte `CUDA_VISIBLE_DEVICES` → **stop**. Zakaz treningu na CPU „na noc”, „tymczasowo” albo „żeby zobaczyć”.
+- Dozwolone na CPU: `env-check` (raport), budowa danych, eksport ONNX, kwantyzacja wag, `emb:eval` / kalibracja / skan produktu.
+- Dowód w `run.json`: pole `device` = nazwa GPU. Przebieg bez GPU nie zamyka briefu treningowego.
+- Reguła dla agentów: `.cursor/rules/emb-train-gpu-only.mdc`; skrót w `dustmap-emb/README.md` (Zasady).
+
 ## Sprawdzenie środowiska (21.10.2026)
 
 `python env-check.py` w `E:\dustmap-emb-data\venv`:
