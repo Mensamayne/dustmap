@@ -1208,8 +1208,11 @@
       "brief": "docs/briefs/PAIR-00-overview.md",
       "gates": [],
       "epic": "PAIR",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-23T15:22:23.342Z",
+      "gitProofSha": "7e9d91ce78a31a9689667165fa424dfe2d79a307",
+      "closureNotes": "Overview + 6 briefow w kolejce; decyzje: EMB-15 + pair head, GPU only"
     },
     {
       "id": "PAIR-01",
@@ -1217,10 +1220,15 @@
       "layer": 1,
       "segment": "semantic",
       "brief": "docs/briefs/PAIR-01-meter.md",
-      "gates": ["PAIR-00"],
+      "gates": [
+        "PAIR-00"
+      ],
       "epic": "PAIR",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-23T15:22:47.042Z",
+      "gitProofSha": "21decd9cacb0b7fe9f8d301318a45c2cf2195755",
+      "closureNotes": "pair-head.ts + emb:pair-eval; baseline cosinus vs klasy"
     },
     {
       "id": "PAIR-02",
@@ -1228,10 +1236,15 @@
       "layer": 2,
       "segment": "semantic",
       "brief": "docs/briefs/PAIR-02-train.md",
-      "gates": ["PAIR-01"],
+      "gates": [
+        "PAIR-01"
+      ],
       "epic": "PAIR",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-23T15:22:38.199Z",
+      "gitProofSha": "f2e493517c8a7e0e6ed56f6cf4805b92f0d6f10e",
+      "closureNotes": "pair_head.py na GPU; val macro-F1 ~0.59; test same-AP 0.53"
     },
     {
       "id": "PAIR-03",
@@ -1239,10 +1252,15 @@
       "layer": 3,
       "segment": "semantic",
       "brief": "docs/briefs/PAIR-03-package.md",
-      "gates": ["PAIR-02"],
+      "gates": [
+        "PAIR-02"
+      ],
       "epic": "PAIR",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-23T15:22:47.677Z",
+      "gitProofSha": "64c0c6757d677f0458477aa71684e8bc4c261b57",
+      "closureNotes": "paczka dustmap-same-meaning-private-pair v0.5.0-pair w cache"
     },
     {
       "id": "PAIR-04",
@@ -1250,10 +1268,15 @@
       "layer": 4,
       "segment": "semantic",
       "brief": "docs/briefs/PAIR-04-product.md",
-      "gates": ["PAIR-03"],
+      "gates": [
+        "PAIR-03"
+      ],
       "epic": "PAIR",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-23T15:22:49.760Z",
+      "gitProofSha": "b7661d23fda4fc2dfcda25d85f0d3a7b847e99af",
+      "closureNotes": "ADAPTER_REV 7; same/pattern/other w run+cluster"
     },
     {
       "id": "PAIR-05",
@@ -1261,10 +1284,15 @@
       "layer": 5,
       "segment": "semantic",
       "brief": "docs/briefs/PAIR-05-compare.md",
-      "gates": ["PAIR-04"],
+      "gates": [
+        "PAIR-04"
+      ],
       "epic": "PAIR",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-23T15:22:50.248Z",
+      "gitProofSha": "5e1d690046c431934fda1c3352e8998a6f43c56d",
+      "closureNotes": "Monorepo-A semantic 783 high118 vs EMB-15 1034/603; domyslny EMB-15"
     }
   ]
 }
