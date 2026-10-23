@@ -989,10 +989,13 @@
       "brief": "docs/briefs/CON-00-overview.md",
       "gates": [],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-23T01:01:27.798Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T01:02:12.547Z",
+      "gitProofSha": "c83240f32c56195f8241cc0026e15f2241bb07bc",
+      "closureNotes": "Overview binding: dane + miara + CON-11 trening v2 vs EMB-15; Skan v2 poza epikiem"
     },
     {
       "id": "CON-01",
