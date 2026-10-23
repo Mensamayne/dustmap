@@ -1,5 +1,9 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-07: trudne negatywy (23.10.2026)
+
+Siostry EMB-10: 201× `pattern` do seed, 189 w `real-refs` ( emb:gold OK, 1499 prywatnych). Minery: concept (caller/sibling/fragment), class-shape, CSS same-props, gold-sibling. `check_labels.py` bez sprzeczności. Odłożone: 1 para bez ciała na migawce.
+
 ## CON-06: pary generowane (23.10.2026)
 
 Kontrolowane operacje na jednostkach korpusu (AST, bez LLM w tej iteracji — brak wag codegen w cache; `llm.mjs` + rejestr propozycji Qwen2.5-Coder-1.5B). **464** par po `verify` (expand/contains, decompose/concept, css-equiv/same, pattern-trap). Limit ≤ 2 warianty / jednostka; udział generowanych ≤ 40% pozytywów (dataset.json). Selftest verify OK.

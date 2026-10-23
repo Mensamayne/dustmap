@@ -1096,10 +1096,13 @@
         "CON-04"
       ],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-23T03:16:54.699Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-23T03:20:12.429Z",
+      "gitProofSha": "72e6790a56cea28d5f355c1ec0bc53aec4dc223d",
+      "closureNotes": "464 AST-generated pairs after verify; ops+llm hook; no codegen weights downloaded"
     },
     {
       "id": "CON-07",
@@ -1111,8 +1114,10 @@
         "CON-04"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-23T03:20:42.250Z",
+      "startedBy": "agent"
     },
     {
       "id": "CON-08",
