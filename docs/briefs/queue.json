@@ -1304,10 +1304,13 @@
         "CON-11"
       ],
       "epic": "CON",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-24T00:17:11.540Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-24T04:57:06.784Z",
+      "gitProofSha": "8f1ced088f78bce0aaa2d7122bababc0f0080350",
+      "closureNotes": "Miernik: AP etykiety vs negatywy, 109 zagnieżdżeń out, pułapka osobno, podział po grupach plików (SALT 298), CSS przez git show; EMB-15 test 0.705 vs CON-11 0.636"
     },
     {
       "id": "CON-13",
