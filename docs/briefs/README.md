@@ -74,6 +74,9 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | CON-09 | Paczka danych + pomiar bazowy obecnego modelu |
 | CON-10 | Szlifowanie i pielęgnacja zbioru wzorcowego (śmieć out, rytuał) |
 | CON-11 | Trening v2 vs EMB-15 (domknięte: EMB-15 zostaje domyślny) |
+| CON-12 | Naprawa miernika i zestawu testowego (audyt 24.10) |
+| CON-13 | Dane w skali: historia otwartych repo, generator, klony |
+| CON-14 | Prawdziwy trening v2, paczka, pomiar, decyzja o domyślnym |
 
 **Epik PAIR — osobna decyzja na parach** (ten sam enkoder EMB-15 + mała głowa `same`/`pattern`/`other`). Overview: [PAIR-00-overview.md](PAIR-00-overview.md).
 

@@ -1293,6 +1293,47 @@
       "completedAt": "2026-10-23T15:22:50.248Z",
       "gitProofSha": "5e1d690046c431934fda1c3352e8998a6f43c56d",
       "closureNotes": "Monorepo-A semantic 783 high118 vs EMB-15 1034/603; domyslny EMB-15"
+    },
+    {
+      "id": "CON-12",
+      "title": "Naprawa miernika i zestawu testowego",
+      "layer": 6,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-12-meter-and-gold-repair.md",
+      "gates": [
+        "CON-11"
+      ],
+      "epic": "CON",
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-24T00:17:11.540Z",
+      "startedBy": "agent"
+    },
+    {
+      "id": "CON-13",
+      "title": "Dane w skali: historia otwartych repo, generator, klony",
+      "layer": 7,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-13-data-at-scale.md",
+      "gates": [
+        "CON-12"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "CON-14",
+      "title": "Prawdziwy trening v2, paczka, pomiar, decyzja o domyślnym",
+      "layer": 8,
+      "segment": "semantic",
+      "brief": "docs/briefs/CON-14-real-training.md",
+      "gates": [
+        "CON-13"
+      ],
+      "epic": "CON",
+      "status": "todo",
+      "kind": "feature"
     }
   ]
 }
