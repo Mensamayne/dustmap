@@ -124,6 +124,14 @@ function selftest(pairs: GoldPair[]): never {
     ["odwrócona wyrocznia → AP ≤ odsetek pozytywów + 0.05", runs.inverted.ap <= base + 0.05],
     [`losowe wyniki → AP blisko odsetka pozytywów (${base.toFixed(2)} ± 0.15)`, Math.abs(runs.random.ap - base) <= 0.15],
     ["brak wyniku liczony jako 0, nie pomijany", summarize(pairs.map((p) => ({ ...p, score: null })), 0.82).at.recall === 0],
+    [
+      "AP etykiety liczone tylko względem negatywów (inne pozytywy wyżej nie psują wyniku)",
+      (() => {
+        const rank: Record<string, number> = { same: 0.99, concept: 0.98, contains: 0.9, pattern: 0.3, different: 0.1 };
+        const s = summarize(pairs.map((p) => ({ ...p, score: rank[p.label] ?? 0 })), 0.82);
+        return (["same", "contains", "concept"] as const).every((l) => s.apByLabel[l] === null || s.apByLabel[l] > 0.999);
+      })(),
+    ],
   ];
   let failed = 0;
   for (const [label, ok] of checks) {
@@ -181,6 +189,9 @@ async function main(): Promise<void> {
   }
   const seconds = (Date.now() - t0) / 1000;
 
+  // Trap pairs (one model's own top hits, all negatives) are reported on their own, never in AP (CON-12).
+  const trap = scored.filter((p) => p.trap);
+  scored = scored.filter((p) => !p.trap);
   const real = scored.filter((p) => isRealSource(p.source));
   const sets: Array<[string, Scored[]]> = [
     ["test", scored.filter((p) => p.split === "test")],
@@ -216,6 +227,13 @@ async function main(): Promise<void> {
       );
     }
   }
+  if (trap.length) {
+    const at = (t: number) => trap.filter((p) => (p.score ?? 0) >= t).length / trap.length;
+    const mediumUp = calibration ? trap.filter((p) => { const c = reportedConfidence(p, calibration!); return c === "high" || c === "medium"; }).length / trap.length : null;
+    console.log(
+      `pułapka    ${trap.length} par (same-file siblings: najwyższe pomyłki dawnego modelu, wszystkie negatywy) · ≥ ${threshold}: ${fmt(at(threshold))} · ≥ medium po kalibracji: ${fmt(mediumUp)} · średnio ${fmt(trap.reduce((a, p) => a + (p.score ?? 0), 0) / trap.length)} (mniej = lepiej)`,
+    );
+  }
   if (has("calibrated")) {
     if (!calibration) throw new Error("--calibrated: the model package has no calibration (npm run emb:calibrate -- --model <id>)");
     const b = calibration.bands;
@@ -235,7 +253,7 @@ kalibracja: high ≥ ${fmt(b.high)} · medium ≥ ${fmt(b.medium)} (raport od me
   const rawDir = path.join(repo, ".tmp/emb");
   mkdirSync(rawDir, { recursive: true });
   // Ids and scores only — no code, so private pairs never land in a file by accident.
-  const raw = scored.map(({ id, label: l, split, score }) => ({ id, label: l, split, score }));
+  const raw = [...scored, ...trap].map(({ id, label: l, split, score, trap: isTrap }) => ({ id, label: l, split, score, ...(isTrap ? { trap: true } : {}) }));
   writeFileSync(path.join(rawDir, `run-${new Date().toISOString().replace(/[:.]/g, "-")}.json`), JSON.stringify({ provider, model, threshold, raw }, null, 2));
 }
 

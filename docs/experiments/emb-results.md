@@ -1,6 +1,31 @@
 # Wyniki: „ten sam sens” na zbiorze wzorcowym (EMB)
 
+## CON-12: naprawa miernika i zestawu testowego (24.10.2026)
+
+Audyt po CON-11 znalazł w mierniku i złocie pięć wad. **Liczby z sekcji CON-09, CON-11 i PAIR poniżej są liczone wadliwym miernikiem** — porównywać tylko z tabelą tutaj.
+
+1. **AP per etykieta**: przy ocenie `contains` / `concept` pozostałe pozytywy liczyły się jako negatywy, więc wynik ≈ odsetek par etykiety (stąd „~0,05”). Teraz: etykieta kontra tylko `pattern` + `different` (`tools/emb/metrics.mjs`, selftest w `emb:eval`, to samo w `dustmap-emb/gold_meter.py`).
+2. **109 par zagnieżdżonych** (funkcja i funkcja w jej środku, `different`) wyrzucone; bramka higieny je odrzuca. Skan i tak ich nie zgłasza.
+3. **Pułapka osobno**: 193 pary „siostry z jednego pliku” (EMB-10) mają `trap: true` — nie wchodzą do AP ani kalibracji, raport osobno (ile przejdzie do raportu).
+4. **Podział**: grupy plików połączonych parami → jedna część; część z hasza grupy z zamrożonym ziarnem (`file-split.mjs`, SALT 298). Każda etykieta 46–54% w walidacji (wcześniej walidacja 18%, 2 `concept`). Poprawka etykiety nie przesuwa par.
+5. **CSS mierzone**: pliki spoza migawki czytane `git show <sha>:<ścieżka>` z repo celu (tylko odczyt). 0 par pominiętych; wczytanie ~15 s.
+
+Trening i miernik czytają te same pary: `npx tsx tools/emb/gold/export-resolved.mts` → `.tmp/emb/gold-resolved.jsonl` (lokalnie, nie w gicie) → `gold_meter.py`.
+
+**Kontrola 80 losowych par** (stratyfikacja po etykiecie, ocena na ślepo): zgodność 63/80 (79%) na pięciu etykietach, **73/80 (91%) w pytaniu „duplikat czy nie”**. Rozbieżności głównie między `same` / `contains` / `concept`. Poprawione 3 ewidentne błędy (wywołujący↔wywoływany jako `contains`; CSS jako `contains`; siostra-pułapka, która jest rozbudowaną wersją → `contains`).
+
+Złoto po naprawie: 142 publicznych + 1390 prywatnych (same 343 · contains 57 · concept 57 · pattern 602 · different 473).
+
+| Model (int8, CPU) | test AP | same | contains | concept | pułapka ≥ medium (mniej = lepiej) | high / ≥ medium precyzja (test) |
+|---|--:|--:|--:|--:|--:|---|
+| EMB-15 (`dustmap-same-meaning-private`) | **0,705** | 0,686 | 0,316 | 0,088 | 77,7% | 0,84 / 0,82 |
+| CON-11 (`…-private-con11`) | 0,636 | 0,608 | 0,229 | 0,079 | 0% (progi 0,965/0,975 — prawie nic nie zgłasza) | 1,00 / 1,00 przy wykrywalności 3,8% |
+
+**Wniosek.** EMB-15 zostaje lepszy od CON-11 na każdej etykiecie. `concept` jest dla obu na poziomie losu, `contains` słabe, a pułapka pokazuje, że obecny model przepuszcza do raportu ~78% „sióstr z jednego pliku”. To cel dla CON-13/14.
+
 ## PAIR: głowa na parach (23.10.2026)
+
+> CON-12: głowa mapuje `contains` i `concept` na „nie duplikat”, wbrew definicji CON-00 — nie nadaje się na domyślny niezależnie od liczb.
 
 Enkoder = EMB-15 (`dustmap-same-meaning-private`). Nowa MLP 3-klasowa (`same`|`pattern`|`other`) na cechach `[a;b;|a−b|;a⊙b]`, trening **tylko GPU** (`pair_head.py`, run `pair-head-20261023-1610`). Soft etykiety → `other`. Paczka: `dustmap-same-meaning-private-pair` v0.5.0-pair.
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
 /**
  * CON-10: hygiene gate for private gold refs (real-refs / private-refs).
- * Flags product-out paths, backup/storyboard dumps, and trivial one-line
- * `different` locals when both spans can be read from the pinned snapshot.
+ * Flags product-out paths, backup/storyboard dumps, trivial one-line `different` locals when both
+ * spans can be read from the pinned snapshot, and nested pairs (one span inside the other in the same
+ * file — the scan drops them, so they measure nothing a user sees; CON-12).
  *
  *   npx tsx tools/emb/gold/check-hygiene.mts
  *   npx tsx tools/emb/gold/check-hygiene.mts --selftest
@@ -62,6 +63,10 @@ export function checkHygiene(rows: Row[]): string[] {
       if (OUT_OF_PRODUCT.test(p)) bad.push(`${at}: ścieżka poza produktem (.claude/skills): ${p}`);
       if (DUMP_PATH.test(p)) bad.push(`${at}: dump backup/storyboard: ${p}`);
     }
+    if (r.a && r.b && r.a.path === r.b.path && r.a.startLine != null && r.a.endLine != null && r.b.startLine != null && r.b.endLine != null) {
+      const inside = (x: Side, y: Side) => x.startLine! >= y.startLine! && x.endLine! <= y.endLine!;
+      if (inside(r.a, r.b) || inside(r.b, r.a)) bad.push(`${at}: para zagnieżdżona (jedna strona w środku drugiej) — skan takich nie zgłasza`);
+    }
     if (r.label === "different" && r.a && r.b) {
       const ca = readSpan(r.a);
       const cb = readSpan(r.b);
@@ -118,6 +123,10 @@ function selftest() {
           b: { ...base.b!, path: "b.ts", startLine: 1, endLine: 1, code: "let failed = 0;" },
         },
       ],
+    ],
+    [
+      "para zagnieżdżona",
+      [{ ...base, id: "h4", b: { ...base.a!, startLine: 2, endLine: 2, code: "  return 1;" } }],
     ],
     [
       "zdublowane id",

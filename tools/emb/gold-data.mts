@@ -4,6 +4,7 @@
  * refs come from two files: private-refs.jsonl (DUST-15 groups, hand-picked) and real-refs.jsonl
  * (EMB-12 / CON-01 bands + EMB-10 same-file siblings merged via merge-same-file-siblings.mts).
  */
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -24,6 +25,12 @@ export type GoldPair = {
   larger?: "a" | "b";
   /** Pair unit for CON-09+ reporting; derived from side kinds when present. */
   unit?: UnitKind;
+  /**
+   * CON-12: a trap pair — hard negatives harvested from one model's own top hits (EMB-10 same-file
+   * siblings). Reported on their own, never inside AP or calibration: the selection is biased
+   * against the model it was mined from.
+   */
+  trap?: boolean;
 };
 export type Scored = GoldPair & { score: number | null };
 type PrivateRef = { repo: string; sha: string; path: string; startLine: number; endLine: number; name: string; kind: string; sha256: string };
@@ -69,19 +76,57 @@ export function isRealSource(source: string): boolean {
   return REAL_SOURCE_PREFIXES.some((p) => source === p || source.startsWith(`${p} +`));
 }
 
-/** Private sides read back from the pinned snapshots; a drifted or missing side drops the pair. */
+type TargetRegistry = { targets: Record<string, { path: string; env: string }> };
+
+/** Target checkout for `git show` (read-only) when a file is outside the pinned snapshot. */
+function targetDir(name: string): string | null {
+  const reg = JSON.parse(readFileSync(path.join(repo, "tools/targets/targets.json"), "utf8")) as TargetRegistry;
+  const t = reg.targets[name];
+  if (!t) return null;
+  const dir = path.resolve(repo, process.env[t.env] ?? t.path);
+  return existsSync(dir) ? dir : null;
+}
+
+/**
+ * File text at the ref's commit: the pinned snapshot first; files the snapshot leaves out (it keeps
+ * only the extensions a scan config includes — CSS for one) come from the target with `git show`.
+ * Each file is read once per process.
+ */
+function fileReader(): (r: PrivateRef) => string | null {
+  const cache = new Map<string, string | null>();
+  return (r) => {
+    const key = `${r.repo}@${r.sha}:${r.path}`;
+    if (cache.has(key)) return cache.get(key)!;
+    let text: string | null = null;
+    const snap = path.join(repo, ".tmp/targets", `${r.repo}@${r.sha.slice(0, 12)}`, "src", r.path);
+    if (existsSync(snap)) text = readFileSync(snap, "utf8");
+    else {
+      const dir = targetDir(r.repo);
+      if (dir) {
+        try {
+          text = execFileSync("git", ["show", `${r.sha}:${r.path}`], { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 });
+        } catch {
+          text = null;
+        }
+      }
+    }
+    cache.set(key, text);
+    return text;
+  };
+}
+
+/** Private sides read back at their pinned commit; a drifted or missing side drops the pair. */
 export function loadPrivate(): { pairs: GoldPair[]; note: string } {
   const refs = ["private-refs.jsonl", "real-refs.jsonl"]
     .map((f) => path.join(goldDir, f))
     .filter((f) => existsSync(f))
     .flatMap((f) => jsonl<Omit<GoldPair, "a" | "b"> & { a: PrivateRef; b: PrivateRef }>(f));
   if (refs.length === 0) return { pairs: [], note: "" };
-  const snapOf = (r: PrivateRef) => path.join(repo, ".tmp/targets", `${r.repo}@${r.sha.slice(0, 12)}`, "src");
-  const missing = [...new Set(refs.flatMap((r) => [r.a, r.b]).filter((r) => !existsSync(snapOf(r))).map((r) => `npm run target -- ${r.repo} --snapshot ${r.sha}`))];
+  const fileText = fileReader();
   const read = (r: PrivateRef): Side | null => {
-    const file = path.join(snapOf(r), r.path);
-    if (!existsSync(file)) return null;
-    const span = readFileSync(file, "utf8").split(/\r?\n/).slice(r.startLine - 1, r.endLine).join("\n");
+    const text = fileText(r);
+    if (text === null) return null;
+    const span = text.split(/\r?\n/).slice(r.startLine - 1, r.endLine).join("\n");
     if (createHash("sha256").update(span).digest("hex") !== r.sha256) return null;
     // Class members and object properties are not valid on their own; wrap them for parsers.
     const code =
@@ -96,11 +141,7 @@ export function loadPrivate(): { pairs: GoldPair[]; note: string } {
     if (!a || !b) drifted++;
     else pairs.push({ ...r, a, b, unit: pairUnit(r.a.kind, r.b.kind) });
   }
-  const notes = [
-    missing.length ? `brak migawki: ${missing.join("; ")}` : "",
-    drifted ? `${drifted} par prywatnych pominiętych: kod pod odnośnikiem się zmienił lub nie ma migawki` : "",
-  ];
-  return { pairs, note: notes.filter(Boolean).join("; ") };
+  return { pairs, note: drifted ? `${drifted} par prywatnych pominiętych: kod pod odnośnikiem się zmienił albo pliku nie ma ani w migawce, ani w repo celu` : "" };
 }
 
 /** Every gold pair: public ones plus the private ones the snapshot can still serve. */

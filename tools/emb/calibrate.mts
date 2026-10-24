@@ -6,6 +6,7 @@
  * Band = the lowest similarity at which the pairs scoring at least that much reach a precision:
  * high ≥ 0.90, medium ≥ 0.75, low ≥ 0.50 (below low nothing is reported). The bands are written into
  * the package's manifest.json (`variants.<v>.calibration`); manifest.json is not itself checksummed.
+ * Trap pairs (`trap: true`, harvested from one model's own top hits) stay out (CON-12).
  *
  *   npm run emb:calibrate -- --model <package id> [--model-dir <dir>]
  */
@@ -34,7 +35,7 @@ async function main(): Promise<void> {
   if (!model) throw new Error("--model <package id>");
   const modelDir = arg("model-dir") ? path.resolve(arg("model-dir")!) : resolveModelDir({});
   const { pairs, privateCount, note } = loadGold();
-  const validation = pairs.filter((p) => p.split === "validation");
+  const validation = pairs.filter((p) => p.split === "validation" && !p.trap);
   const manifestPath = path.join(modelDir, model, "manifest.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { variants: Record<string, Record<string, unknown>> };
   for (const variant of Object.keys(manifest.variants)) {
@@ -53,7 +54,7 @@ async function main(): Promise<void> {
       const scored: Scored[] = validation.map((p) => ({ ...p, score: cosineSimilarity(vec.get(p.a.code)!, vec.get(p.b.code)!) }));
       const bands = bandsFrom(scored);
       if (bands.low === null) throw new Error(`${variant}: walidacja nie osiąga nawet precyzji ${TARGETS.low} — model nie nadaje się do raportu`);
-      const counts = { same: 0, pattern: 0, different: 0 };
+      const counts: Record<string, number> = { same: 0, contains: 0, concept: 0, pattern: 0, different: 0 };
       for (const p of validation) counts[p.label]++;
       manifest.variants[variant]!.calibration = {
         bands,

@@ -1,42 +1,38 @@
 #!/usr/bin/env tsx
 /**
- * Reassign private ref JSONL `split` using per-file hash (CON-03 step 4).
- * Targets real-refs.jsonl and private-refs.jsonl. Dry-run by default; --apply to write.
+ * Re-split the private gold refs (real-refs.jsonl + private-refs.jsonl together) into validation /
+ * test by file groups, balanced per label (file-split.mjs, CON-12). Dry-run by default; --apply writes.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { expectedSplit } from "./file-split.mjs";
+import { assignSplits, filesInBothParts } from "./file-split.mjs";
+
+type Row = { id: string; label: string; split: string; a: { repo?: string; path?: string }; b: { repo?: string; path?: string } };
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const apply = process.argv.includes("--apply");
-const files = ["real-refs.jsonl", "private-refs.jsonl"];
+const files = ["real-refs.jsonl", "private-refs.jsonl"].map((n) => path.join(here, n)).filter((f) => existsSync(f));
+const byFile = files.map((f) => ({
+  file: f,
+  rows: readFileSync(f, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l) as Row),
+}));
+const all = byFile.flatMap((x) => x.rows);
+const parts = assignSplits(all);
+const next = all.map((r) => ({ ...r, split: parts.get(r.id)! }));
+const leak = filesInBothParts(next);
+if (leak.length) throw new Error(`pliki w obu częściach: ${leak.slice(0, 5).join(", ")}`);
 
-for (const name of files) {
-  const refsPath = path.join(here, name);
-  if (!existsSync(refsPath)) continue;
-  const rows = readFileSync(refsPath, "utf8")
-    .trim()
-    .split(/\n/)
-    .map((l) => JSON.parse(l));
-
-  let changed = 0;
-  let validation = 0;
-  let test = 0;
-  const out = rows.map((r) => {
-    const next = expectedSplit(r);
-    if (!next) return r;
-    if (r.split !== next) changed++;
-    if (next === "validation") validation++;
-    else test++;
-    return { ...r, split: next };
-  });
-
-  console.log(JSON.stringify({ file: name, total: rows.length, changed, validation, test }, null, 2));
-  if (apply) {
-    writeFileSync(refsPath, out.map((r) => JSON.stringify(r)).join("\n") + "\n");
-    console.log(`Wrote ${out.length} rows to ${name}`);
-  }
+const table: Record<string, { validation: number; test: number }> = {};
+for (const r of next) {
+  table[r.label] ??= { validation: 0, test: 0 };
+  table[r.label]![r.split as "validation" | "test"]++;
 }
-if (!apply) console.log("Dry-run OK. Re-run with --apply to write.");
+console.log(JSON.stringify({ total: next.length, changed: all.filter((r) => r.split !== parts.get(r.id)).length, byLabel: table }, null, 2));
 
+if (apply) {
+  for (const { file, rows } of byFile) {
+    writeFileSync(file, rows.map((r) => JSON.stringify({ ...r, split: parts.get(r.id) })).join("\n") + "\n");
+  }
+  console.log(`Zapisano: ${files.map((f) => path.basename(f)).join(", ")}`);
+} else console.log("Dry-run. --apply zapisuje.");

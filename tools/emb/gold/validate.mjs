@@ -3,7 +3,7 @@
  * Validate the EMB/CON gold set: public.jsonl (pairs with code) and private reference files
  * (private-refs.jsonl from DUST-15, real-refs.jsonl from EMB-12/CON-01 — references only, never code).
  * Rules: five labels (same/contains/concept/pattern/different), `larger` required for contains,
- * known splits, unique ids, no code in private refs, sane line ranges, minimum sizes from EMB-01
+ * known splits, no file in both parts (CON-12), unique ids, no code in private refs, sane line ranges, minimum sizes from EMB-01
  * (≥150 pairs, ≥40 positive-ish `same`, ≥40 `pattern`), public.jsonl in sync with its sources.
  * `--selftest` plants defects and requires each to be caught.
  */
@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { expectedSplit } from "./file-split.mjs";
+import { filesInBothParts } from "./file-split.mjs";
 
 const PRIVATE_REF_FILES = ["private-refs.jsonl", "real-refs.jsonl"];
 
@@ -72,15 +72,10 @@ export function validateGold(pub, priv, { minTotal = 150, minSame = 40, minPatte
         }
       }
       if (kind === "private" && hasCodeKey(r)) bad.push(`${at}: kod w pliku prywatnym — dozwolone tylko odnośniki`);
-      // CON-03: private rows with paths must use per-file hash split (no cross-bucket leak into validation)
-      if (kind === "private") {
-        const want = expectedSplit(r);
-        if (want && r.split !== want) {
-          bad.push(`${at}: split ${JSON.stringify(r.split)} ≠ file-hash ${want} (przeciek części)`);
-        }
-      }
     }
   }
+  // CON-12: a file (and so every function in it) belongs to one part only.
+  for (const f of filesInBothParts(priv)) bad.push(`plik w obu częściach (przeciek): ${f}`);
   const all = [...pub, ...priv];
   const count = (l) => all.filter((r) => r.label === l).length;
   if (all.length < minTotal) bad.push(`za mało par: ${all.length} < ${minTotal}`);
@@ -102,16 +97,9 @@ function load() {
 
 function selftest() {
   const { pub, priv } = load();
-  // Plant a pair whose files hash to different buckets but claims validation (CON-03 leak).
+  // Plant a pair that reuses a file of an existing pair but sits in the other part (CON-12 leak).
   const base = priv.find((r) => r?.a?.path && r?.b?.path) ?? priv[0];
-  const leakRow = {
-    ...base,
-    id: "x-leak-split",
-    split: "validation",
-    a: { ...base.a, path: "aaa/validation-only-plant.ts" },
-    b: { ...base.b, path: "zzz/test-only-plant.ts" },
-  };
-  // Force opposite buckets: retry until fileBucket differs (stable for these two paths).
+  const leakRow = { ...base, id: "x-leak-split", split: base.split === "test" ? "validation" : "test", b: { ...base.b, path: "zzz/plant-only.ts" } };
   const planted = [
     ["kod w pliku prywatnym", pub, [...priv, { ...priv[0], id: "x1", a: { ...priv[0].a, code: "secret()" } }]],
     ["zdublowane id", [...pub, pub[0]], priv],

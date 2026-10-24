@@ -86,10 +86,10 @@ Złoto gnije, jeśli doklejamy pary bez sensu. **Wyrzuć** (bramka `check-hygien
 | Dump / archiwum UI | `…/backups/…`, plik `storyboard.css` |
 | Trywialne lokale jako `different` | obie strony to jedna linia w stylu `const x = null` / `new Set()` / `let n = 0` (gdy migawka da się odczytać) |
 | Zdublowane id | dwa wiersze z tym samym `id` |
+| Para zagnieżdżona (CON-12) | jedna strona leży w zakresie linii drugiej w tym samym pliku — skan takich nie zgłasza, a większa dosłownie zawiera mniejszą |
 
 **Zostaw** (to nie jest śmieć):
 
-- zagnieżdżenia EMB-10 jako `different` (helper w zakresie większej funkcji — celowy fałszywy alarm poprzedniego modelu);
 - `‹private›` ↔ źródło JSX jako `same` (skompilowany DS);
 - krótkie, ale **rzeczywiste** fragmenty logiki (nie same deklaracje pustych zmiennych).
 
@@ -102,7 +102,11 @@ Po każdym doleciu **≥ 50** nowych par do `real-refs`:
 3. Notka w `docs/experiments/emb-results.md`: ile dodano, ile wyrzucono, dlaczego.
 4. `npm run emb:gold` (walidacja + higiena).
 
-`npm run emb:eval` wypisuje osobno zestaw **prawdziwy** (pary z prawdziwego kodu: `EMB-12 real`, `CON-01 relabel`, `CON-03 real`, `EMB-10 same-file siblings` — przez `isRealSource` w `gold-data.mts`), obok odłożonej części `test` i całości. AP liczy pozytywy łącznie; osobno raportuje AP przy traktowaniu tylko `same`, tylko `contains`, tylko `concept` jako klasy pozytywnej.
+**Podział (CON-12).** Pliki połączone parami tworzą grupę; cała grupa idzie do jednej części (`validation` albo `test`) według hasza grupy z zamrożonym ziarnem (`file-split.mjs`). Żaden plik nie jest w obu częściach (walidacja to sprawdza). Po dodaniu par: `npx tsx tools/emb/gold/apply-file-split.mts --apply`.
+
+**Pułapka (CON-12).** Pary z `trap: true` (siostry z jednego pliku, zebrane z najwyżej ocenionych pomyłek dawnego modelu) nie wchodzą do AP ani kalibracji; `emb:eval` raportuje je osobno: jaki odsetek przeszedłby do raportu.
+
+`npm run emb:eval` wypisuje osobno zestaw **prawdziwy** (pary z prawdziwego kodu: `EMB-12 real`, `CON-01 relabel`, `CON-03 real`, `EMB-10 same-file siblings` — przez `isRealSource` w `gold-data.mts`), obok odłożonej części `test` i całości. AP liczy pozytywy łącznie; osobno raportuje AP każdej etykiety pozytywnej względem samych negatywów (`pattern` + `different`) — inne pozytywy wypadają z tego wycinka (CON-12).
 
 ## Siostry w jednym pliku (EMB-10 → złoto / CON-07)
 
@@ -110,7 +114,7 @@ Problem: model często łączy dwie funkcje w **tym samym pliku** o wysokim podo
 
 | Rodzaj | Sens dla użytkownika | Etykieta w złocie | Gdzie ląduje |
 |--------|----------------------|-------------------|--------------|
-| Zagnieżdżenie (helper leży w zakresie linii zewnętrznej) | fałszywy alarm raportu; produkt już pomija takie krawędzie | `different` | od razu do `real-refs` |
+| Zagnieżdżenie (helper leży w zakresie linii zewnętrznej) | produkt pomija takie krawędzie | — | nigdy do złota (CON-12) |
 | Wspólny szkielet, inne zadanie / inne pole | zapach szablonu albo celowy wariant — nie scalać 1:1 | zwykle `pattern` | seed (ręcznie) albo CON-07 |
 | Prawdziwa kopia do scalenia | rzadkie wśród siostr | `same` | tylko po ręcznej etykiecie |
 
@@ -122,14 +126,13 @@ Problem: model często łączy dwie funkcje w **tym samym pliku** o wysokim podo
    - `kindHint: needs-label` + propozycja `pattern` (jeszcze **nie** złoto)
 3. **Ręczna próbka** → `same-file-siblings-seed.jsonl` (powód w `why`, odcisk `sha256`).
 4. **`merge-same-file-siblings.mts --apply`** dopisuje do `real-refs.jsonl` tylko:
-   - cały seed,
-   - kandydatów `nested-false-alarm`,
+   - cały seed i pary ocenione w CON-07, z `trap: true`,
    - bez duplikatów względem istniejącego złota,
-   - ze `split` z `file-split.mjs` (CON-03),
+   - z podziałem całego zbioru od nowa (`file-split.mjs`, CON-12),
    - ze `source: "EMB-10 same-file siblings"` (widoczne w `emb:eval` jako zestaw prawdziwy).
 5. **`needs-label` (ok. 202 par)** zostają w candidates do etykietowania w CON-07; potem ponowny merge (opcjonalnie `--include-proposed-pattern` tylko gdy etykiety są już pewne).
 
-Stan po pierwszym merge (22.10.2026): **+114** do `real-refs` (9 ze seed + 105 zagnieżdżeń; 4 pokrycia seed↔nested). Nadal poza złotem: **202** `needs-label`.
+Stan po CON-12 (24.10.2026): zagnieżdżenia (109) usunięte ze złota; 193 siostry jako pułapka (`trap: true`).
 
 ## Zasady
 

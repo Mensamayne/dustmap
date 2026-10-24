@@ -25,11 +25,16 @@ export function averagePrecision(pairs, { positiveLabel = null } = {}) {
   return sum / totalPos;
 }
 
-/** AP treating each positive label alone as the positive class (rest negative), for CON-01 reporting. */
+/**
+ * AP of one positive label against the negatives only (`pattern`, `different`): the other positive
+ * labels leave the slice. Counting them as negatives (CON-01..CON-11) pinned every label's AP near its
+ * base rate whenever the model also scored the other positives high (CON-12).
+ */
 export function averagePrecisionByPositiveLabel(pairs) {
   const out = {};
   for (const label of ["same", "contains", "concept"]) {
-    out[label] = pairs.some((p) => p.label === label) ? averagePrecision(pairs, { positiveLabel: label }) : null;
+    const slice = pairs.filter((p) => p.label === label || !positive(p));
+    out[label] = pairs.some((p) => p.label === label) ? averagePrecision(slice, { positiveLabel: label }) : null;
   }
   return out;
 }

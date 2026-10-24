@@ -1,9 +1,12 @@
 /**
  * Merge accepted same-file sibling pairs into real-refs.jsonl (gold holdout).
  *
- * Accepted (default):
+ * Accepted (default), all marked `trap: true` (reported apart from AP and calibration, CON-12):
  *   - every row from same-file-siblings-seed.jsonl (hand-reviewed)
- *   - candidates with kindHint nested-false-alarm (structural different)
+ *   - candidates labelled in CON-07
+ *
+ * Never accepted: kindHint nested-false-alarm (a helper inside its outer function — the scan drops
+ * such pairs, CON-12).
  *
  * Not accepted until labeled:
  *   - candidates with kindHint needs-label (proposed pattern only)
@@ -15,7 +18,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { expectedSplit } from "./file-split.mjs";
+import { assignSplits } from "./file-split.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const apply = process.argv.includes("--apply");
@@ -80,13 +83,15 @@ function requireSha256(row: Row, at: string): void {
 
 function toGoldRow(row: Row, source: string): Row {
   requireSha256(row, row.id);
-  const split = expectedSplit(row) ?? row.split;
   const { kindHint: _drop, ...rest } = row;
   return {
     ...rest,
     id: row.id.startsWith("sibling:") ? row.id : `sibling:${row.id}`,
     source,
-    split,
+    // Placeholder: the whole set is re-split on write (file groups, CON-12).
+    split: row.split ?? "test",
+    // Harvested from a model's own top hits: reported apart from AP and calibration (CON-12).
+    trap: true,
   };
 }
 
@@ -115,16 +120,15 @@ const counts: Record<string, number> = {};
 for (const r of seed) take(r, SOURCE, "seed");
 
 for (const r of candidates) {
-  if (r.kindHint === "nested-false-alarm") take(r, SOURCE, "nested");
-  else if (r.kindHint === "labeled-con07") take(r, "CON-07 sibling label", "labeled-con07");
+  // Nested spans (a helper inside its outer function) never enter the gold: the scan drops them
+  // (isNestedSpanPair) and textually the outer one contains the inner one (CON-12).
+  if (r.kindHint === "nested-false-alarm") continue;
+  if (r.kindHint === "labeled-con07") take(r, "CON-07 sibling label", "labeled-con07");
   else if (r.kindHint === "needs-label" && includeProposed) take(r, SOURCE, "proposed-pattern");
 }
 
 const skippedNeedsLabel = candidates.filter((r) => r.kindHint === "needs-label").length;
-const skippedDup =
-  seed.length +
-  candidates.filter((r) => r.kindHint === "nested-false-alarm").length -
-  accepted.length;
+const skippedDup = seed.length - accepted.length;
 
 const byLabel: Record<string, number> = {};
 for (const r of accepted) byLabel[r.label] = (byLabel[r.label] ?? 0) + 1;
@@ -155,6 +159,8 @@ if (accepted.length === 0) {
   process.exit(0);
 }
 
-const out = [...existing, ...accepted];
+const merged = [...existing, ...accepted];
+const parts = assignSplits(merged);
+const out = merged.map((r) => ({ ...r, split: parts.get(r.id) ?? r.split }));
 writeFileSync(refsPath, out.map((r) => JSON.stringify(r)).join("\n") + "\n");
 console.log(`Wrote ${accepted.length} new rows → real-refs.jsonl (total ${out.length}).`);
