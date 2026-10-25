@@ -9,6 +9,7 @@ import {
   singleFileAdapter,
   throwingAdapter,
 } from "../test-support/fake-adapters.js";
+import { normalizedClonesAdapter } from "../clones/index.js";
 import { isOutsideRepo, runScan, snapshotRepoPaths } from "./run-scan.js";
 
 function git(cwd: string, args: string[]): void {
@@ -50,6 +51,39 @@ describe("runScan", () => {
     expect(existsSync(path.join(root, ".dustmap"))).toBe(false);
     expect(snapshotRepoPaths(root)).toEqual(before);
     expect(adapter.runs).toBe(1);
+  });
+
+  it("a judge that cannot open is a tool error; the scan finishes and the copies keep their confidence (V1-02)", async () => {
+    const root = initGitRepo();
+    const copy = (name: string, rate: string) =>
+      `export function ${name}(net: number, qty: number) {
+  if (net < 0) throw new Error("bad net");
+  const unit = Math.round(net * (1 + ${rate}) * 100) / 100;
+  const total = Math.round(unit * qty * 100) / 100;
+  return { unit, total, rate: ${rate} };
+}
+`;
+    writeFileSync(path.join(root, "src", "gross-a.ts"), copy("grossA", "0.23"), "utf8");
+    writeFileSync(path.join(root, "src", "gross-b.ts"), copy("grossB", "0.19"), "utf8");
+    const out = mkdtempSync(path.join(tmpdir(), "dustmap-out-"));
+    const configPath = path.join(out, "dustmap.config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({ semantic: { provider: "none" }, judge: { provider: "openai", model: "gpt-x", url: "https://judge.example.invalid/v1", allowRemote: true } }),
+      "utf8",
+    );
+    const keys = ["DUSTMAP_JUDGE_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"] as const;
+    const saved = keys.map((k) => process.env[k]);
+    for (const k of keys) delete process.env[k];
+    try {
+      const { report } = await runScan({ repoRoot: root, mode: "full", adapters: [normalizedClonesAdapter()], configPath, outputDir: out });
+      expect(report.scan.tools.find((t) => t.name === "pair-judge")?.error).toMatch(/no API key is set/);
+      const copyGroup = report.findings.find((f) => f.kind === "exact-clone");
+      expect(copyGroup?.confidence).toBe("medium");
+      expect(copyGroup?.judgement).toBeUndefined();
+    } finally {
+      keys.forEach((k, i) => (saved[i] === undefined ? delete process.env[k] : (process.env[k] = saved[i])));
+    }
   });
 
   it("second full scan hits cache and does not re-run adapters", async () => {

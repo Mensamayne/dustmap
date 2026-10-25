@@ -21,6 +21,7 @@ import { openJudge, type OpenedJudge } from "../judge/judge.js";
 import { toPosix } from "../posix.js";
 import { rankingWeightsFromConfig, summarizeFindings } from "../rank/index.js";
 import { mergeDuplicateLayers } from "./merge-duplicates.js";
+import { judgeTextDuplicates, readsTextJudge } from "./judge-duplicates.js";
 import { openAdapterCache } from "./cache.js";
 import { gitHead } from "./git.js";
 import { takeInventory } from "./inventory.js";
@@ -116,9 +117,10 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
   let cacheMisses = 0;
 
   // One pair judge per scan (V1-01), opened by the first layer that needs it and released at the end.
-  let judgeOpening: Promise<OpenedJudge> | null = null;
+  // Held in an object: TypeScript does not see the closure assign it, and would read it as always null.
+  const judgeState: { opening: Promise<OpenedJudge> | null } = { opening: null };
   const judge = () =>
-    (judgeOpening ??= openJudge(config.judge, { ...(config.semantic.modelDir ? { modelDir: config.semantic.modelDir } : {}), outputDir }));
+    (judgeState.opening ??= openJudge(config.judge, { ...(config.semantic.modelDir ? { modelDir: config.semantic.modelDir } : {}), outputDir }));
 
   try {
     for (const adapter of enabledAdapters) {
@@ -160,7 +162,16 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
     for (const f of findings) byFp.set(f.fingerprint, f);
     const unique = mergeDuplicateLayers([...byFp.values()], { tokenCopyAloneMax: config.clones.tokenCopyAloneMax });
     // keep / wontfix mute from ranking and category counts (fingerprint change brings them back).
-    const visible = applyDecisions(unique, loadDecisions(outputDir));
+    const kept = applyDecisions(unique, loadDecisions(outputDir));
+    // The judge on copies text alone cannot settle (V1-02); a judge that cannot open is a tool error, not a failed scan.
+    let visible = kept;
+    if (kept.some(readsTextJudge)) {
+      try {
+        visible = await judgeTextDuplicates(kept, await judge(), readFile);
+      } catch (err) {
+        tools.push({ name: "pair-judge", version: `${config.judge.provider}:${config.judge.model}`, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
     const summary = summarizeFindings(visible, rankingWeightsFromConfig(config.ranking));
 
     const report = Report.parse({
@@ -185,7 +196,9 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
 
     return { report, reportPath, outputDir, adapterRuns, filesScanned: files };
   } finally {
-    if (judgeOpening) await (await judgeOpening).judge?.release();
+    // A judge that failed to open was already reported by the layer that asked for it; nothing to release.
+    const opened = judgeState.opening ? await judgeState.opening.catch(() => null) : null;
+    await opened?.judge?.release();
   }
 }
 

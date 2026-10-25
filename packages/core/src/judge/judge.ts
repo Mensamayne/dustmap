@@ -5,8 +5,13 @@
  * `openJudge` builds it from `judge` config; a package that is not installed is a note, not an error
  * (the scan falls back to similarity alone and says so); a broken setup (no API key for a remote API,
  * remote without allowRemote, a damaged package) is an error. The scan opens the judge once and
- * releases it at the end.
+ * releases it at the end. Every judge's verdicts are kept under outputDir (one file per judge, keyed by
+ * the hash of both pieces), so a re-scan reads only changed pairs; an API judge reads at most
+ * `judge.maxPairs` new pairs per scan (the cost cap), the rest stay unjudged.
  */
+import { createHash } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import type { JudgementType } from "@dustmap/contract";
 import type { JudgeConfig } from "../config/schema.js";
 import { OnnxModelError, resolveModelDir } from "../semantic/onnx-provider.js";
@@ -31,6 +36,8 @@ export type PairJudge = {
   readonly threshold: number;
   /** `null` for a pair the judge did not read (an API judge's pair budget was spent). */
   judge: (pairs: ReadonlyArray<readonly [string, string]>) => Promise<Array<JudgedPair | null>>;
+  /** Distinct pairs since opening: read by the model, answered from the verdict cache, left unread by the budget. */
+  readonly stats: { read: number; cached: number; skipped: number };
   release: () => Promise<void>;
 };
 
@@ -48,23 +55,80 @@ export async function openJudge(
   if (cfg.provider === "onnx") {
     try {
       const onnx = await openPairJudge(resolveModelDir({ modelDir: opts.modelDir }), cfg.model, { device: cfg.device });
-      return {
-        judge: {
-          id: `onnx:${onnx.manifest.id}@${onnx.manifest.version} (${onnx.variant})`,
-          threshold: onnx.manifest.threshold,
-          judge: async (pairs) => (await onnx.score(pairs)).map((score) => ({ score })),
-          release: () => onnx.release(),
-        },
-        note: null,
-      };
+      const judge = cachedJudge({
+        id: `onnx:${onnx.manifest.id}@${onnx.manifest.version} (${onnx.variant})`,
+        cacheKey: `onnx:${onnx.manifest.id}@${onnx.manifest.version}`,
+        threshold: onnx.manifest.threshold,
+        read: async (pairs) => (await onnx.score(pairs)).map((score) => ({ score })),
+        budget: null,
+        outputDir: opts.outputDir,
+        release: () => onnx.release(),
+      });
+      return { judge, note: null };
     } catch (err) {
       if (err instanceof OnnxModelError && err.code === "onnx_model_missing") return { judge: null, note: `pair judge "${cfg.model}" is not installed` };
       throw err;
     }
   }
   assertApiJudgeReady(cfg, DEFAULT_JUDGE_PACKAGE);
-  const api = createApiJudge(cfg, opts.outputDir, opts.fetch);
-  return { judge: { id: api.id, threshold: 0.5, judge: api.judge, release: async () => {} }, note: null };
+  const api = createApiJudge(cfg, opts.fetch);
+  const judge = cachedJudge({ id: api.id, cacheKey: api.id, threshold: 0.5, read: api.judge, budget: cfg.maxPairs, outputDir: opts.outputDir, release: async () => {} });
+  return { judge, note: null };
+}
+
+/**
+ * A judge with its verdict cache and pair budget: cached pairs cost nothing; of the rest at most
+ * `budget` (null = all) are read per opening, the others come back `null`. The cache file is written
+ * after every read, so a scan that fails half way keeps what it paid for.
+ */
+function cachedJudge(o: {
+  id: string;
+  cacheKey: string;
+  threshold: number;
+  read: (pairs: ReadonlyArray<readonly [string, string]>) => Promise<JudgedPair[]>;
+  budget: number | null;
+  outputDir: string;
+  release: () => Promise<void>;
+}): PairJudge {
+  const file = path.join(o.outputDir, "cache", "judge", `${o.cacheKey.replace(/[^a-zA-Z0-9._@-]+/g, "_").slice(0, 96)}.json`);
+  let cache: Record<string, JudgedPair> | null = null;
+  const load = (): Record<string, JudgedPair> => {
+    if (cache) return cache;
+    try {
+      cache = JSON.parse(readFileSync(file, "utf8")) as Record<string, JudgedPair>;
+    } catch {
+      // No cache yet, or a broken one: the pairs are read again.
+      cache = {};
+    }
+    return cache;
+  };
+  let left = o.budget;
+  const stats = { read: 0, cached: 0, skipped: 0 };
+  return {
+    id: o.id,
+    threshold: o.threshold,
+    stats,
+    async judge(pairs) {
+      const known = load();
+      const keys = pairs.map(([a, b]) => createHash("sha256").update(`${a}\u0000${b}`).digest("hex").slice(0, 40));
+      const distinct = [...new Set(keys)];
+      const fresh = distinct.filter((k) => !known[k]);
+      const take = left === null ? fresh : fresh.slice(0, Math.max(0, left));
+      if (left !== null) left -= take.length;
+      stats.cached += distinct.length - fresh.length;
+      stats.read += take.length;
+      stats.skipped += fresh.length - take.length;
+      if (take.length > 0) {
+        const byKey = new Map(keys.map((k, i) => [k, pairs[i]!] as const));
+        const verdicts = await o.read(take.map((k) => byKey.get(k)!));
+        take.forEach((k, i) => (known[k] = verdicts[i]!));
+        mkdirSync(path.dirname(file), { recursive: true });
+        writeFileSync(file, `${JSON.stringify(known)}\n`, "utf8");
+      }
+      return keys.map((k) => known[k] ?? null);
+    },
+    release: o.release,
+  };
 }
 
 /**

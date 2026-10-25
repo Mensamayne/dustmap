@@ -95,7 +95,9 @@ describe("pair judge (V1-01)", () => {
     const rec = recorded(() => ({ choices: [{ message: { content: '{"label":"same","confidence":0.9,"reason":"Same loop, other names."}' } }] }));
     const dir = out();
     const c = cfg({ provider: "openai", model: "gpt-x", url: "http://127.0.0.1:9/v1", maxPairs: 2 });
-    const judge = createApiJudge(c, dir, rec.fetch);
+    const open = async () => (await openJudge(c, { outputDir: dir, fetch: rec.fetch })).judge!;
+    const judge = await open();
+    expect(judge.id).toBe("openai:gpt-x");
     const first = await judge.judge([["function a() { return 1; }", "function b() { return 1; }"]]);
     expect(first).toEqual([{ score: 0.95, label: "same", reason: "Same loop, other names." }]);
     expect(rec.calls[0]!.url).toBe("http://127.0.0.1:9/v1/chat/completions");
@@ -103,22 +105,25 @@ describe("pair judge (V1-01)", () => {
     expect(rec.calls[0]!.body.messages![1]!.content).toContain("function a() { return 1; }");
     expect(rec.calls[0]!.body.messages![1]!.content).toContain("function b() { return 1; }");
     // Cached: a fresh judge on the same outputDir asks nothing for that pair.
-    const again = createApiJudge(c, dir, rec.fetch);
-    await again.judge([["function a() { return 1; }", "function b() { return 1; }"]]);
-    expect(again.requests.count).toBe(0);
-    // Budget 2 new pairs per scan: the third is not read.
+    const again = await open();
+    expect(await again.judge([["function a() { return 1; }", "function b() { return 1; }"]])).toEqual(first);
+    expect(rec.calls).toHaveLength(1);
+    // Budget 2 new pairs per scan: the third is not read; a repeated pair is read once.
     const three = await again.judge([
       ["x1", "y1"],
       ["x2", "y2"],
+      ["x1", "y1"],
       ["x3", "y3"],
     ]);
-    expect(three.map((v) => v === null)).toEqual([false, false, true]);
+    expect(three.map((v) => v === null)).toEqual([false, false, false, true]);
+    expect(rec.calls).toHaveLength(3);
+    expect(again.stats).toEqual({ read: 2, cached: 1, skipped: 1 });
   });
 
   it("Anthropic: Messages API with x-api-key, system prompt and the verdict from the text block", async () => {
     process.env.ANTHROPIC_API_KEY = "test-key";
     const rec = recorded(() => ({ content: [{ type: "text", text: '{"label":"pattern","confidence":1,"reason":"Same shape, other data."}' }] }));
-    const judge = createApiJudge(cfg({ provider: "anthropic", model: "claude-x", allowRemote: true }), out(), rec.fetch);
+    const judge = createApiJudge(cfg({ provider: "anthropic", model: "claude-x", allowRemote: true }), rec.fetch);
     const [v] = await judge.judge([["const a = 1;", "const b = 2;"]]);
     expect(v).toEqual({ score: 0, label: "pattern", reason: "Same shape, other data." });
     expect(rec.calls[0]!.url).toBe("https://api.anthropic.com/v1/messages");

@@ -12,6 +12,7 @@ Kopie „ten sam kod, inne stałe” (L1-kształt) i prawie kopie (L2) dostają 
 
 - **Plik:** `packages/core/src/scan/**`
 - **Zmiana:** grupy `exact-clone` (medium) i `near-clone`: pary prowadzący ↔ każdy członek z tekstu jednostek (ta sama droga co skan: bez komentarzy, końce linii LF); wszystkie potwierdzone → high, wszystkie odrzucone → low; `judgement` + dowód; limit par wspólny ze skanem
+- **Zmiana w trakcie (decyzja z pomiaru):** odrzucone **nie spadają** do low — zostają medium z werdyktem „wspólny wzorzec” i powodem. Kopia tekstu jest pewna; „nie” sędziego gubi 1 na 5 prawdziwych duplikatów (złoto: 32 z 40), lab pokazał to na podłożonych kopiach. Obniża dalej tylko warstwa znaczeniowa (tam relacja to samo podobieństwo).
 - **Done when:** testy z nagranym sędzią; Monorepo-A: liczby i przegląd 20 grup
 
 ## Constraints
@@ -27,6 +28,7 @@ Kopie „ten sam kod, inne stałe” (L1-kształt) i prawie kopie (L2) dostają 
 
 - `packages/core/src/scan/**`, `packages/core/src/judge/**`, `packages/core/__tests__/**`
 - `docs/experiments/dup-results.md`
+- Added during work: `packages/cli/src/main.ts` (kod wyjścia zamiast `process.exit()` — Node na Windows padał przy zamykaniu połączeń sędziego API), `docs/briefs/V1-02-judge-text-layers.md` (ta notatka)
 
 ## Weryfikacja
 

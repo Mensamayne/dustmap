@@ -322,3 +322,18 @@ Monorepo-A: 14 395 findings, 5 795 duplicate: high **2 901** (CSS 2 017, semanti
 - AP ≥ 0.80 on test: **not met** — 0.736 (C); the planned data (variants) made it worse; Qwen 0.798 remains the reference.
 - ≥ 50 pairs/s on CPU: **boundary documented** — 4.4 (512) / 7.6 (256); GPU 75.
 - On the way: BUG-14 (fixed), and `judgedMinBand` from a review through the fixed path.
+
+## V1-02 — the judge on L1-shape and L2
+
+After the layers merge, every `exact-clone` medium (identical up to constants) and every `near-clone` group goes to the scan's judge: the lead place against each other place (at most 8), the units cut as the semantic layer cuts them (parsed unit, comments out, LF), so a pair both layers read is judged once. Every pair the same job → **high**. A no **never lowers** a text copy: the copy itself is certain, and on gold the judge's no drops one real duplicate in five here (32 of 40 kept, DUP-08); the lab showed it on planted copies (a method copied into another class with another collection, two labels differing only in strings). The group carries the verdict (`intentional-pattern`, with the reason) and stays medium. The semantic layer, whose relation is only a similarity, keeps demoting on a no. Verdicts are cached under `outputDir/cache/judge` for every judge (package or API), so a re-scan reads only changed pairs.
+
+Monorepo-A `dbe35aa00cd6` (judge `dustmap-pair-judge-private` 0.1.0 on GPU), duplicates before → after: high 2 901 → **3 202**, medium 2 333 → **2 032**, low 561 → 561. Of the groups this stage read: confirmed 301 (near 262, L1-shape 39), read as a pattern 251 (near 183, L1-shape 68), split 16; every unit was found in its file. First scan 114 s, a re-scan with the verdict cache 17 s. Service-B: 145 findings, its copy groups judged the same way.
+
+Hand review, 20 groups drawn at random (seed 11):
+
+- **Confirmed, 10/10 real duplicates:** `.ts` / compiled `.js` twins (`‹private›`, `‹private›`, `‹private›`), helpers copied between packages (`‹private›` / `‹private›`, `‹private›`, two `resolve…Backend`), copied file walkers and gram formatters, `finalizeDraft` of the ice and sweet services.
+- **Read as a pattern, 9/10 a shared skeleton with other data** by the label definitions: two argv flag parsers of one file, two analytics event builders, two `onClick` handlers, two rule-store handlers, two language stem helpers, two test scenarios, two `clearPending…` wrappers, two `‹private›` reading another file. **1/10 disputable:** `‹private›` / `‹private›`, two ~50-line variants a maintainer could call one job. Several of the nine are still parameter candidates — the reason they stay medium with the verdict rather than drop to low.
+
+Gold (DUP-08, same judge): L1-shape + L2 confirmed by the judge — precision 0.97, against 0.74 for the layer without it.
+
+On the way: a judge that cannot open (a remote API without a key) made the scan's final release rethrow, so the CLI exited as an internal error after writing the report — now released quietly, the error stays in `scan.tools` (`pair-judge`); and the CLI sets its exit code instead of calling `process.exit()`, which aborted Node on Windows while the API judge's sockets were closing.

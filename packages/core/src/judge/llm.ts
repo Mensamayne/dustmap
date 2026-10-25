@@ -4,12 +4,8 @@
  * answers with a label (same / contains / concept / pattern / different), its confidence and one
  * sentence of reason; the label and confidence become the probability of the same job, the scale every
  * judge shares. Keys come only from the environment; a non-loopback URL needs `judge.allowRemote`.
- * Verdicts are cached on disk under outputDir (model + hash of the pair), so a re-scan pays only for
- * changed pairs, and a scan judges at most `judge.maxPairs` new pairs.
+ * The verdict cache and the per-scan pair budget wrap every judge alike (judge.ts).
  */
-import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
 import type { JudgeConfig } from "../config/schema.js";
 import { isLoopbackUrl, type FetchLike } from "../semantic/provider.js";
 import type { JudgedPair } from "./judge.js";
@@ -94,27 +90,18 @@ const FENCE = "```";
 const piece = (name: string, code: string) => [`Piece ${name}:`, FENCE, cut(code), FENCE].join("\n");
 const userPrompt = (a: string, b: string) => `${piece("A", a)}\n\n${piece("B", b)}`;
 
-function pairKey(model: string, a: string, b: string): string {
-  return createHash("sha256").update(`${model}\u0000${a}\u0000${b}`).digest("hex").slice(0, 40);
-}
-
 export type ApiJudge = {
   readonly id: string;
-  /** Requests made (cached pairs make none). */
+  /** Requests made. */
   readonly requests: { count: number };
-  judge: (pairs: ReadonlyArray<readonly [string, string]>) => Promise<Array<JudgedPair | null>>;
+  /** One request per pair. */
+  judge: (pairs: ReadonlyArray<readonly [string, string]>) => Promise<JudgedPair[]>;
 };
 
-/**
- * An API pair judge. `null` for a pair means "not judged" (the scan's pair budget was spent); the
- * caller keeps that pair's group as similarity alone said.
- */
-export function createApiJudge(cfg: JudgeConfig, outputDir: string, fetchImpl: FetchLike = fetch as FetchLike): ApiJudge {
+export function createApiJudge(cfg: JudgeConfig, fetchImpl: FetchLike = fetch as FetchLike): ApiJudge {
   const url = endpoint(cfg);
   const key = judgeApiKey();
-  const cacheDir = path.join(outputDir, "cache", "judge", cfg.model.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 64));
   const requests = { count: 0 };
-  let budget = cfg.maxPairs;
   const ask = async (a: string, b: string): Promise<JudgedPair> => {
     requests.count += 1;
     const res =
@@ -146,27 +133,8 @@ export function createApiJudge(cfg: JudgeConfig, outputDir: string, fetchImpl: F
     id: `${cfg.provider}:${cfg.model}`,
     requests,
     async judge(pairs) {
-      const out: Array<JudgedPair | null> = [];
-      for (const [a, b] of pairs) {
-        const file = path.join(cacheDir, `${pairKey(cfg.model, a, b)}.json`);
-        if (existsSync(file)) {
-          try {
-            out.push(JSON.parse(readFileSync(file, "utf8")) as JudgedPair);
-            continue;
-          } catch {
-            // A broken cache entry is asked again.
-          }
-        }
-        if (budget <= 0) {
-          out.push(null);
-          continue;
-        }
-        budget -= 1;
-        const verdict = await ask(a, b);
-        mkdirSync(cacheDir, { recursive: true });
-        writeFileSync(file, `${JSON.stringify(verdict)}\n`, "utf8");
-        out.push(verdict);
-      }
+      const out: JudgedPair[] = [];
+      for (const [a, b] of pairs) out.push(await ask(a, b));
       return out;
     },
   };

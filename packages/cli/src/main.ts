@@ -75,5 +75,6 @@ async function main(argv: string[]): Promise<number> {
   }
 }
 
-const code = await main(process.argv.slice(2));
-process.exit(code);
+// The exit code, not process.exit(): exiting while fetch sockets close (an API judge or embedding
+// provider) aborts Node on Windows (libuv UV_HANDLE_CLOSING assertion); the process ends once idle.
+process.exitCode = await main(process.argv.slice(2));
