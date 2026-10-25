@@ -1386,8 +1386,11 @@
         "DUP-01"
       ],
       "epic": "DUP",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T02:02:11.291Z",
+      "gitProofSha": "5224cd96d250fb146821d302a3e17a8c2f8028b4",
+      "closureNotes": "L2 near copies and contains with diff; Monorepo-A 494 near-miss families + 52 contains, precision 30/30, +41 s; lab 146/146"
     },
     {
       "id": "DUP-03",
