@@ -1602,6 +1602,83 @@
       "completedAt": "2026-10-25T21:56:19.479Z",
       "gitProofSha": "acceef9f7a6c611690037949a8c68cf0557da7e5",
       "closureNotes": "docs/MODELS.md with ready configs for every embedding and judge mode; lab scenario 14 checks the judge modes on a fake loopback API; lab 174/174."
+    },
+    {
+      "id": "REL-00",
+      "title": "Overview: publiczne wydanie na GitHubie",
+      "layer": 0,
+      "segment": "release",
+      "brief": "docs/briefs/REL-00-overview.md",
+      "gates": [],
+      "epic": "REL",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "REL-01",
+      "title": "Higiena repo przed publikacją",
+      "layer": 1,
+      "segment": "release",
+      "brief": "docs/briefs/REL-01-repo-hygiene.md",
+      "gates": [
+        "REL-00"
+      ],
+      "epic": "REL",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "REL-02",
+      "title": "Modele dla obcych użytkowników",
+      "layer": 1,
+      "segment": "release",
+      "brief": "docs/briefs/REL-02-models-for-everyone.md",
+      "gates": [
+        "REL-00"
+      ],
+      "epic": "REL",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "REL-03",
+      "title": "Prywatne dane poza publicznym drzewem",
+      "layer": 2,
+      "segment": "release",
+      "brief": "docs/briefs/REL-03-private-data-out.md",
+      "gates": [
+        "REL-01"
+      ],
+      "epic": "REL",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "REL-04",
+      "title": "Wizytówka: README, licencja, CI",
+      "layer": 3,
+      "segment": "release",
+      "brief": "docs/briefs/REL-04-showcase.md",
+      "gates": [
+        "REL-02",
+        "REL-03"
+      ],
+      "epic": "REL",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "REL-05",
+      "title": "Publiczna historia",
+      "layer": 4,
+      "segment": "release",
+      "brief": "docs/briefs/REL-05-public-history.md",
+      "gates": [
+        "REL-04"
+      ],
+      "epic": "REL",
+      "status": "todo",
+      "kind": "feature"
     }
   ]
 }
