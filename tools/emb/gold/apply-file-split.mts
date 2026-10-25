@@ -7,12 +7,13 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assignSplits, filesInBothParts } from "./file-split.mjs";
+import { privatePath } from "../../private-data.mjs";
 
 type Row = { id: string; label: string; split: string; a: { repo?: string; path?: string }; b: { repo?: string; path?: string } };
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const apply = process.argv.includes("--apply");
-const files = ["real-refs.jsonl", "private-refs.jsonl"].map((n) => path.join(here, n)).filter((f) => existsSync(f));
+const files = ["real-refs.jsonl", "private-refs.jsonl"].map((n) => privatePath("gold", n)).filter((f) => existsSync(f));
 const byFile = files.map((f) => ({
   file: f,
   rows: readFileSync(f, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l) as Row),

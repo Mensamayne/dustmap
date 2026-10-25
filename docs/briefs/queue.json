@@ -71,7 +71,7 @@
       "startedBy": "agent",
       "completedAt": "2026-10-15T23:11:12.517Z",
       "gitProofSha": "6926154a5c6d9b6464c865e71e4ccbdfd3436752",
-      "closureNotes": "Knip: service-b 67 dead-code (2.3s), monorepo-a 4444 (530s first / ~5s cache); high examples: ‹private›, ‹private› (likely real junk), ‹private› on service-b; zero forbidden page/route/layout/action highs."
+      "closureNotes": "Knip: service-b 67 dead-code (2.3s), monorepo-a 4444 (530s first / ~5s cache); high examples: two stray root scripts (likely real junk), a migration script on service-b; zero forbidden page/route/layout/action highs."
     },
     {
       "id": "DUST-04",
@@ -90,7 +90,7 @@
       "startedBy": "agent",
       "completedAt": "2026-10-15T23:21:01.951Z",
       "gitProofSha": "a4d0cbae278ee274643bfed514df4d8eac7e0905",
-      "closureNotes": "jscpd: service-b 11 duplicate / 67 dead (0.6s); monorepo-a 1874 duplicate + 4444 dead (16.5s). High clones: ‹private› x4, ‹private› ingredients steps, fix-*.mjs scripts. Zod schema clones demoted to low."
+      "closureNotes": "jscpd: service-b 11 duplicate / 67 dead (0.6s); monorepo-a 1874 duplicate + 4444 dead (16.5s). High clones: gate scripts x4, wizard steps, one-off fix scripts. Zod schema clones demoted to low."
     },
     {
       "id": "DUST-05",
@@ -109,7 +109,7 @@
       "startedBy": "agent",
       "completedAt": "2026-10-15T23:35:06.209Z",
       "gitProofSha": "3cfa874a9dd1dc6b0eba5aeae22e6244b699b907",
-      "closureNotes": "semantic: service-b 5 clusters in 141s (e.g. ‹private› ‹private› 0.87 medium — real parallel stores; ‹private› ‹private› 0.83 low). monorepo-a semantic off in target config (cost). Remote HTTP blocked without allowRemote."
+      "closureNotes": "semantic: service-b 5 clusters in 141s (e.g. one lookup in two parallel stores 0.87 medium — real; a collision finder 0.83 low). monorepo-a semantic off in target config (cost). Remote HTTP blocked without allowRemote."
     },
     {
       "id": "DUST-06",
@@ -128,7 +128,7 @@
       "startedBy": "agent",
       "completedAt": "2026-10-15T23:51:41.581Z",
       "gitProofSha": "adb10c94bf873c97f26a1d8aa7ff91958a2536db",
-      "closureNotes": "signals: service-b 28 refactor (0.8s) e.g. long ‹private›, severity===critical/high repeated; monorepo-a 3603 refactor / 25s e.g. ‹private› cyclomatic 20, main 385 lines. Hints are review-only."
+      "closureNotes": "signals: service-b 28 refactor (0.8s) e.g. a long invariant checker, one severity condition repeated; monorepo-a 3603 refactor / 25s e.g. a wizard component cyclomatic 20, a 385-line main. Hints are review-only."
     },
     {
       "id": "DUST-07",
@@ -146,7 +146,7 @@
       "startedBy": "agent",
       "completedAt": "2026-10-16T00:16:22.742Z",
       "gitProofSha": "a2408823f60f4fe59b85e530f0d81d17ee8eb513",
-      "closureNotes": "git-signals: snapshots 0 (no history); live service-b 5 hotspot / 259s; live monorepo-a 571 (419 hotspot, 114 co-change, 38 fix-density) / 741s e.g. ‹private› hotspot 1730, i18n co-change 100%, ‹private› fix 0.80"
+      "closureNotes": "git-signals: snapshots 0 (no history); live service-b 5 hotspot / 259s; live monorepo-a 571 (419 hotspot, 114 co-change, 38 fix-density) / 741s e.g. a hotspot score 1730, i18n co-change 100%, a fix density 0.80"
     },
     {
       "id": "DUST-08",
@@ -165,7 +165,7 @@
       "startedBy": "agent",
       "completedAt": "2026-10-16T00:29:29.549Z",
       "gitProofSha": "f5bad999b96c54800f0cb174750a983b403322e2",
-      "closureNotes": "structure: service-b 10 (1 cycle ‹private›, hubs types fan-in 11 / engine fan-out 16) 2.2s; monorepo-a 443 (65 cycles e.g. ‹private› modal, 378 hubs) 88s; layer-violation 0 without layers[] in target config"
+      "closureNotes": "structure: service-b 10 (1 port/adapter cycle, a types hub fan-in 11 / engine fan-out 16) 2.2s; monorepo-a 443 (65 cycles, 378 hubs) 88s; layer-violation 0 without layers[] in target config"
     },
     {
       "id": "DUST-09",
@@ -186,7 +186,7 @@
       "startedBy": "agent",
       "completedAt": "2026-10-16T00:37:58.613Z",
       "gitProofSha": "ef0f0995404ea6debbccbc0f9068e9f1d15bacb5",
-      "closureNotes": "ranking: service-b top ‹private› (clone+large+god) 0.4s; monorepo-a top ‹private› (clone+large+god+cycle, score~86) 9s cache; decisions keep mutes until fingerprint changes; ratchet exit 1 on new fps"
+      "closureNotes": "ranking: service-b top a runner module (clone+large+god) 0.4s; monorepo-a top a session-body component (clone+large+god+cycle, score~86) 9s cache; decisions keep mutes until fingerprint changes; ratchet exit 1 on new fps"
     },
     {
       "id": "DUST-10",
@@ -1663,8 +1663,10 @@
         "REL-01"
       ],
       "epic": "REL",
-      "status": "todo",
-      "kind": "feature"
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-25T22:31:35.055Z",
+      "startedBy": "agent"
     },
     {
       "id": "REL-04",

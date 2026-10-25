@@ -11,6 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { privatePath } from "../../private-data.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "../../..");
@@ -85,7 +86,7 @@ export function checkHygiene(rows: Row[]): string[] {
 
 function loadPrivateRows(): Row[] {
   return ["private-refs.jsonl", "real-refs.jsonl"]
-    .map((f) => path.join(here, f))
+    .map((f) => privatePath("gold", f))
     .filter((f) => existsSync(f))
     .flatMap((f) =>
       readFileSync(f, "utf8")

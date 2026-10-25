@@ -11,12 +11,13 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { repo } from "../gold-data.mts";
+import { privatePath } from "../../private-data.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const apply = process.argv.includes("--apply");
-const candPath = path.join(here, "same-file-siblings-candidates.jsonl");
-const seedOut = path.join(here, "same-file-siblings-con07-seed.jsonl");
-const deferredPath = path.join(here, "same-file-siblings-deferred.jsonl");
+const candPath = privatePath("gold", "same-file-siblings-candidates.jsonl");
+const seedOut = privatePath("gold", "same-file-siblings-con07-seed.jsonl");
+const deferredPath = privatePath("gold", "same-file-siblings-deferred.jsonl");
 
 const SNAP = path.resolve(repo, ".tmp/targets/monorepo-a@dbe35aa00cd6/src");
 

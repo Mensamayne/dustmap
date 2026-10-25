@@ -6,7 +6,7 @@
 
 ## Overview
 
-Naprawić bug: skan tnie funkcje, fragmenty i klasy razem z końcami linii pliku. Na Windowsie (checkout z `core.autocrlf`, a także migawka `git archive`) to `\r\n` — w migawce Monorepo-A 10 883 z 10 886 plików skryptów. Modele uczyły się na tekście z `\n` (dane treningowe, złoto: `split(/\r?\n/).join("\n")`). Sędzia par na tej samej parze (`‹private›` `.js` / `.ts`): z `\n` 0,998, z `\r\n` 0,022 — w skanie zdegradował prawdziwe duplikaty. Model wektorowy dostaje ten sam tekst. Miernik tego nie widział, bo karmił modele tekstem z `\n`.
+Naprawić bug: skan tnie funkcje, fragmenty i klasy razem z końcami linii pliku. Na Windowsie (checkout z `core.autocrlf`, a także migawka `git archive`) to `\r\n` — w migawce Monorepo-A 10 883 z 10 886 plików skryptów. Modele uczyły się na tekście z `\n` (dane treningowe, złoto: `split(/\r?\n/).join("\n")`). Sędzia par na tej samej parze (sortowanie topologiczne jako `.js` i `.ts`): z `\n` 0,998, z `\r\n` 0,022 — w skanie zdegradował prawdziwe duplikaty. Model wektorowy dostaje ten sam tekst. Miernik tego nie widział, bo karmił modele tekstem z `\n`.
 
 ## Read first
 

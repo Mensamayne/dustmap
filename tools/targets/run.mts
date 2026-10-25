@@ -24,12 +24,11 @@ import {
   takeInventory,
   type DustmapConfigType,
 } from "../../packages/core/src/index.ts";
+import { loadTargets } from "./registry.mjs";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const dustmapBin = path.join(repo, "packages", "cli", "bin", "dustmap.mjs");
-const registry = JSON.parse(readFileSync(path.join(repo, "tools/targets/targets.json"), "utf8")) as {
-  targets: Record<string, { path: string; env: string; config: string | null }>;
-};
+const targets = loadTargets() as Record<string, { path: string; env: string; config: string | null }>;
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -44,7 +43,7 @@ function fail(code: number, message: string): never {
 const name = process.argv[2] && !process.argv[2].startsWith("--") ? process.argv[2] : undefined;
 const adHoc = arg("path");
 const snapshot = arg("snapshot");
-if (!name && !adHoc) fail(2, "Użycie: npm run target -- <monorepo-a|service-b|self> [--snapshot <sha>]  albo  --path <katalog>");
+if (!name && !adHoc) fail(2, `Użycie: npm run target -- <${Object.keys(targets).join("|")}> [--snapshot <sha>]  albo  --path <katalog>`);
 
 let targetDir: string;
 let configPath: string | null = null;
@@ -53,8 +52,8 @@ if (adHoc) {
   targetDir = path.resolve(adHoc);
   label = arg("label") ?? path.basename(targetDir);
 } else {
-  const t = registry.targets[name!];
-  if (!t) fail(2, `Nie ma celu „${name}”. Dostępne: ${Object.keys(registry.targets).join(", ")}`);
+  const t = targets[name!];
+  if (!t) fail(2, `Nie ma celu „${name}”. Dostępne: ${Object.keys(targets).join(", ")}`);
   targetDir = path.resolve(repo, process.env[t.env] ?? t.path);
   configPath = t.config ? path.join(repo, t.config) : null;
   label = name!;

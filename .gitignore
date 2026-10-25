@@ -47,3 +47,6 @@ yarn-error.log*
 .nyc_output/
 playwright-report/
 test-results/
+
+# Maintainer-only research data (private targets, gold refs, alias rules) — never in git (REL-03)
+/private/

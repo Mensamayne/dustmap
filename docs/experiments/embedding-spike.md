@@ -8,10 +8,10 @@
 |--|--|
 | Narzędzie | jscpd 5.4.1 (natywny, Rust), `--semantic --semantic-scope same --kind semantic` |
 | Model | `jina-embeddings-v2-base-code` (lokalnie, CPU; 324 MB, był już pobrany) |
-| Korpus | tylko pliki z rolą `source` (DUST-20) z `‹private›/**` i `packages/*/src/**`, bez martwego `‹private›` — 4817 plików, 35 MB |
+| Korpus | tylko pliki z rolą `source` (DUST-20) z aplikacji webowej i pakietów `packages/*/src/**`, bez jednego martwego pakietu — 4817 plików, 35 MB |
 | Sprzęt | 16 wątków CPU; GPU (RTX 4070 Ti) zajęte przez inny proces, PyTorch tylko CPU — liczenie na GPU nie było możliwe |
 
-## Przebieg 1 — `‹private›` (176 plików, 28 tys. linii)
+## Przebieg 1 — jeden pakiet rdzenia agenta (176 plików, 28 tys. linii)
 
 `--min-tokens 50 --min-lines 8`, wątki automatycznie. **Czas: 270 s.** Wynik: 26 par.
 
@@ -40,19 +40,19 @@ Ocena ręczna 16 par z trzech pasm podobieństwa (czytany kod obu stron):
 
 **Wartość dodana:** jscpd w trybie tokenowym na tym samym katalogu (1 s, 31 klonów) **nie znalazł żadnej z 8 prawdziwych par**. Embeddingi znajdują coś, czego zwykłe porównanie tekstu nie widzi.
 
-**Najcenniejszy wzorzec:** pary #4, #7 i kolejne (#9, #13, #23 — nieoceniane, ten sam układ plików) łączą te same dwa pliki: `‹private›` ↔ `‹private›`. To nie pięć duplikatów, tylko **jeden: dwa równoległe systemy zapisu tury**. Raport powinien grupować pary po parze plików.
+**Najcenniejszy wzorzec:** pary #4, #7 i kolejne (#9, #13, #23 — nieoceniane, ten sam układ plików) łączą te same dwa pliki: magazyn audytu i magazyn śladów tury. To nie pięć duplikatów, tylko **jeden: dwa równoległe systemy zapisu tury**. Raport powinien grupować pary po parze plików.
 
-## Przebieg 2 — próbka z `‹private›` (670 plików, 102 tys. linii)
+## Przebieg 2 — próbka z biblioteki aplikacji webowej (670 plików, 102 tys. linii)
 
-Katalogi: `actions`, `auth`, `‹private›`, `‹private›`, `core`. `--min-tokens 80 --min-lines 15`. **1279 funkcji, czas 985 s (1,3 funkcji/s).** Wynik: 121 par (≥ 0.85: 50; 0.82–0.85: 19; 0.79–0.82: 30; < 0.79: 22).
+Pięć katalogów biblioteki. `--min-tokens 80 --min-lines 15`. **1279 funkcji, czas 985 s (1,3 funkcji/s).** Wynik: 121 par (≥ 0.85: 50; 0.82–0.85: 19; 0.79–0.82: 30; < 0.79: 22).
 
-| # | Podob. | Para (względem `‹private›/…`) | Werdykt | Dlaczego |
+| # | Podob. | Para | Werdykt | Dlaczego |
 |---|--------|------|---------|----------|
 | 0 | 0.996 | (prywatny kod) | **real** | ta sama funkcja skopiowana do 3 akcji, różni się tylko kluczem komunikatu |
 | 5 | 0.963 | (prywatny kod) | **real** | ~80 linii skopiowanego odczytu zużycia, różni się tylko wyborem tenanta |
 | 12 | 0.926 | (prywatny kod) | **real** | serwer i UI osobno łatają tę samą część „dokument” w wiadomościach |
 | 25 | 0.908 | (prywatny kod) | **real** | ta sama procedura „upewnij się, że lokalny użytkownik istnieje”, inna rola |
-| 40 | 0.874 | (prywatny kod) | **real** | dwa budowniczowie podglądu miksu, już się rozjechały (inny domyślny `roleKey`, brak `type`) |
+| 40 | 0.874 | (prywatny kod) | **real** | dwa budowniczowie podglądu miksu, już się rozjechały (inna wartość domyślna, brak jednego pola) |
 | 55 | 0.841 | (prywatny kod) | pattern | wspólny początek handlera akcji, dalej inna logika |
 | 64 | 0.827 | (prywatny kod) | pattern | ten sam wstęp „sprawdź uprawnienie”, reszta różna |
 | 72 | 0.815 | (prywatny kod) | pattern | wstęp handlera |
@@ -85,7 +85,7 @@ Najczęstszy fałszywy alarm to **wzorzec**, nie losowy szum: wstępy handlerów
 ## Decyzja dla DUST-05
 
 1. **Domyślnie włączone**, model `jina-embeddings-v2-base-code` (Apache-2.0, 324 MB, lokalnie). Próg w obrębie języka: **0.82**. Pewność znaleziska: ≥ 0.85 → `medium`, 0.82–0.85 → `low`. Poniżej 0.82 nie raportujemy (4 trafienia na 16). `high` dopiero, gdy zbiór prawdy (DUST-16) pokaże ≥ 90% na większej próbce.
-2. **Grupowanie po parze plików i po funkcji**: kilka par między tymi samymi dwoma plikami to jedno znalezisko „dwa równoległe systemy” (np. `‹private›` ↔ `‹private›`). Jedna funkcja w N kopiach (#0: apply / reject / extend) to jedna grupa z N miejscami.
+2. **Grupowanie po parze plików i po funkcji**: kilka par między tymi samymi dwoma plikami to jedno znalezisko „dwa równoległe systemy” (np. magazyn audytu ↔ magazyn śladów tury). Jedna funkcja w N kopiach (#0: apply / reject / extend) to jedna grupa z N miejscami.
 3. **Koszt to główne ryzyko, nie trafność.** CPU: 1,3–2,1 funkcji/s. Pełny kod produktu Monorepo-A (~4,8 tys. plików) to szacunkowo ~2 godziny za pierwszym razem. Stąd:
    - pierwszy pełny skan semantyczny to jawny krok „budowania indeksu” w tle z postępem; zwykły `scan` korzysta z pamięci wektorów,
    - tryb `diff` liczy tylko zmienione funkcje (sekundy),

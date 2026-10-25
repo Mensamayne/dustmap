@@ -19,16 +19,17 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assignSplits } from "./file-split.mjs";
+import { privatePath } from "../../private-data.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const apply = process.argv.includes("--apply");
 const includeProposed = process.argv.includes("--include-proposed-pattern");
 
 const SOURCE = "EMB-10 same-file siblings";
-const seedPath = path.join(here, "same-file-siblings-seed.jsonl");
-const seedCon07Path = path.join(here, "same-file-siblings-con07-seed.jsonl");
-const candPath = path.join(here, "same-file-siblings-candidates.jsonl");
-const refsPath = path.join(here, "real-refs.jsonl");
+const seedPath = privatePath("gold", "same-file-siblings-seed.jsonl");
+const seedCon07Path = privatePath("gold", "same-file-siblings-con07-seed.jsonl");
+const candPath = privatePath("gold", "same-file-siblings-candidates.jsonl");
+const refsPath = privatePath("gold", "real-refs.jsonl");
 
 type Side = {
   repo: string;

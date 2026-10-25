@@ -10,11 +10,13 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { privatePath } from "../../private-data.mjs";
+import { targetDir } from "../../targets/registry.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "../../..");
 const outDir = path.join(repo, ".tmp/con03-second");
-const refsPath = path.join(here, "real-refs.jsonl");
+const refsPath = privatePath("gold", "real-refs.jsonl");
 const candPath = path.join(repo, ".tmp/con03/candidates.json");
 const BATCH = 28;
 
@@ -32,8 +34,8 @@ function readSpan(side: Side): string | null {
   // Prefer live Monorepo-A for CSS (archive often omits .css)
   const live =
     side.repo === "monorepo-a"
-      ? process.env.DUSTMAP_TARGET_MONOREPO_A ?? path.resolve(repo, "../monorepo-a")
-      : process.env.DUSTMAP_TARGET_SERVICE_B ?? path.resolve(repo, "../service-b");
+      ? targetDir("monorepo-a")
+      : targetDir("service-b");
   const candidates = [
     path.join(snapRoot(side.repo, side.sha), side.path),
     path.join(live, side.path),
@@ -206,7 +208,8 @@ function score() {
       const res = resolutions.get(r.id);
       if (!res) return r;
       applied++;
-      const next = { ...r, label: res.label, why: res.why ?? r.why, source: `${r.source ?? "CON-03"} + second-opinion resolve` };
+      // Keep original source tag (CON-01 / CON-03 / EMB-10 …) so isRealSource still matches.
+      const next = { ...r, label: res.label, why: res.why ?? r.why };
       if (res.label === "contains") next.larger = res.larger;
       else delete next.larger;
       return next;

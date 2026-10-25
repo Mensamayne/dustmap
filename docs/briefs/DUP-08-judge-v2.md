@@ -6,7 +6,7 @@
 
 Sędzia par z DUP-04 (`dustmap-pair-judge-private`) dobrze odrzuca wzorce (pułapka 51/193 zamiast 187/193 u Qwena) i podnosi precyzję L2 do 0,97. Ma dwie luki, zmierzone w `docs/experiments/dup-results.md` (DUP-04):
 
-1. **Myli kopie różniące się nazwą albo stałą z różną robotą.** Na Monorepo-A odrzucił `‹private›` ×3 (inna nazwa typu), `‹private›` ×8 (inna stała), `‹private›` / `‹private›`. Przyczyna w danych: negatywy „ta sama sygnatura”, „ta sama nazwa” uczą, że inne identyfikatory to inna robota. AP na teście 0,736 (cel DUP-04: ≥ 0,80).
+1. **Myli kopie różniące się nazwą albo stałą z różną robotą.** Na Monorepo-A odrzucił budowniczego ścieżek wykresu ×3 (inna nazwa typu), czytnik identyfikatorów reguł ×8 (inna stała), dwa parsery JSON z CLI. Przyczyna w danych: negatywy „ta sama sygnatura”, „ta sama nazwa” uczą, że inne identyfikatory to inna robota. AP na teście 0,736 (cel DUP-04: ≥ 0,80).
 2. **Na CPU 4,4 pary/s** (karta 75/s). Cel DUP-04: ≥ 50/s na CPU.
 
 ## Read first

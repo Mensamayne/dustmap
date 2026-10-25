@@ -26,8 +26,8 @@ A group counts as correct when its members really are what the finding says (sam
 
 | Kind | Sampled | Correct | Notes |
 |---|---:|---:|---|
-| exact-clone / high | 8 | 8 | `sha256Hex`, `clamp01` ×5, `‹private›` across packages, CLI `req` helpers, verify-gate `read` ×3 |
-| exact-clone / medium | 8 | 8 | engine-client `‹private›` ×4 (only the URL differs), `‹private›` ×3 (only the prefix), `generateMetadata` ×4 layouts, FNV hash in hex vs decimal (now high after literal-by-value) |
+| exact-clone / high | 8 | 8 | `sha256Hex`, `clamp01` ×5, a retry-header parser across packages, CLI `req` helpers, verify-gate `read` ×3 |
+| exact-clone / medium | 8 | 8 | an engine-client getter ×4 (only the URL differs), a request-id parser ×3 (only the prefix), `generateMetadata` ×4 layouts, FNV hash in hex vs decimal (now high after literal-by-value) |
 | css-duplicate / high | 7 | 7 | focus ring ×20 selectors, `.stack` flex column ×3 |
 | css-duplicate / medium | 7 | 7 | all shared sets are real |
 | **Total** | **30** | **30** | precision 1.00 (target ≥ 0.95) |
@@ -36,7 +36,7 @@ Usefulness is a separate question from correctness. Of the 7 shared CSS sets, ab
 
 ### What the sample shows for later briefs
 
-- Many high groups come from whole copied files or folders: design-system kits copied under `monorepo-a-web/`, `‹private›`, `‹private›`. Each copied function is its own finding. DUP-06 should fold these into one "parallel files" finding.
+- Many high groups come from whole copied files or folders: design-system kits copied into the web app, an archived app version, copied landing pages. Each copied function is its own finding. DUP-06 should fold these into one "parallel files" finding.
 - `exact-clone / medium` are the most actionable findings: same code, other constants, often in one file. DUP-05 should turn them into a parameter sketch.
 
 ### Lab
@@ -76,8 +76,8 @@ A finding counts as correct when its members really are near copies (or the smal
 
 | Kind | Draws | Correct | Examples |
 |---|---:|---:|---|
-| near-miss | 20 (19 distinct; seeds 41, 97) | 20 | `‹private›` / `‹private›` (only the default constant name), `‹private›` / `‹private›`, `‹private›` / `‹private›`, `‹private›` / `‹private›`, `‹private›` (lab copy) / `‹private›` (+ one `if`) |
-| contains | 10 (seed 43) | 10 | `parseArgs` and its extended copy with more flags, `encodeCursor` + a cap, `‹private›` inside `‹private›`, `‹private›` inside the opt-out variant |
+| near-miss | 20 (19 distinct; seeds 41, 97) | 20 | two day-range clamps (only the default constant name), two id readers, two daily-lane helpers, two recipe-section components, two row pushers (+ one `if`) |
+| contains | 10 (seed 43) | 10 | `parseArgs` and its extended copy with more flags, `encodeCursor` + a cap, a date-start parser inside the end-exclusive one, an opt-in action inside its opt-out variant |
 | **Total** | **30** | **30** | precision 1.00 (target ≥ 0.95) |
 
 Defects found by the review and fixed before the count: the same function wrapped differently (and with a trailing comma) was a near copy → logical lines; a method was "contained" in a whole class because that class held its near copy → inner pairs win; families of copy-pasted script helpers flooded as pairs → grouping; identical members of a family repeated L1 → one representative; the diff printed one file line several times (JSX) and only the first line of a wrapped statement → printed once, up to three file lines.
@@ -107,7 +107,7 @@ Scenario `12-prawie-kopie`: a near copy (one changed call, other names), a copy 
 
 Recall of L1+L2 on gold: same 0.15, contains 0.11, concept 0.00 — most gold duplicates are type 3–4, which is L3/L4's job. Trap: 11/193 reported.
 
-**Correction to DUP-02.** Its acceptance asked for L2 precision ≥ 0.95 *on gold*; DUP-02 was closed on a Monorepo-A review that asked "is this really a near copy?" (30/30 yes). On gold, which asks "do both do the same job?", L2 is 0.79 and L1-shape 0.60. The misses are copies with one responsibility swapped: `‹private›` / `walk` (another file filter), `‹private›` / `‹private›` (another media query), `POST` / `POST` (accept vs reject action). No text rule separates them — similarity of the pattern pairs (0.71–0.87) overlaps that of the duplicates (0.74–0.98). Twelve of the 14 such labels come from the CON-03 labelling; within one family gold is not consistent (`‹private›` ↔ `‹private›` pattern, both ↔ `‹private›` same). Consequence for the epic: L1-shape and L2 report a certain *text* relation; "same job" is decided by L4 or the agent, and DUP-06 shows the two separately.
+**Correction to DUP-02.** Its acceptance asked for L2 precision ≥ 0.95 *on gold*; DUP-02 was closed on a Monorepo-A review that asked "is this really a near copy?" (30/30 yes). On gold, which asks "do both do the same job?", L2 is 0.79 and L1-shape 0.60. The misses are copies with one responsibility swapped: two file walkers (another file filter), two media-query subscriptions (another query), `POST` / `POST` (accept vs reject action). No text rule separates them — similarity of the pattern pairs (0.71–0.87) overlaps that of the duplicates (0.74–0.98). Twelve of the 14 such labels come from the CON-03 labelling; within one family gold is not consistent (two loaders labelled pattern, both labelled same against a third). Consequence for the epic: L1-shape and L2 report a certain *text* relation; "same job" is decided by L4 or the agent, and DUP-06 shows the two separately.
 
 ### L3 — partner in the top k (product path)
 
@@ -159,7 +159,7 @@ Time: L1+L2+L5 47 s (L5 sketches ~0 s extra after caching unit details); directi
 
 ### Review
 
-- **30 sketches** (seeds 5, 9, 23): 10 constant-parameter sketches, 10 near-copy sketches, 10 CSS grouping sketches. Passing the listed values to the common form gives each original: 30/30 after two fixes found in the review — a type name taken as a value (`‹private›: p1` → now "another type"), and a required parameter placed after an optional one (`‹private›(‹private›?: string, p1)` → now in front). Known limit: a parameter's type is the reference value's type (`typeof ‹private›`); it may need widening by hand.
+- **30 sketches** (seeds 5, 9, 23): 10 constant-parameter sketches, 10 near-copy sketches, 10 CSS grouping sketches. Passing the listed values to the common form gives each original: 30/30 after two fixes found in the review — a type name taken as a value (`x: p1` → now "another type"), and a required parameter placed after an optional one (`fetchRaw(base?: string, p1)` → now in front). Known limit: a parameter's type is the reference value's type (`typeof LABELS`); it may need widening by hand.
 - **5 directions** checked against the target's own history (`git log --follow -M`): 5/5 — e.g. `‹private›` is a `C100` copy of `‹private›` made 18 days later; `‹private›` was copied from `agent-forensics-mcp`.
 - The first measurement also found 45 sketches that did not parse (template-string pieces and JSX attributes replaced with their delimiters, positional parameters added to components): fixed, 0 now.
 
@@ -205,8 +205,8 @@ Judge score + cosine in one logistic model (fit on validation): test AP 0.710 bu
 On gold, pairs at or above the medium band: precision 0.72 → 0.87, duplicates kept 75 of 99, trap 173 → 49; high band 0.81 → 0.89.
 
 Review on Monorepo-A:
-- **20 random high groups kept by the judge: 20/20 duplicates** (one borderline: `‹private›` / `‹private›`, one condition apart — a parameter candidate; `‹private›` in `‹private›` is the Babel output of `‹private›`).
-- **10 random groups the judge removed: 5 correct removals** (caller/callee, build vs strip of one link, string vs number variant, different translation logic, server vs local variant), **5 real or borderline duplicates lost**: `‹private›` / `‹private›`, `‹private›` ×3 (only a type name differs), `‹private›` ×8 (only a constant differs), `‹private›` ×2, `prune` / `‹private›`. Lowering the threshold does not help (test: recall 0.76 at 0.5, 0.84 at 0.05 while the trap doubles); the judge is confidently wrong on copies that differ in an identifier — its negatives (same signature, same name) taught it that other names mean other work. L1/L2 still report several of these as text copies (DUP-06 merges the layers).
+- **20 random high groups kept by the judge: 20/20 duplicates** (one borderline: two unit converters one condition apart — a parameter candidate; an icon component in a compiled bundle is the Babel output of its JSX source).
+- **10 random groups the judge removed: 5 correct removals** (caller/callee, build vs strip of one link, string vs number variant, different translation logic, server vs local variant), **5 real or borderline duplicates lost**: two CLI JSON parsers, a chart-path builder ×3 (only a type name differs), a gate rule-id reader ×8 (only a constant differs), a device lister ×2, two prune helpers. Lowering the threshold does not help (test: recall 0.76 at 0.5, 0.84 at 0.05 while the trap doubles); the judge is confidently wrong on copies that differ in an identifier — its negatives (same signature, same name) taught it that other names mean other work. L1/L2 still report several of these as text copies (DUP-06 merges the layers).
 
 ### Lab: why the judge demotes instead of deleting
 
@@ -247,7 +247,7 @@ Full Monorepo-A scan with every layer (jscpd, L1, L2, L5, semantic + pair judge,
 | low | 20 | 5 | 11 | 4 | 0.25 |
 
 - 3 of the 5 high/medium misses were token copies (jscpd) no other layer confirmed: `try/catch` + trace boilerplate, a fragment spanning a function and a zod schema, a response-parsing fragment.
-- low is almost all semantic groups the judge rejected: 15 of 20 rightly hidden from the default report (icons, ice/sweet form fields, API vs SMTP tests …); the 5 real ones are the judge's known gap (DUP-08): a type or a language apart — `‹private›` `.js` / `.ts`, `countName`, `‹private›` / `‹private›`, a copied `fetcher`, a dose-band check.
+- low is almost all semantic groups the judge rejected: 15 of 20 rightly hidden from the default report (icons, ice/sweet form fields, API vs SMTP tests …); the 5 real ones are the judge's known gap (DUP-08): a type or a language apart — a topological sort `.js` / `.ts` twin, a name counter, two HTML strippers, a copied `fetcher`, a dose-band check.
 
 ### Token copies alone
 
@@ -282,9 +282,9 @@ All duplicate scenarios green: 02 (copies, one group led by L1), 03 (same meanin
 
 ### Correction to DUP-04 and DUP-07: most of the judge's "misses" were line endings (BUG-14)
 
-The scan cut unit bodies with the file's line endings: 10 883 of the 10 886 script files of the Monorepo-A snapshot are CRLF (`git archive` converts like a Windows checkout). The judge and the embedding model were trained on LF text, and the meter fed them LF text, so the meter never showed it. One pair, `‹private›` `.js` / `.ts`: **0.998 from LF, 0.022 from the scan's cut**. BUG-14 made every unit body LF (`stripComments`).
+The scan cut unit bodies with the file's line endings: 10 883 of the 10 886 script files of the Monorepo-A snapshot are CRLF (`git archive` converts like a Windows checkout). The judge and the embedding model were trained on LF text, and the meter fed them LF text, so the meter never showed it. One pair, a topological sort as `.js` and `.ts`: **0.998 from LF, 0.022 from the scan's cut**. BUG-14 made every unit body LF (`stripComments`).
 
-So the DUP-04 statement "the judge is confidently wrong on copies that differ in an identifier" and the DUP-07 "5 real duplicates in low are the judge's gap" were mostly this bug. Through the fixed path the same judge (v0.1, run C) accepts 7 of the 8 reviewed real duplicates (`‹private›` 0.999, `‹private›` 0.998, `‹private›` 0.77, `‹private›` 0.71, `countName` 0.60, `‹private›`, a dose-band check); its own errors on the 14 hand-reviewed pairs: `‹private›` (another constant, a split case in gold too), and two wrongly accepted pairs — `tryLoad…` / `load…` (one calls the other) and build vs strip of a link.
+So the DUP-04 statement "the judge is confidently wrong on copies that differ in an identifier" and the DUP-07 "5 real duplicates in low are the judge's gap" were mostly this bug. Through the fixed path the same judge (v0.1, run C) accepts 7 of the 8 reviewed real duplicates (the topological sort 0.999, the HTML stripper 0.998, the chart-path builder 0.77, the CLI JSON parser 0.71, the name counter 0.60, the device lister, a dose-band check); its own errors on the 14 hand-reviewed pairs: the gate rule-id reader (another constant, a split case in gold too), and two wrongly accepted pairs — `tryLoad…` / `load…` (one calls the other) and build vs strip of a link.
 
 The embedding model was robust to it: L3 recall@20 on Monorepo-A 0.88 before and after (the meter's L3 runs the scan's cut).
 
@@ -311,7 +311,7 @@ A 126 M-parameter cross-encoder does not reach 50 pairs/s on this CPU even at ha
 
 ### New default from the fixed path: judged groups from the high band
 
-With LF input the judge confirmed many more semantic groups (Monorepo-A: high 730, medium 343, low 411; before the fix 472 / 110 / 903). Hand review of the confirmed ones (seeds 611, 733, 919): **high band 16/17 real**; **medium band ~1 in 4** (15 groups: mostly sibling helpers of one file — `‹private›` / `‹private›`, two dialog hooks, primary / secondary button, caller and callee — the trap's kind of pair, where the judge says yes 26 % of the time). New `semantic.judgedMinBand` (default `high`): a judged group below the high similarity band stays low with that reason. Semantic now: high 730, medium 142 (high-band groups one step down for a shared pattern or parallel files), low 612.
+With LF input the judge confirmed many more semantic groups (Monorepo-A: high 730, medium 343, low 411; before the fix 472 / 110 / 903). Hand review of the confirmed ones (seeds 611, 733, 919): **high band 16/17 real**; **medium band ~1 in 4** (15 groups: mostly sibling helpers of one file — a flush and a write helper of one draft store, two dialog hooks, primary / secondary button, caller and callee — the trap's kind of pair, where the judge says yes 26 % of the time). New `semantic.judgedMinBand` (default `high`): a judged group below the high similarity band stays low with that reason. Semantic now: high 730, medium 142 (high-band groups one step down for a shared pattern or parallel files), low 612.
 
 ### Final full scan (every layer, judge, merge, BUG-14)
 
@@ -331,8 +331,8 @@ Monorepo-A `dbe35aa00cd6` (judge `dustmap-pair-judge-private` 0.1.0 on GPU), dup
 
 Hand review, 20 groups drawn at random (seed 11):
 
-- **Confirmed, 10/10 real duplicates:** `.ts` / compiled `.js` twins (`‹private›`, `‹private›`, `‹private›`), helpers copied between packages (`‹private›` / `‹private›`, `‹private›`, two `resolve…Backend`), copied file walkers and gram formatters, `finalizeDraft` of the ice and sweet services.
-- **Read as a pattern, 9/10 a shared skeleton with other data** by the label definitions: two argv flag parsers of one file, two analytics event builders, two `onClick` handlers, two rule-store handlers, two language stem helpers, two test scenarios, two `clearPending…` wrappers, two `‹private›` reading another file. **1/10 disputable:** `‹private›` / `‹private›`, two ~50-line variants a maintainer could call one job. Several of the nine are still parameter candidates — the reason they stay medium with the verdict rather than drop to low.
+- **Confirmed, 10/10 real duplicates:** `.ts` / compiled `.js` twins (an ops planner, a report mapper, a link checker), helpers copied between packages (two emptiness checks, a dose helper, two backend resolvers), copied file walkers and gram formatters, the finalize step of two product-line services.
+- **Read as a pattern, 9/10 a shared skeleton with other data** by the label definitions: two argv flag parsers of one file, two analytics event builders, two `onClick` handlers, two rule-store handlers, two language stem helpers, two test scenarios, two `clearPending…` wrappers, two rule-id readers of other files. **1/10 disputable:** two snapshot-calculator factories of two product lines, ~50-line variants a maintainer could call one job. Several of the nine are still parameter candidates — the reason they stay medium with the verdict rather than drop to low.
 
 Gold (DUP-08, same judge): L1-shape + L2 confirmed by the judge — precision 0.97, against 0.74 for the layer without it.
 

@@ -11,11 +11,12 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { privatePath } from "../../private-data.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "../../..");
 const ts = createRequire(path.join(repo, "packages/core/package.json"))("typescript");
-const spec = JSON.parse(readFileSync(path.join(here, "private-spec.json"), "utf8"));
+const spec = JSON.parse(readFileSync(privatePath("gold", "private-spec.json"), "utf8"));
 const snapshot = path.join(repo, ".tmp/targets", `${spec.target}@${spec.sha.slice(0, 12)}`, "src");
 if (!existsSync(snapshot)) {
   console.error(`Brak migawki ${snapshot}. Najpierw: npm run target -- ${spec.target} --snapshot ${spec.sha}`);
@@ -117,6 +118,6 @@ for (const p of spec.pairs) {
   }
   lines.push(JSON.stringify({ id: p.id, label: p.label, split: split(p.id), source: "DUST-15", sim: p.sim, why: p.why, a: a.ref, b: b.ref }));
 }
-writeFileSync(path.join(here, "private-refs.jsonl"), `${lines.join("\n")}\n`);
+writeFileSync(privatePath("gold", "private-refs.jsonl"), `${lines.join("\n")}\n`);
 console.log(`private-refs.jsonl: ${lines.length}/${spec.pairs.length} par`);
 for (const p of problems) console.log(`  pominięte ${p}`);

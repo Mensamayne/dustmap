@@ -12,6 +12,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { filesInBothParts } from "./file-split.mjs";
+import { privatePath } from "../../private-data.mjs";
 
 const PRIVATE_REF_FILES = ["private-refs.jsonl", "real-refs.jsonl"];
 
@@ -40,8 +41,11 @@ function hasCodeKey(value) {
   return false;
 }
 
-/** → list of problems (empty = valid). */
-export function validateGold(pub, priv, { minTotal = 150, minSame = 40, minPattern = 40 } = {}) {
+/**
+ * → list of problems (empty = valid). The size floors are for the full gold: they apply when the private
+ * references are present (a public clone has the public part only, REL-03).
+ */
+export function validateGold(pub, priv, { minTotal = 150, minSame = 40, minPattern = 40, sizes = priv.length > 0 } = {}) {
   const bad = [];
   const ids = new Set();
   for (const [kind, rows] of [["public", pub], ["private", priv]]) {
@@ -78,15 +82,17 @@ export function validateGold(pub, priv, { minTotal = 150, minSame = 40, minPatte
   for (const f of filesInBothParts(priv)) bad.push(`plik w obu częściach (przeciek): ${f}`);
   const all = [...pub, ...priv];
   const count = (l) => all.filter((r) => r.label === l).length;
-  if (all.length < minTotal) bad.push(`za mało par: ${all.length} < ${minTotal}`);
-  if (count("same") < minSame) bad.push(`za mało par same: ${count("same")} < ${minSame}`);
-  if (count("pattern") < minPattern) bad.push(`za mało par pattern: ${count("pattern")} < ${minPattern}`);
+  if (sizes) {
+    if (all.length < minTotal) bad.push(`za mało par: ${all.length} < ${minTotal}`);
+    if (count("same") < minSame) bad.push(`za mało par same: ${count("same")} < ${minSame}`);
+    if (count("pattern") < minPattern) bad.push(`za mało par pattern: ${count("pattern")} < ${minPattern}`);
+  }
   return bad;
 }
 
 function load() {
   const priv = PRIVATE_REF_FILES.flatMap((name) => {
-    const file = path.join(here, name);
+    const file = privatePath("gold", name);
     return existsSync(file) ? parseJsonl(readFileSync(file, "utf8"), name) : [];
   });
   return {
@@ -95,8 +101,25 @@ function load() {
   };
 }
 
+/** A well-formed private reference, so the private-format plants run on a public clone too. */
+const SYNTHETIC_REF = {
+  id: "synthetic:ref",
+  label: "same",
+  split: "validation",
+  source: "selftest",
+  a: { repo: "x", sha: "0".repeat(40), path: "src/a.ts", startLine: 1, endLine: 3, name: "a", sha256: "0".repeat(64) },
+  b: { repo: "x", sha: "0".repeat(40), path: "src/b.ts", startLine: 1, endLine: 3, name: "b", sha256: "0".repeat(64) },
+};
+
 function selftest() {
-  const { pub, priv } = load();
+  const loaded = load();
+  const pub = loaded.pub;
+  const sizes = loaded.priv.length > 0;
+  const priv = sizes ? loaded.priv : [SYNTHETIC_REF];
+  if (validateGold(pub, priv, { sizes }).length > 0) {
+    console.log(`FAIL: the unplanted gold must be valid: ${validateGold(pub, priv, { sizes }).slice(0, 3).join("; ")}`);
+    process.exit(1);
+  }
   // Plant a pair that reuses a file of an existing pair but sits in the other part (CON-12 leak).
   const base = priv.find((r) => r?.a?.path && r?.b?.path) ?? priv[0];
   const leakRow = { ...base, id: "x-leak-split", split: base.split === "test" ? "validation" : "test", b: { ...base.b, path: "zzz/plant-only.ts" } };
@@ -106,12 +129,12 @@ function selftest() {
     ["nieznana etykieta", [...pub, { ...pub[0], id: "x2", label: "maybe" }], priv],
     ["contains bez larger", [...pub, { ...pub[0], id: "x2b", label: "contains" }], priv],
     ["zły zakres linii", pub, [...priv, { ...priv[0], id: "x3", a: { ...priv[0].a, startLine: 9, endLine: 3 } }]],
-    ["za mało par", pub.slice(0, 10), priv.slice(0, 5)],
+    ["za mało par", pub.slice(0, 10), priv.slice(0, 5), { sizes: true }],
     ["przeciek split po pliku", pub, [...priv, leakRow]],
   ];
   let failed = 0;
-  for (const [what, p, q] of planted) {
-    const caught = validateGold(p, q).length > 0;
+  for (const [what, p, q, opts] of planted) {
+    const caught = validateGold(p, q, { sizes, ...opts }).length > 0;
     console.log(`${caught ? "PASS" : "FAIL"}: ${what} → walidacja czerwona`);
     if (!caught) failed++;
   }

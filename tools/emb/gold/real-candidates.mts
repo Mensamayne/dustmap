@@ -50,7 +50,7 @@ const TARGETS: TargetSpec[] = [
   {
     repo: "monorepo-a",
     sha: "dbe35aa00cd63fecf779ad4d48de922de45ce0f5",
-    config: "tools/targets/monorepo-a.dustmap.config.json",
+    config: "private/targets/monorepo-a.dustmap.config.json",
     quotas: {
       "fn-fn": [
         [0.8, 1.01, 80],

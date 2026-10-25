@@ -28,6 +28,8 @@
 
 ## Live Claude Code results
 
+### Próba 2026-10-20 (DUST-18)
+
 | Task | Result | Calls (approx.) | What went wrong |
 |------|--------|----------------:|-----------------|
 | T01–T08 | fail | 0 | `claude -p` exit 1: **Not logged in · Please run /login** |
@@ -37,7 +39,20 @@
 1. The harness passed `--bare`, which by definition ignores the OAuth login and accepts only `ANTHROPIC_API_KEY` — it would have failed for a logged-in maintainer too. Fixed in BUG-05: `--bare` only with an API key, `--strict-mcp-config`, `stream-json` transcripts scored per task (required tools used, call budget kept), stale task gets the stale report.
 2. On this machine the standalone `claude` CLI is not logged in (`claude auth status` → `loggedIn: false`; the desktop app keeps its own session). The harness now checks this first and stops with one actionable error.
 
-The live run is tracked as [DUST-23](../briefs/DUST-23-live-agent-dogfood.md). After `claude auth login`:
+### Próba 2026-10-23 (DUST-23)
+
+`npm run agent-eval:live` — najpierw skryptowane 8/8 OK (jak wyżej), potem żywy tor:
+
+| | |
+|--|--|
+| `claude auth status` | `loggedIn: false`, `authMethod: none` |
+| `ANTHROPIC_API_KEY` | unset |
+| exit harness | 1 |
+| komunikat | `live agent harness error: claude CLI is not logged in … Run claude auth login or set ANTHROPIC_API_KEY` |
+
+Żadnego `claude -p` na T01–T08 nie uruchomiono (precheck). Usterki narzędzi MCP **nie** da się zgłosić z tej próby — brak sesji. Zadanie DUST-23 = **blocked** do logowania maintainera.
+
+Po `claude auth login` (albo kluczu w env):
 
 ```bash
 npm run agent-eval:live

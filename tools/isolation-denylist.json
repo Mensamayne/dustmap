@@ -1,15 +1,4 @@
 {
-  "$comment": "Maintainer project names that must never appear in packages/*/src (Dustmap stays generic).",
-  "names": [
-    "monorepo-a",
-    "monorepo-a",
-    "monorepo-a",
-    "service-b",
-    "project-c",
-    "project-c",
-    "project-d",
-    "project-d",
-    "project-e",
-    "project-f"
-  ]
+  "$comment": "Test-target names that must never appear in packages/*/src (Dustmap stays generic). Public aliases here; the maintainer's real project names merge in from private/isolation-denylist.json (REL-03).",
+  "names": ["monorepo-a", "service-b", "project-c", "project-d", "project-e", "project-f"]
 }

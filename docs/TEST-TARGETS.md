@@ -21,7 +21,7 @@ Każde wywołanie Dustmapa jest sprawdzane migawką repo przed/po — jakikolwie
 
 ## Rejestr celów
 
-Plik `tools/targets/targets.json` (DUST-16). Ścieżka każdego celu da się nadpisać zmienną środowiskową — inny komputer, inna ścieżka.
+Publiczny plik `tools/targets/targets.json` (DUST-16) zna tylko cel `self`. Prywatne cele maintainera (`monorepo-a`, `service-b` — nazwy zastępcze) i ich konfiguracje, zbiory prawdy oraz odnośniki złota leżą w `private/` poza gitem (REL-03); `tools/targets/registry.mjs` dokleja je, gdy są. Ścieżkę każdego celu da się nadpisać zmienną środowiskową — inny komputer, inna ścieżka.
 
 ### `monorepo-a` — duży, prawdziwy, zabałaganiony (główny poligon)
 
@@ -29,22 +29,22 @@ Plik `tools/targets/targets.json` (DUST-16). Ścieżka każdego celu da się nad
 |--|--|
 | **Ścieżka** | `../monorepo-a` (obok tego repo) · env `DUSTMAP_TARGET_MONOREPO_A` |
 | **Skala (15.10.2026)** | ~23 tys. plików w git, ~10 tys. plików TS/TSX, ~1,27 mln linii TS, 74 paczki workspace, ~2,55 tys. commitów |
-| **Inne języki** | Java (`‹private›-java`, ~220 plików), Dart (`monorepo-a-‹private›`, zamrożony), dużo JSON (seedy katalogu) — Dustmap **nie może się na nich wywrócić**, ma je pominąć albo zgłosić „nieobsługiwane” |
+| **Inne języki** | Java (~220 plików), Dart (zamrożona aplikacja), dużo JSON (dane katalogu) — Dustmap **nie może się na nich wywrócić**, ma je pominąć albo zgłosić „nieobsługiwane” |
 
 Co tu jest i dlaczego to dobry test:
 
 | Pułapka dla skanera | Gdzie w Monorepo-A | Czego oczekujemy |
 |---------------------|--------------------|------------------|
-| Trasy ładowane przez framework (Next app router) | `monorepo-a-web/app/**/page.tsx`, `route.ts` (~400 plików) | **nigdy** „martwe” z wysoką pewnością |
-| Rejestr akcji (rejestracja przez wywołanie, nie import) | `defineAction(` w ~175 plikach, `‹private›/` | po skonfigurowaniu punktów wejścia — nie „martwe” |
+| Trasy ładowane przez framework (Next app router) | `app/**/page.tsx`, `route.ts` aplikacji webowej (~400 plików) | **nigdy** „martwe” z wysoką pewnością |
+| Rejestr akcji (rejestracja przez wywołanie, nie import) | rejestracja wywołaniem fabryki w ~175 plikach | po skonfigurowaniu punktów wejścia — nie „martwe” |
 | Paczki z CLI i serwerami MCP | `packages/*/bin`, `packages/*-mcp/` | `bin` z `package.json` = punkt wejścia |
 | Skrypty wołane z `package.json` | `tools/**/*.mjs` (setki), root `package.json` | żywe, jeśli wymienione w skryptach |
-| Pliki ładowane po nazwie | seedy katalogu (JSON), fixtures, `‹private›/` (generowane) | niska pewność albo wykluczone w configu |
-| Prawdziwe śmieci (dobre trafienia) | luźne `monorepo-a-web/*.js` typu `‹private›`, jednorazowe `‹private›/‹private›` | powinny wyjść jako kandydaci |
+| Pliki ładowane po nazwie | dane katalogu (JSON), fixtures, dokumentacja generowana | niska pewność albo wykluczone w configu |
+| Prawdziwe śmieci (dobre trafienia) | luźne jednorazowe skrypty w katalogu aplikacji i w `tools/` | powinny wyjść jako kandydaci |
 | Kod pisany przez agentów, którzy dopisują i nie kasują | całe repo | duplikaty po sensie, powtórzone warunki |
 | Długa historia | 2,5 tys. commitów, masowe commity (formatowanie, wydania) | sygnały git bez szumu z masowych commitów |
 
-Konfiguracja punktów wejścia Monorepo-A żyje w `tools/targets/monorepo-a.dustmap.config.json` **w tym repo**, nie w Monorepo-A.
+Konfiguracja punktów wejścia Monorepo-A żyje w `private/targets/monorepo-a.dustmap.config.json` **u maintainera**, nie w Monorepo-A ani w publicznym gicie.
 
 ### `service-b` — mały i czysty (cel kontrolny)
 
@@ -76,7 +76,7 @@ Wynik każdego przebiegu: `.tmp/targets/<etykieta>/inventory.json` (pliki per ro
 
 ## Zbiór prawdy i pomiar trafności
 
-`tools/targets/ground-truth/monorepo-a.json` (DUST-16): znaleziska przejrzane ręcznie na przypiętej migawce, każde z werdyktem `real` / `false-positive` / `intended-pattern` i jednym zdaniem dlaczego. Raport porównuje się z tym zbiorem:
+`private/targets/ground-truth/monorepo-a.json` (DUST-16): znaleziska przejrzane ręcznie na przypiętej migawce, każde z werdyktem `real` / `false-positive` / `intended-pattern` i jednym zdaniem dlaczego. Raport porównuje się z tym zbiorem:
 
 - **trafność wysokiej pewności** = ile znalezisk `high` z próbki to `real` — bramka: nie spada między wersjami,
 - **twarde zakazy** (np. „żadna `page.tsx` jako martwa `high`”) — bramka: zero naruszeń.

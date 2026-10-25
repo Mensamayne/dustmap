@@ -90,7 +90,7 @@ Złoto gnije, jeśli doklejamy pary bez sensu. **Wyrzuć** (bramka `check-hygien
 
 **Zostaw** (to nie jest śmieć):
 
-- `‹private›` ↔ źródło JSX jako `same` (skompilowany DS);
+- skompilowany bundle ↔ źródło JSX jako `same` (skompilowany DS);
 - krótkie, ale **rzeczywiste** fragmenty logiki (nie same deklaracje pustych zmiennych).
 
 ### Rytuał po doleciu

@@ -39,6 +39,7 @@ const ABS_PATH_RE =
 const ESCAPE_IMPORT_RE =
   /from\s+["'](?:\.\.\/){3,}[^"']+["']|import\s*\(\s*["'](?:\.\.\/){3,}[^"']+["']\s*\)|require\s*\(\s*["'](?:\.\.\/){3,}[^"']+["']\s*\)/;
 
+/** Public aliases from tools/, plus the maintainer's real project names from private/ when present (REL-03). */
 function loadDenylist(repoRoot) {
   const denylistPath = path.join(repoRoot, "tools", "isolation-denylist.json");
   if (!existsSync(denylistPath)) {
@@ -48,7 +49,9 @@ function loadDenylist(repoRoot) {
   if (!Array.isArray(raw.names) || raw.names.length === 0) {
     throw new Error(`isolation-denylist.json must list names`);
   }
-  return raw.names.map((n) => String(n));
+  const privateList = path.join(process.env.DUSTMAP_PRIVATE_DIR ?? path.join(repoRoot, "private"), "isolation-denylist.json");
+  const extra = existsSync(privateList) ? JSON.parse(readFileSync(privateList, "utf8")).names ?? [] : [];
+  return [...new Set([...raw.names, ...extra].map((n) => String(n)))];
 }
 
 function walkSrcFiles(dir, out = []) {

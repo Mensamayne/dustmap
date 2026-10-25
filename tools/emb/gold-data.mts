@@ -9,6 +9,8 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { privatePath } from "../private-data.mjs";
+import { loadTargets, targetDir } from "../targets/registry.mjs";
 
 export type GoldLabel = "same" | "contains" | "concept" | "pattern" | "different";
 /** CON unit bucket for meter breakdowns (function / fragment / class / css). */
@@ -90,14 +92,11 @@ export function isRealSource(source: string): boolean {
   return REAL_SOURCE_PREFIXES.some((p) => source === p || source.startsWith(`${p} +`));
 }
 
-type TargetRegistry = { targets: Record<string, { path: string; env: string }> };
-
 /** Target checkout for `git show` (read-only) when a file is outside the pinned snapshot. */
-function targetDir(name: string): string | null {
-  const reg = JSON.parse(readFileSync(path.join(repo, "tools/targets/targets.json"), "utf8")) as TargetRegistry;
-  const t = reg.targets[name];
-  if (!t) return null;
-  const dir = path.resolve(repo, process.env[t.env] ?? t.path);
+function checkoutOf(name: string): string | null {
+  const targets = loadTargets();
+  if (!targets[name]) return null;
+  const dir = targetDir(name, targets);
   return existsSync(dir) ? dir : null;
 }
 
@@ -115,7 +114,7 @@ function fileReader(): (r: PrivateRef) => string | null {
     const snap = path.join(repo, ".tmp/targets", `${r.repo}@${r.sha.slice(0, 12)}`, "src", r.path);
     if (existsSync(snap)) text = readFileSync(snap, "utf8");
     else {
-      const dir = targetDir(r.repo);
+      const dir = checkoutOf(r.repo);
       if (dir) {
         try {
           text = execFileSync("git", ["show", `${r.sha}:${r.path}`], { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 });
@@ -131,8 +130,9 @@ function fileReader(): (r: PrivateRef) => string | null {
 
 /** Private sides read back at their pinned commit; a drifted or missing side drops the pair. */
 export function loadPrivate(): { pairs: GoldPair[]; note: string } {
+  // References into private snapshots live outside git (REL-03); without them the gold is the public part.
   const refs = ["private-refs.jsonl", "real-refs.jsonl"]
-    .map((f) => path.join(goldDir, f))
+    .map((f) => privatePath("gold", f))
     .filter((f) => existsSync(f))
     .flatMap((f) => jsonl<Omit<GoldPair, "a" | "b"> & { a: PrivateRef; b: PrivateRef }>(f));
   if (refs.length === 0) return { pairs: [], note: "" };

@@ -47,6 +47,7 @@ import {
 } from "@dustmap/core";
 import { loadGold, repo, type GoldPair, type Side } from "./gold-data.mts";
 import { summarize } from "./metrics.mjs";
+import { loadTargets } from "../targets/registry.mjs";
 
 const argv = process.argv.slice(2);
 const arg = (name: string, fallback?: string) => {
@@ -157,7 +158,8 @@ async function reportL3(pairs: GoldPair[], model: string, device: "auto" | "gpu"
   try {
     for (const [snap, group] of bySnapshot) {
       const root = path.join(repo, ".tmp/targets", snap, "src");
-      const configFile = path.join(repo, "tools/targets", `${snap.split("@")[0]}.dustmap.config.json`);
+      const config0 = loadTargets()[snap.split("@")[0]]?.config;
+      const configFile = config0 ? path.join(repo, config0) : "";
       if (!existsSync(root) || !existsSync(configFile)) {
         console.log(`\nL3 — ${snap}: brak migawki albo konfiguracji (${group.length} par pominiętych)`);
         continue;

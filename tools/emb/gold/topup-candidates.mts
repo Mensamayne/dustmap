@@ -24,7 +24,7 @@ const taken = new Set(
   ]),
 );
 
-const t = { repo: "monorepo-a", sha: "dbe35aa00cd63fecf779ad4d48de922de45ce0f5", config: "tools/targets/monorepo-a.dustmap.config.json" };
+const t = { repo: "monorepo-a", sha: "dbe35aa00cd63fecf779ad4d48de922de45ce0f5", config: "private/targets/monorepo-a.dustmap.config.json" };
 const root = path.join(repo, ".tmp/targets", `${t.repo}@${t.sha.slice(0, 12)}`, "src");
 const { config } = loadConfig(root, path.join(repo, t.config));
 const inv = takeInventory(root, config, "full");

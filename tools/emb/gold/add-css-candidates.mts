@@ -13,10 +13,11 @@ import path from "node:path";
 import { openOnnxProvider } from "@dustmap/core";
 import { extractUnits } from "../../../packages/core/src/semantic/units.ts";
 import { repo } from "../gold-data.mts";
+import { targetDir } from "../../targets/registry.mjs";
 
 const SHA = "dbe35aa00cd63fecf779ad4d48de922de45ce0f5";
 const REPO_NAME = "monorepo-a";
-const LIVE = process.env.DUSTMAP_TARGET_MONOREPO_A ?? path.resolve(repo, "../monorepo-a");
+const LIVE = targetDir("monorepo-a");
 const OUT = path.join(repo, ".tmp/con03/candidates.json");
 const TARGET_PAIRS = 180;
 

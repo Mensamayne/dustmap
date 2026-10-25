@@ -16,7 +16,7 @@ Zanim zbudujemy wykrywanie „to samo, inaczej napisane” (DUST-05), mierzymy n
 ### Step 1 — Przebieg na Monorepo-A
 
 - **Plik:** `docs/experiments/embedding-spike.md`
-- **Zmiana:** `npx jscpd@<przypięta wersja> --semantic` z lokalnym modelem domyślnym (jina-embeddings-v2-base-code) na `../monorepo-a/‹private›/` + `packages/*/src` (bez testów, fixtures, wygenerowanych). Wynik do `.tmp/spike/`. Zapisz: wersję jscpd, model, czas, liczbę funkcji, liczbę par.
+- **Zmiana:** `npx jscpd@<przypięta wersja> --semantic` z lokalnym modelem domyślnym (jina-embeddings-v2-base-code) na bibliotece aplikacji webowej Monorepo-A + `packages/*/src` (bez testów, fixtures, wygenerowanych). Wynik do `.tmp/spike/`. Zapisz: wersję jscpd, model, czas, liczbę funkcji, liczbę par.
 - **Done when:** przebieg skończony, liczby w raporcie.
 
 ### Step 2 — Ręczna ocena próbki

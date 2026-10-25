@@ -17,6 +17,7 @@ import { minimatch } from "minimatch";
 import { z } from "zod";
 import { Confidence, Report, type ConfidenceType, type FindingType } from "../../packages/contract/src/index.ts";
 import { builtinAdapters } from "../../packages/core/src/index.ts";
+import { privatePath } from "../private-data.mjs";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -58,8 +59,8 @@ function fail(code: number, message: string): never {
 }
 
 const name = process.argv[2] && !process.argv[2].startsWith("--") ? process.argv[2] : undefined;
-const gtPath = arg("gt") ?? (name ? path.join(repo, "tools/targets/ground-truth", `${name}.json`) : undefined);
-if (!gtPath) fail(2, "Użycie: npm run target:compare -- <monorepo-a|service-b>  albo  --gt <plik> --report <plik>");
+const gtPath = arg("gt") ?? (name ? privatePath("targets", "ground-truth", `${name}.json`) : undefined);
+if (!gtPath) fail(2, "Użycie: npm run target:compare -- <cel z prawdą wzorcową>  albo  --gt <plik> --report <plik>");
 if (!existsSync(gtPath)) fail(2, `Brak zbioru prawdy: ${gtPath}`);
 const gt = GroundTruth.parse(JSON.parse(readFileSync(gtPath, "utf8")));
 

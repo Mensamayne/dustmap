@@ -50,3 +50,6 @@ npm run verify:targets
 
 1. Commit `Fixes REL-03: …`
 2. `node tools/queue/close.mjs --id REL-03 --note "…"`
+
+- Wynik: dane prywatne (odnośniki złota, cele, zbiory prawdy, lista nazw) w `private/`; `tools/private-data.mjs` i `tools/targets/registry.mjs` czytają je, gdy są; reguły zamiany nazw (`private/release-aliases.json`) stosuje `tools/release/apply-aliases.mjs` (też `--check`). Publicznie: `monorepo-a`, `service-b`, `project-c…f`. Przykłady z przeglądów (nazwy funkcji, ścieżki) przepisane na opisy; wykrywacz porównał drzewo z nazwami i ścieżkami obu migawek — zostały tylko zwykłe słowa.
+- Added during work: `tools/release/apply-aliases.mjs`, `tools/private-data.mjs`, `tools/targets/registry.mjs`; walidator złota bez progów liczności, gdy brak części prywatnej (publiczny klon); `verify:targets` bez prywatnych celów kończy się „nothing to measure”; niezatwierdzone wcześniej zmiany CON w `tools/emb/gold/export-resolved.mts`, `tools/emb/gold/second-opinion.mts`, `docs/experiments/agent-dogfood.md` weszły z czyszczeniem, bo ich wersje w gicie nazywały prywatne projekty
