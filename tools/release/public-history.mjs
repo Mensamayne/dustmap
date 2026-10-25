@@ -14,6 +14,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { privatePath, repoRoot } from "../private-data.mjs";
 import { loadAliasRules } from "./apply-aliases.mjs";
 
@@ -81,7 +82,7 @@ export function audit(repo, { aliasFile = privatePath("release-aliases.json"), t
   return { problems, blobs: blobs.length };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const out = opt("out");
   const filterRepo = opt("filter-repo") ?? "git-filter-repo";
   if (!out) {
