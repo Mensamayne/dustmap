@@ -38,6 +38,7 @@ Agent widzi jedną grupę na jeden powielony koncept: członkowie, warstwa, któ
 - `packages/mcp/**`
 - `packages/cli/**`
 - `packages/contract/**`
+- Added during work: `docs/experiments/dup-results.md`; `../dustmap-lab/scenarios/02-kopiuj-wklej.mjs` (expects one group led by L1 instead of a jscpd cluster); `packages/cli/agent/PLAYBOOK.md` (Duplicates section)
 
 ## Weryfikacja
 

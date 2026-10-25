@@ -43,7 +43,6 @@ export {
   type ModelManifest,
   type OnnxProvider,
 } from "./onnx-provider.js";
-export { dedupeSemanticAgainstClones, isFullyCoveredByClone } from "./dedupe-vs-clones.js";
 export {
   runSemanticAnalysis,
   runSemanticAdapter,

@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ReportType } from "@dustmap/contract";
+import type { FindingType, ReportType } from "@dustmap/contract";
 import {
   builtinAdapters,
   listFindings,
@@ -53,6 +53,40 @@ export type ToolFailure = {
 };
 
 export type ToolResult = ToolSuccess | ToolFailure;
+
+/** A duplicate finding read as a group (DUP-06): its layers, the judge, the original, the sketch, its parts. */
+export type DuplicateGroup = {
+  layer?: string;
+  foundBy?: string;
+  judge?: string;
+  original?: string;
+  sketch?: string;
+  sketchBlocked?: string;
+  parts?: string;
+  places: number;
+};
+
+const GROUP_FIELDS: Array<[label: string, field: Exclude<keyof DuplicateGroup, "places" | "original">]> = [
+  ["layer", "layer"],
+  ["found-by", "foundBy"],
+  ["judge", "judge"],
+  ["sketch", "sketch"],
+  ["sketch-blocked", "sketchBlocked"],
+  ["parts", "parts"],
+];
+
+/** The group view of a duplicate finding from its evidence, or null for other categories. */
+export function duplicateGroup(f: FindingType): DuplicateGroup | null {
+  if (f.category !== "duplicate" && f.category !== "semantic-duplicate") return null;
+  const group: DuplicateGroup = { places: f.locations.length };
+  for (const [label, field] of GROUP_FIELDS) {
+    const e = f.evidence.find((x) => x.label === label);
+    if (e) group[field] = e.value;
+  }
+  const direction = f.evidence.find((x) => x.label === "direction")?.value;
+  if (direction) group.original = direction;
+  return group;
+}
 
 /** Hard cap for dustmap_guide body (brief: ≤ 4 KiB). */
 export const GUIDE_MAX_BYTES = 4 * 1024;
@@ -250,7 +284,8 @@ Map = report.json (full scan only); diff scans write report.diff.json (read with
 1) dustmap_guide → 2) dustmap_summary (or dustmap_scan full if the map is missing/stale) →
 3) dustmap_list / dustmap_show → 4) run verifyHint → 5) dustmap_decide or enqueue selected fingerprints.
 Rules: no delete without verifyHint; no keep without reason; stale map → full scan first.
-Tell humans places and effects, not fingerprint walls. Follow each reply's next[] field.`;
+Tell humans places and effects, not fingerprint walls. Follow each reply's next[] field.
+Duplicates: dustmap_show → group (layer, foundBy, judge, original, sketch / sketchBlocked, parts); the sketch is text — write the change yourself, then re-scan.`;
 
 function loadGuideText(): string {
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -359,15 +394,20 @@ export function dustmapList(ctx: McpToolContext, args: ListArgs = {}): ToolResul
       offset: page.offset,
       limit: page.limit,
       hasMore: page.hasMore,
-      items: page.items.map((f) => ({
-        fingerprint: f.fingerprint,
-        kind: f.kind,
-        category: f.category,
-        confidence: f.confidence,
-        path: f.locations[0]?.path,
-        symbol: f.locations[0]?.symbol,
-        suggestedAction: f.suggestedAction,
-      })),
+      items: page.items.map((f) => {
+        const group = duplicateGroup(f);
+        return {
+          fingerprint: f.fingerprint,
+          kind: f.kind,
+          category: f.category,
+          confidence: f.confidence,
+          path: f.locations[0]?.path,
+          symbol: f.locations[0]?.symbol,
+          suggestedAction: f.suggestedAction,
+          // Duplicates: enough to pick one without a show call (full group in dustmap_show).
+          ...(group ? { places: group.places, layer: group.layer, hasSketch: group.sketch !== undefined } : {}),
+        };
+      }),
     },
     report,
     // Freshness against the repo that was scanned, not the server's cwd (BUG-09).
@@ -415,6 +455,7 @@ export function dustmapShow(ctx: McpToolContext, args: ShowArgs): ToolResult {
         evidence: finding.evidence,
         ...(finding.judgement ? { judgement: finding.judgement } : {}),
       },
+      ...(duplicateGroup(finding) ? { group: duplicateGroup(finding) } : {}),
     },
     report,
     // Freshness against the repo that was scanned, not the server's cwd (BUG-09).

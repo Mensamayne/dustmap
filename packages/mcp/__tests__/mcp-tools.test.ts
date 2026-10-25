@@ -452,6 +452,47 @@ describe("Dustmap MCP tools (in-process client)", () => {
     expect(summary.head).toBe(git(scanned, ["rev-parse", "HEAD"]));
   });
 
+  it("duplicates: an agent goes guide → scan → list → show → decide and gets the group (DUP-06)", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-dup-"));
+    writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "mcp-dup", private: true, type: "module" }));
+    mkdirSync(path.join(root, "src", "orders"), { recursive: true });
+    mkdirSync(path.join(root, "src", "tickets"), { recursive: true });
+    const label = (name: string, open: string, closed: string, empty: string) => `export function ${name}(isOpen: boolean, count: number): string {
+  if (count === 0) {
+    return "${empty}";
+  }
+  const state = isOpen ? "${open}" : "${closed}";
+  return \`\${state} (\${count})\`;
+}
+`;
+    writeFileSync(path.join(root, "src", "orders", "label.ts"), label("orderLabel", "open", "closed", "no orders"));
+    git(root, ["init"]);
+    git(root, ["config", "user.email", "mcp@dustmap.test"]);
+    git(root, ["config", "user.name", "Dustmap MCP"]);
+    git(root, ["add", "."]);
+    spawnSync("git", ["commit", "-m", "orders"], { cwd: root, env: { ...process.env, GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z", GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z" } });
+    writeFileSync(path.join(root, "src", "tickets", "label.ts"), label("ticketLabel", "active", "paused", "no tickets"));
+    git(root, ["add", "."]);
+    spawnSync("git", ["commit", "-m", "tickets"], { cwd: root, env: { ...process.env, GIT_AUTHOR_DATE: "2026-01-21T00:00:00Z", GIT_COMMITTER_DATE: "2026-01-21T00:00:00Z" } });
+    const outDir = path.join(root, ".dustmap");
+    const pair = await connectPair({ cwd: root });
+    closers.push(pair.close);
+    const call = async (name: string, args: Record<string, unknown>) => JSON.parse(textPayload(await pair.client.callTool({ name, arguments: args })));
+
+    const guide = await call("dustmap_guide", {});
+    expect(guide.data?.guide ?? guide.guide).toContain("## Duplicates");
+    await call("dustmap_scan", { mode: "full", out: outDir });
+    const list = await call("dustmap_list", { out: outDir, category: "duplicate" });
+    const item = list.items.find((i: { kind: string }) => i.kind === "exact-clone");
+    expect(item).toMatchObject({ places: 2, layer: "L1 normalized copy", hasSketch: true });
+    const show = await call("dustmap_show", { out: outDir, fingerprint: item.fingerprint });
+    expect(show.group.original).toContain("oldest: orderLabel (src/orders/label.ts:1)");
+    expect(show.group.original).toContain("20 days later");
+    expect(show.group.sketch).toContain("export function orderLabel(isOpen: boolean, count: number, p1: string");
+    const decide = await call("dustmap_decide", { out: outDir, fingerprint: item.fingerprint, verdict: "fix", reason: "merge into one label function with parameters" });
+    expect(decide.ok ?? true).not.toBe(false);
+  });
+
   it("scan in a repo without HEAD does not claim a fresh report", async () => {
     const root = mkdtempSync(path.join(tmpdir(), "dustmap-mcp-scan-nohead-"));
     writeFileSync(

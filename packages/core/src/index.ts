@@ -51,7 +51,6 @@ export { toPosix, relativePosix } from "./posix.js";
 export {
   semanticAdapter,
   runSemanticAnalysis,
-  dedupeSemanticAgainstClones,
   createEmbeddingProvider,
   createMemoryEmbeddingProvider,
   assertHttpProviderAllowed,
@@ -76,6 +75,7 @@ export {
   extractUnits,
 } from "./semantic/index.js";
 export { openVectorCache } from "./semantic/vector-cache.js";
+export { mergeDuplicateLayers, samePlace } from "./scan/merge-duplicates.js";
 export { openPairJudge, loadJudgePackage, truncatePair, type PairJudge, type JudgeManifest } from "./semantic/pair-judge.js";
 export type {
   EmbeddingProvider,

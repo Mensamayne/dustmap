@@ -39,6 +39,15 @@ Every MCP reply has `next`: 1–3 follow-up calls. Prefer them over a parallel w
 
 **Review only your changes:** `dustmap_scan` with `mode: "diff"` (base defaults to the map’s commit) → `dustmap_list` with `report: "diff"`.
 
+## Duplicates
+
+One finding per copied concept; `dustmap_show` → `group`:
+- `layer`: L1 normalized copy (certain) · L2 near copy · L3 same meaning · token copy. `foundBy`: layers agreeing.
+- `judge`: a pair model read both sides; `low` = pattern or other job — check by hand.
+- `original`: oldest member (git); the rest are copies.
+- `sketch`: common form with `p1…` parameters, only when safe; `sketchBlocked` says why not. Text only — write the change yourself, then re-scan.
+- `parts`: smaller copies inside these places.
+
 ## Hard rules
 
 - No delete without that finding’s `verifyHint`.

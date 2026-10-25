@@ -218,3 +218,17 @@ The first version dropped rejected pairs. Lab scenario `03-ten-sam-sens` (plante
 - ≥ 50 pairs/s on CPU: **4.4** (GPU 75).
 - Met: the judge in the scan with a threshold; L2 precision on gold 0.74 → 0.97; semantic precision 0.72 → 0.87; trap false alarms −70 %.
 - DUP-08 (queued): positives for "copies that differ only in names or constants" (L1-shape / L2 pairs) and a smaller or shorter-input judge for the CPU.
+
+## DUP-06 — one finding per concept; MCP and the playbook (2026-10-25)
+
+`scan/merge-duplicates.ts` replaces `semantic/dedupe-vs-clones.ts` (which only dropped semantic groups wholly inside a token clone):
+
+- **Same set of places → one finding.** Duplicate findings whose places correspond both ways (same file, overlap ≥ half the smaller range, sizes within ×2) merge; the strongest leads (confidence, then L1 > L2 > L3 > token) and keeps its fingerprint; the others add the evidence it lacks (judge, sketch, direction, diff); `found-by` lists every layer that agreed. Every duplicate finding gets `layer`.
+- **A set inside a larger set stays a finding of its own.** The first version merged on one-way containment; lab scenario 03 caught it: three identical loops (L1) were merged into a group of seven loops alike in meaning (L3) and the result claimed "identical after renaming" for the recursive and `reduce` versions. Two true statements stay two findings.
+- **Parts.** A strictly smaller fragment inside a larger place (a token fragment in a near-copied function, a copied function in a copied file) becomes a line in the larger finding's `parts`; its sketch and diff are not carried up and it does not change the larger finding's confidence.
+
+Monorepo-A (saved full report): duplicate findings 6 402 → **5 695**; **324** findings carry two or more agreeing layers. 708 still share some lines with another finding — deliberately: sets inside larger sets, and token blocks that cross function boundaries. Full scan with every layer, the judge and the merge: 139 s, 14 394 findings (4 645 duplicate, 1 149 semantic-duplicate).
+
+MCP: `dustmap_list` gives duplicates `places`, `layer`, `hasSketch`; `dustmap_show` adds `group` {layer, foundBy, judge, original, sketch, sketchBlocked, parts, places}. The playbook (and the embedded guide) has a Duplicates section (guide 3.7 KB of 4 KB). E2E test: an agent goes guide → scan → list → show → decide on a repo with an original and a copy made 20 days later, and reads the original, the age gap and a sketch with `p1` from the group.
+
+Lab: 02 now expects the three copied files as one group led by L1 with jscpd in `found-by` (two new checks); 03 green with the honest split; full lab 159/159.

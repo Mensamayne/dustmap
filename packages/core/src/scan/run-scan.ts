@@ -20,7 +20,7 @@ import { applyDecisions, loadDecisions } from "../decisions/index.js";
 import { annotateWithJudge } from "../judge/index.js";
 import { toPosix } from "../posix.js";
 import { rankingWeightsFromConfig, summarizeFindings } from "../rank/index.js";
-import { dedupeSemanticAgainstClones } from "../semantic/dedupe-vs-clones.js";
+import { mergeDuplicateLayers } from "./merge-duplicates.js";
 import { openAdapterCache } from "./cache.js";
 import { gitHead } from "./git.js";
 import { takeInventory } from "./inventory.js";
@@ -148,10 +148,10 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
     }
   }
 
-  // Dedupe by fingerprint (last wins), then drop semantic clusters already covered by token clones.
+  // Dedupe by fingerprint (last wins), then one finding per duplicated concept across layers (DUP-06).
   const byFp = new Map<string, FindingType>();
   for (const f of findings) byFp.set(f.fingerprint, f);
-  const unique = dedupeSemanticAgainstClones([...byFp.values()]);
+  const unique = mergeDuplicateLayers([...byFp.values()]);
   // keep / wontfix mute from ranking and category counts (fingerprint change brings them back).
   const visible = applyDecisions(unique, loadDecisions(outputDir));
   const summary = summarizeFindings(visible, rankingWeightsFromConfig(config.ranking));
