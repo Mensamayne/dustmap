@@ -1542,8 +1542,11 @@
         "V1-00"
       ],
       "epic": "V1",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T21:27:31.270Z",
+      "gitProofSha": "3cff8d646f1c3e58ca1e3945c9da2a94c8399a8c",
+      "closureNotes": "Judge chosen by one setting: onnx package, OpenAI-compatible API (incl. local servers), Anthropic, or none; verify green, lab 159/159."
     },
     {
       "id": "V1-02",
