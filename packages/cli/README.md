@@ -4,7 +4,7 @@ Report-only map of dead code, duplicates, and refactor signals for TypeScript/Ja
 
 Primary user: an AI agent. Humans use the same commands.
 
-## Install (from this monorepo)
+## Install (from a clone of this repo)
 
 ```bash
 npm install
@@ -67,15 +67,17 @@ Fails with exit **1** when there are **new** findings above the configured confi
 
 ### Duplicates by meaning
 
-Duplicates by meaning (`semantic-duplicate`) come from a small model that runs on this machine, offline: on the graphics card when there is one (DirectML on Windows, CUDA on Linux), otherwise on the CPU. The model package lives in the user's model directory (`semantic.modelDir`, `$DUSTMAP_MODELS_DIR` or `~/.cache/dustmap/models`) and is checked against the SHA-256 in its manifest before use; Dustmap never downloads it on its own. Without an installed model a scan still runs, reports the missing model under the semantic tool, and skips meaning-based duplicates.
-
-Config (`dustmap.config.json`, all optional):
+Duplicates by meaning (`semantic-duplicate`) come from an embedding model, and a pair judge can confirm duplicate groups of every layer. Both are optional: by default the embedding model is Dustmap's public ONNX package (offline, GPU when it works, else CPU; checked against the SHA-256 in its manifest before use) and there is no judge. A model that is not installed turns its layer off with a `note:` line saying how to turn it on; everything else runs. Dustmap never downloads a model on its own — `dustmap model pull <id> --from <url>` is the only command that touches the network.
 
 ```json
-{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning-private", "device": "auto" } }
+{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning-public", "device": "auto" } }
 ```
 
-`provider`: `onnx` (default), `http` (an OpenAI-compatible embeddings URL — code leaves the machine only with `allowRemote: true`) or `none`. Until a public package is published (EMB-11), the default model id is the private one — install it under the model directory (copy from `dustmap-emb/dist/…` or `dustmap model pull` when a public URL exists). `device`: `auto` (GPU when it works, else CPU), `gpu` or `cpu`. `threshold`: unset = the model's calibrated report floor; confidence `high` / `medium` comes from the model's calibrated bands, and deliberate patterns (same registration call, same switch skeleton, same catch block…) get one level less.
+Any OpenAI-compatible embeddings API, the Anthropic or OpenAI chat APIs as the judge, local servers (Ollama, vLLM), privacy rules (`allowRemote`, keys from the environment only) and cost: [docs/MODELS.md](../../docs/MODELS.md).
+
+### `dustmap model pull <id> [--from <url>] [--model-dir <dir>] [--json]` · `dustmap model list`
+
+Install a model package (refuses packages marked private and any file whose SHA-256 differs from the manifest) and list what is installed.
 
 ## Categories
 
@@ -126,7 +128,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm install -g @dustmap/cli   # or wire your workspace bin
+      - run: npm install -g @dustmap/cli   # once published to npm; until then build from a checkout of this repo
       - uses: ./packages/cli/action
         with:
           fail-on: new-high

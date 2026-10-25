@@ -17,7 +17,13 @@ coverage/
 .dustmap/report.json
 
 # Cursor / Claude / agent local junk (skills, rules, chats — stay on disk, not in git)
-.claude/
+.claude/*
+# …except the project workflow skills AGENTS.md links to (REL-04)
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/kontynuuj-rozwoj/
+!.claude/skills/przed-kazda-odpowiedzia/
+!.claude/skills/szukaj-bugow/
 .cursor/
 .agents/
 .codex/

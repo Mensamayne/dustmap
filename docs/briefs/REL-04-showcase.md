@@ -55,3 +55,5 @@ npm run verify
 
 1. Commit `Fixes REL-04: …`
 2. `node tools/queue/close.mjs --id REL-04 --note "…"`
+
+- Added during work: `packages/cli/src/init-agent.ts` + test (wpis MCP dla obcego repo wskazuje serwer obok CLI zamiast nieopublikowanej paczki npm), `packages/cli/README.md` (sekcja modeli), `docs/OPEN-DECISIONS.md` (licencja i GitHub rozstrzygnięte)

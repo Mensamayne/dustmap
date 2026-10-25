@@ -63,6 +63,17 @@ describe("dustmap init --agent", () => {
     expect(readFileSync(path.join(root, "AGENTS.md"), "utf8")).toBe(snapshot);
   });
 
+  it("a foreign repo's MCP entry points at the server next to this CLI, not an unpublished npm package", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dustmap-agent-mcp-"));
+    writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "foreign" }));
+    const r = dustmap(["init", root, "--agent", "claude"], root);
+    expect(r.status, r.stderr).toBe(0);
+    const mcp = JSON.parse(readFileSync(path.join(root, ".mcp.json"), "utf8")) as { mcpServers: Record<string, { command: string; args: string[] }> };
+    const entry = Object.values(mcp.mcpServers)[0]!;
+    expect(entry.command).toBe("node");
+    expect(path.resolve(entry.args[0]!)).toBe(path.join(repoRoot, "packages", "mcp", "bin", "dustmap-mcp.mjs"));
+  });
+
   it("upsertMarkedBlock leaves prefix/suffix intact", () => {
     const before = "AAA\n\nBBB\n";
     const once = upsertMarkedBlock(before, "BODY1");

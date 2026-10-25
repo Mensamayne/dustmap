@@ -102,17 +102,17 @@ ${playbook.trim()}
 }
 
 function mcpServerEntry(repoRoot: string): Record<string, unknown> {
-  // Prefer workspace bin when present; else npx-style placeholder the user can edit.
+  // Prefer the repo's own install, then the MCP server next to this CLI (a source checkout used on
+  // another repo); the npm package name only when neither exists.
   const localBin = path.join(repoRoot, "node_modules", "@dustmap", "mcp", "bin", "dustmap-mcp.mjs");
   const monoBin = path.join(repoRoot, "packages", "mcp", "bin", "dustmap-mcp.mjs");
+  const besideCli = fileURLToPath(new URL("../../mcp/bin/dustmap-mcp.mjs", import.meta.url));
   let command = "npx";
   let args = ["-y", "@dustmap/mcp"];
-  if (existsSync(monoBin)) {
+  const bin = [monoBin, localBin, besideCli].find((p) => existsSync(p));
+  if (bin) {
     command = "node";
-    args = [monoBin];
-  } else if (existsSync(localBin)) {
-    command = "node";
-    args = [localBin];
+    args = [bin];
   }
   return {
     command,
