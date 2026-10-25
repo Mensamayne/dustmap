@@ -337,3 +337,10 @@ Hand review, 20 groups drawn at random (seed 11):
 Gold (DUP-08, same judge): L1-shape + L2 confirmed by the judge — precision 0.97, against 0.74 for the layer without it.
 
 On the way: a judge that cannot open (a remote API without a key) made the scan's final release rethrow, so the CLI exited as an internal error after writing the report — now released quietly, the error stays in `scan.tools` (`pair-judge`); and the CLI sets its exit code instead of calling `process.exit()`, which aborted Node on Windows while the API judge's sockets were closing.
+
+## V1-03 — the meter for any judge
+
+`npm run dup:meter -- --judge-provider onnx|openai|anthropic [--judge-model …] [--judge-url …] [--judge-limit n] [--allow-remote]` scores the gold pairs through the scan's own factory (`openJudge`): the same judge, input cut and verdict cache as a scan (`.tmp/emb/judge-meter`). `--judge-limit n` takes a fixed sample of n test + trap pairs (ordered by a hash of the pair id, so a re-run is free) and computes every number over the scored pairs only. The L4 line names the judge and counts pairs read, cached and skipped.
+
+- Package through the factory (`--judge-provider onnx`, GPU fp16): test AP 0.729, trap 51/193, L1-shape + L2 precision 0.97 (32/40 duplicates kept), 71.8 pairs/s — the same numbers as the DUP-08 GPU run (CPU fp32: 0.735).
+- OpenAI-compatible path on a recorded loopback server, `--judge-limit 60`: 60 pairs read; the re-run read 0 and took 60 from the cache, numbers unchanged. The Anthropic path is covered by the core tests and lab scenario 14 (recorded server, no network).
