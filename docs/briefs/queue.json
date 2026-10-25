@@ -1350,10 +1350,13 @@
       "brief": "docs/briefs/DUP-00-overview.md",
       "gates": [],
       "epic": "DUP",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-25T00:06:00.618Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-25T00:06:01.284Z",
+      "gitProofSha": "a7af74ecec995785b548e4f9006c34da17093a6d",
+      "closureNotes": "Paradygmat 5 warstw + research, decyzja: sygnały + szkic ujednolicenia; CON-13/14 cancelled"
     },
     {
       "id": "DUP-01",
