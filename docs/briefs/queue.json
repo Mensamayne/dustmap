@@ -1467,8 +1467,11 @@
         "DUP-06"
       ],
       "epic": "DUP",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T16:48:46.516Z",
+      "gitProofSha": "4923aae39d1f2d541a6a898ae400888320f4538a",
+      "closureNotes": "60-group review: high 0.90, medium 0.85, low 0.25; lone token copies capped at medium (high sample 27/27 after); lab 159/159; defaults with numbers in dup-results"
     },
     {
       "id": "BUG-13",
