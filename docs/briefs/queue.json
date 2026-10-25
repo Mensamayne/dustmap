@@ -1496,8 +1496,24 @@
         "DUP-04"
       ],
       "epic": "DUP",
-      "status": "todo",
+      "status": "in_progress",
       "kind": "feature"
+    },
+    {
+      "id": "BUG-14",
+      "title": "Treść jednostek z końcami linii Windows psuje modele (sędzia 0,998 → 0,022)",
+      "layer": 100,
+      "segment": "semantic",
+      "brief": "docs/briefs/BUG-14-crlf-unit-bodies.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "done",
+      "kind": "bug",
+      "severity": "high",
+      "source": "DUP-08 review, 2026-10-25",
+      "completedAt": "2026-10-25T16:59:53.031Z",
+      "gitProofSha": "716deef5dc2e4e48c0e0e16e6af6c42c46f0456d",
+      "closureNotes": "stripComments returns LF; the judge on one pair 0.022 -> 0.998 through the scan cut; 10883/10886 Monorepo-A files were CRLF; regression test for every unit kind"
     }
   ]
 }
