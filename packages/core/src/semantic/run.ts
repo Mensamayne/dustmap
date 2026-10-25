@@ -29,8 +29,8 @@ import {
 } from "./provider.js";
 import { openVectorCache } from "./vector-cache.js";
 
-/** Bump when extraction, scoring or clustering changes (adapter cache key): 2 per-side bodies (BUG-07), 3 parser extraction (EMB-08), 4 calibrated confidence + patterns (EMB-09), 5 onnx default, jscpd path removed (EMB-10), 6 average-linkage groups (EMB-10), 7 PAIR pair-head filter, 8 pair judge (DUP-04). */
-const ADAPTER_REV = "8";
+/** Bump when extraction, scoring or clustering changes (adapter cache key): 2 per-side bodies (BUG-07), 3 parser extraction (EMB-08), 4 calibrated confidence + patterns (EMB-09), 5 onnx default, jscpd path removed (EMB-10), 6 average-linkage groups (EMB-10), 7 PAIR pair-head filter, 8 pair judge (DUP-04), 9 LF line endings in unit bodies (BUG-14). */
+const ADAPTER_REV = "9";
 
 /** Report threshold for providers without calibration (HTTP; DUST-15 spike value). */
 const UNCALIBRATED_THRESHOLD = 0.82;

@@ -31,7 +31,7 @@ function approxTokens(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
-/** Source text without comments; everything else (strings, regexes, templates) byte for byte. */
+/** Source text without comments and with LF line endings; everything else (strings, regexes, templates) byte for byte. */
 export function stripComments(text: string, kind: ts.ScriptKind): string {
   const variant = kind === ts.ScriptKind.TSX || kind === ts.ScriptKind.JSX ? ts.LanguageVariant.JSX : ts.LanguageVariant.Standard;
   const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, variant, text);
@@ -40,7 +40,9 @@ export function stripComments(text: string, kind: ts.ScriptKind): string {
     if (t === ts.SyntaxKind.SingleLineCommentTrivia || t === ts.SyntaxKind.MultiLineCommentTrivia) continue;
     out += scanner.getTokenText();
   }
-  return out;
+  // Line endings as the models were trained on: a Windows checkout's `\r\n` dropped the pair judge from
+  // 0.998 to 0.022 on one and the same pair (BUG-14).
+  return out.replace(/\r\n?/g, "\n");
 }
 
 function propertyName(name: ts.PropertyName | ts.BindingName | undefined, sf: ts.SourceFile): string | null {
