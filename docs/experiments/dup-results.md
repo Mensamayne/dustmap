@@ -68,7 +68,7 @@ How:
 | Monorepo-A `dbe35aa00cd6` | 494 | 52 | 59 s | +41 s (budget 60 s) |
 | Service-B `0c0aa958e6b3` | 4 | 1 | 0.3 s | — |
 
-Families of near copies on Monorepo-A: 411 of 2, 58 of 3, 15 of 4, 4 of 5, 6 of 6+. Before folding identical copies into one representative there were 22 families of 6+ (largest 49: recursive directory walkers in `‹private›`); before grouping, 1524 pair findings.
+Families of near copies on Monorepo-A: 411 of 2, 58 of 3, 15 of 4, 4 of 5, 6 of 6+. Before folding identical copies into one representative there were 22 families of 6+ (largest 49: recursive directory walkers in one folder of gate scripts); before grouping, 1524 pair findings.
 
 ### Precision — 30 random findings on Monorepo-A
 
@@ -160,7 +160,7 @@ Time: L1+L2+L5 47 s (L5 sketches ~0 s extra after caching unit details); directi
 ### Review
 
 - **30 sketches** (seeds 5, 9, 23): 10 constant-parameter sketches, 10 near-copy sketches, 10 CSS grouping sketches. Passing the listed values to the common form gives each original: 30/30 after two fixes found in the review — a type name taken as a value (`x: p1` → now "another type"), and a required parameter placed after an optional one (`fetchRaw(base?: string, p1)` → now in front). Known limit: a parameter's type is the reference value's type (`typeof LABELS`); it may need widening by hand.
-- **5 directions** checked against the target's own history (`git log --follow -M`): 5/5 — e.g. `‹private›` is a `C100` copy of `‹private›` made 18 days later; `‹private›` was copied from `agent-forensics-mcp`.
+- **5 directions** checked against the target's own history (`git log --follow -M`): 5/5 — e.g. a page script is a `C100` copy of another page's script made 18 days later; one MCP server's entry file was copied from another's.
 - The first measurement also found 45 sketches that did not parse (template-string pieces and JSX attributes replaced with their delimiters, positional parameters added to components): fixed, 0 now.
 
 ### Lab

@@ -21,7 +21,7 @@ Agent piszący Dustmap jedną komendą skanuje prawdziwe repo maintainera i dost
 ### Step 2 — Konfiguracja Monorepo-A
 
 - **Plik:** `tools/targets/monorepo-a.dustmap.config.json`, `tools/targets/service-b.dustmap.config.json`
-- **Zmiana:** punkty wejścia i wykluczenia z tabeli w TEST-TARGETS (trasy app router, `defineAction`, `bin`, skrypty, seedy, zamrożona aplikacja Dart, pakiet Java, generowane `‹private›/`).
+- **Zmiana:** punkty wejścia i wykluczenia z tabeli w TEST-TARGETS (trasy app router, `defineAction`, `bin`, skrypty, seedy, zamrożona aplikacja Dart, pakiet Java, generowana dokumentacja).
 - **Done when:** config przechodzi walidację Zod z DUST-02; skan `monorepo-a` nie wywraca się na Javie / Dart / JSON.
 
 ### Step 3 — Zbiór prawdy i porównanie
