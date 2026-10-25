@@ -1611,8 +1611,11 @@
       "brief": "docs/briefs/REL-00-overview.md",
       "gates": [],
       "epic": "REL",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T22:14:25.285Z",
+      "gitProofSha": "1a9be0300b414bbca94a9af25286855d611ccb78",
+      "closureNotes": "Release epic from the audit and the maintainer's four decisions (hide private projects, scrubbed full history, MIT, public model on HF)."
     },
     {
       "id": "REL-01",
