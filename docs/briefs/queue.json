@@ -1368,10 +1368,13 @@
         "DUP-00"
       ],
       "epic": "DUP",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-25T00:05:42.320Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-25T00:50:29.748Z",
+      "gitProofSha": "e7303dbf7bf3269d0956c76b0b8476ebccc82dbc",
+      "closureNotes": "L1 normalization: TS/JS clones and CSS types I-III; Monorepo-A precision 30/30, lab 134/134; shared CSS sets stay medium until the judge and order check"
     },
     {
       "id": "DUP-02",
