@@ -102,18 +102,6 @@ export const SemanticConfig = z
     url: z.string().url().optional(),
     /** Allow non-loopback URLs for `http` (code would leave the machine). Default false. */
     allowRemote: z.boolean().default(false),
-    /**
-     * Pair judge (DUP-04, layer L4): a model package under modelDir that reads both functions of a
-     * candidate pair at once; pairs it reads as a shared pattern or different work are not reported.
-     * CPU only. Not installed → similarity alone (the group says so); `none` turns it off.
-     */
-    pairJudge: z.string().min(1).default("dustmap-pair-judge-private"),
-    /**
-     * Lowest similarity band a judged group is reported from (medium-and-up). `high`: below it the group
-     * stays at low even when the judge says yes — on real code that band held mostly sibling helpers of one
-     * file (reviewed: high band 16/17 duplicates, medium band ~1 in 4).
-     */
-    judgedMinBand: z.enum(["high", "medium"]).default("high"),
   })
   .strict();
 export type SemanticConfig = z.infer<typeof SemanticConfig>;
@@ -165,24 +153,34 @@ export const RatchetConfig = z
 export type RatchetConfig = z.infer<typeof RatchetConfig>;
 
 /**
- * Optional LLM judge for duplicate clusters and top-ranked places (DUST-14).
- * Disabled by default — the report is complete without it; agents can judge from evidence.
- * API keys come only from env (`DUSTMAP_JUDGE_API_KEY`), never from this file.
+ * The pair judge (layer L4, V1-01): reads both pieces of a candidate pair and gives the probability that
+ * they do the same job; groups it rejects drop to low, confirmed copies of L1-shape / L2 rise.
+ *   onnx       a Dustmap model package under semantic.modelDir (default; not installed = similarity alone)
+ *   openai     any OpenAI-compatible chat API (OpenAI, or a local vLLM / Ollama / llama.cpp server)
+ *   anthropic  the Anthropic Messages API (Claude)
+ *   none       no judge
+ * API keys only from the environment (DUSTMAP_JUDGE_API_KEY, OPENAI_API_KEY or ANTHROPIC_API_KEY), never
+ * from this file; a non-loopback URL needs allowRemote (code pairs leave the machine).
  */
 export const JudgeConfig = z
   .object({
-    enabled: z.boolean().default(false),
-    /** `openai` = OpenAI-compatible chat completions; `anthropic` = Anthropic Messages API. */
-    provider: z.enum(["openai", "anthropic"]).default("openai"),
-    model: z.string().min(1).default("gpt-4o-mini"),
-    /** Base URL for openai-compatible providers (e.g. http://127.0.0.1:11434/v1). */
+    provider: z.enum(["onnx", "openai", "anthropic", "none"]).default("onnx"),
+    /** onnx: the package id; openai / anthropic: the API model name. */
+    model: z.string().min(1).default("dustmap-pair-judge-private"),
+    /** API base URL (default the provider's own; e.g. http://127.0.0.1:11434/v1 for a local server). */
     url: z.string().url().optional(),
-    /** Max findings to judge per scan (clusters first, then top-place findings). */
-    maxClustersPerScan: z.number().int().positive().default(20),
-    /** Soft budget of completion tokens across the scan; stops requesting when exceeded. */
-    maxTokensBudget: z.number().int().positive().default(8000),
-    /** Allow non-loopback URLs (code snippets leave the machine). Default false. */
+    /** Allow a non-loopback URL: code pairs leave this machine. */
     allowRemote: z.boolean().default(false),
+    /** onnx only: `auto` = the GPU variant when the card has room (≥ 2.5 GB free), else the CPU. */
+    device: z.enum(["auto", "gpu", "cpu"]).default("auto"),
+    /** New pairs an API judge reads per scan (cost cap); cached verdicts are free. */
+    maxPairs: z.number().int().positive().default(400),
+    /**
+     * Lowest similarity band a judged semantic group is reported from (medium-and-up). `high`: below it the
+     * group stays low even when the judge says yes — on real code that band held mostly sibling helpers of
+     * one file (reviewed: high band 16/17 duplicates, medium band ~1 in 4; DUP-08).
+     */
+    minBand: z.enum(["high", "medium"]).default("high"),
   })
   .strict();
 export type JudgeConfig = z.infer<typeof JudgeConfig>;
@@ -253,10 +251,21 @@ export const DustmapConfig = z
   .strict();
 export type DustmapConfig = z.infer<typeof DustmapConfig>;
 
+/** Keys a released config may still carry, and where their setting lives now (V1-01). */
+const MOVED_KEYS: Readonly<Record<string, string>> = {
+  "semantic.pairJudge": "judge.provider + judge.model",
+  "semantic.judgedMinBand": "judge.minBand",
+  "judge.enabled": "judge.provider (\"none\" = no judge)",
+};
+
 export function formatConfigError(err: z.ZodError): string {
   return err.issues
     .map((i) => {
       const where = i.path.length ? i.path.join(".") : "(root)";
+      if (i.code === "unrecognized_keys") {
+        const moved = i.keys.map((k) => [k, MOVED_KEYS[[...i.path, k].join(".")]] as const).filter(([, to]) => to);
+        if (moved.length) return `${where}: ${i.message} — moved: ${moved.map(([k, to]) => `${k} → ${to}`).join(", ")}`;
+      }
       return `${where}: ${i.message}`;
     })
     .join("; ");

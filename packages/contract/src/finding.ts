@@ -66,8 +66,9 @@ export const Evidence = z.object({
 export type Evidence = z.infer<typeof Evidence>;
 
 /**
- * Optional LLM judge note (DUST-14). Informational only — never changes confidence or ranking.
- * Omitted when the judge is disabled (default).
+ * The pair judge's verdict on a duplicate group (V1-01): whichever judge read its pairs — a model
+ * package, an OpenAI-compatible API or the Anthropic API — `model` names it. Absent when no judge read
+ * the group (judge `none`, not installed, or its pair budget spent).
  */
 export const JudgementVerdict = z.enum([
   "real-duplicate",

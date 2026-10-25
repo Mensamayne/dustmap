@@ -36,7 +36,7 @@ const JudgeManifest = z.object({
 });
 export type JudgeManifest = z.infer<typeof JudgeManifest>;
 
-export type PairJudge = {
+export type OnnxPairJudge = {
   readonly manifest: JudgeManifest;
   readonly variant: "cpu" | "gpu";
   /** Why the gpu variant is not in use (auto), or null. */
@@ -109,7 +109,7 @@ export async function openPairJudge(
   dir: string,
   id: string,
   opts: { threads?: number; batch?: number; device?: "auto" | "gpu" | "cpu" } = {},
-): Promise<PairJudge> {
+): Promise<OnnxPairJudge> {
   const manifest = loadJudgePackage(dir, id);
   const pkg = path.join(dir, id);
   let ort: Awaited<ReturnType<typeof loadOrt>>;

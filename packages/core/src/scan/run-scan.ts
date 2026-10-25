@@ -17,7 +17,7 @@ import type { Adapter } from "../adapter.js";
 import { loadConfig, resolveOutputDir, type LoadConfigResult } from "../config/load.js";
 import type { DustmapConfig } from "../config/schema.js";
 import { applyDecisions, loadDecisions } from "../decisions/index.js";
-import { annotateWithJudge } from "../judge/index.js";
+import { openJudge, type OpenedJudge } from "../judge/judge.js";
 import { toPosix } from "../posix.js";
 import { rankingWeightsFromConfig, summarizeFindings } from "../rank/index.js";
 import { mergeDuplicateLayers } from "./merge-duplicates.js";
@@ -115,75 +115,78 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
 
-  for (const adapter of enabledAdapters) {
-    const version = adapter.version();
-    const cache = openAdapterCache(outputDir, adapter.name, version);
-    const cached = cache.tryGet(files, cacheKeys);
-    if (cached) {
-      cacheHits += cache.stats.hits;
-      findings.push(...cached);
-      tools.push({ name: adapter.name, version });
-      continue;
+  // One pair judge per scan (V1-01), opened by the first layer that needs it and released at the end.
+  let judgeOpening: Promise<OpenedJudge> | null = null;
+  const judge = () =>
+    (judgeOpening ??= openJudge(config.judge, { ...(config.semantic.modelDir ? { modelDir: config.semantic.modelDir } : {}), outputDir }));
+
+  try {
+    for (const adapter of enabledAdapters) {
+      const version = adapter.version(config);
+      const cache = openAdapterCache(outputDir, adapter.name, version);
+      const cached = cache.tryGet(files, cacheKeys);
+      if (cached) {
+        cacheHits += cache.stats.hits;
+        findings.push(...cached);
+        tools.push({ name: adapter.name, version });
+        continue;
+      }
+      cacheMisses += cache.stats.misses;
+      try {
+        adapterRuns++;
+        const produced = await adapter.run({
+          repoRoot,
+          files: scriptFiles,
+          roles,
+          filesWithRole,
+          styleFilesWithRole,
+          config,
+          mode: opts.mode,
+          readFile,
+          judge,
+        });
+        const parsed = Finding.array().parse(produced);
+        cache.put(files, cacheKeys, parsed);
+        findings.push(...parsed);
+        tools.push({ name: adapter.name, version });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        tools.push({ name: adapter.name, version, error: message });
+      }
     }
-    cacheMisses += cache.stats.misses;
-    try {
-      adapterRuns++;
-      const produced = await adapter.run({
-        repoRoot,
-        files: scriptFiles,
-        roles,
-        filesWithRole,
-        styleFilesWithRole,
-        config,
+
+    // Dedupe by fingerprint (last wins), then one finding per duplicated concept across layers (DUP-06).
+    const byFp = new Map<string, FindingType>();
+    for (const f of findings) byFp.set(f.fingerprint, f);
+    const unique = mergeDuplicateLayers([...byFp.values()], { tokenCopyAloneMax: config.clones.tokenCopyAloneMax });
+    // keep / wontfix mute from ranking and category counts (fingerprint change brings them back).
+    const visible = applyDecisions(unique, loadDecisions(outputDir));
+    const summary = summarizeFindings(visible, rankingWeightsFromConfig(config.ranking));
+
+    const report = Report.parse({
+      schema: REPORT_SCHEMA_ID,
+      scan: {
         mode: opts.mode,
-        readFile,
-      });
-      const parsed = Finding.array().parse(produced);
-      cache.put(files, cacheKeys, parsed);
-      findings.push(...parsed);
-      tools.push({ name: adapter.name, version });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      tools.push({ name: adapter.name, version, error: message });
-    }
+        commit: opts.commit ?? gitHead(repoRoot),
+        ...(opts.mode === "diff" && opts.baseRef ? { baseRef: opts.baseRef } : {}),
+        startedAt: new Date().toISOString(),
+        tools,
+        cache: { hits: cacheHits, misses: cacheMisses },
+        files: { total: files.length, byRole },
+      },
+      summary,
+      findings: visible,
+    });
+
+    // diff → report.diff.json: the full map in report.json changes only on a full scan (BUG-03).
+    const reportPath = reportFilePath(outputDir, opts.mode);
+    writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+    writeScanTarget(outputDir, repoRoot);
+
+    return { report, reportPath, outputDir, adapterRuns, filesScanned: files };
+  } finally {
+    if (judgeOpening) await (await judgeOpening).judge?.release();
   }
-
-  // Dedupe by fingerprint (last wins), then one finding per duplicated concept across layers (DUP-06).
-  const byFp = new Map<string, FindingType>();
-  for (const f of findings) byFp.set(f.fingerprint, f);
-  const unique = mergeDuplicateLayers([...byFp.values()], { tokenCopyAloneMax: config.clones.tokenCopyAloneMax });
-  // keep / wontfix mute from ranking and category counts (fingerprint change brings them back).
-  const visible = applyDecisions(unique, loadDecisions(outputDir));
-  const summary = summarizeFindings(visible, rankingWeightsFromConfig(config.ranking));
-  // Optional LLM judge (default off) — attaches judgement only; does not change scores or ranking.
-  const judged = await annotateWithJudge({
-    findings: visible,
-    summary,
-    config: config.judge,
-    outputDir,
-  });
-
-  const report = Report.parse({
-    schema: REPORT_SCHEMA_ID,
-    scan: {
-      mode: opts.mode,
-      commit: opts.commit ?? gitHead(repoRoot),
-      ...(opts.mode === "diff" && opts.baseRef ? { baseRef: opts.baseRef } : {}),
-      startedAt: new Date().toISOString(),
-      tools,
-      cache: { hits: cacheHits, misses: cacheMisses },
-      files: { total: files.length, byRole },
-    },
-    summary,
-    findings: judged.findings,
-  });
-
-  // diff → report.diff.json: the full map in report.json changes only on a full scan (BUG-03).
-  const reportPath = reportFilePath(outputDir, opts.mode);
-  writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  writeScanTarget(outputDir, repoRoot);
-
-  return { report, reportPath, outputDir, adapterRuns, filesScanned: files };
 }
 
 /** True when absPath is outside repoRoot (after resolve). */

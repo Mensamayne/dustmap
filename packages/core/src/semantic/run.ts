@@ -18,8 +18,9 @@ import {
 } from "./cluster.js";
 import { extractFunctions } from "./extract.js";
 import { reportFloor, type Calibration } from "./calibration.js";
-import { OnnxModelError, openOnnxProvider, resolveModelDir, type OnnxProvider } from "./onnx-provider.js";
-import { openPairJudge, type PairJudge } from "./pair-judge.js";
+import { openOnnxProvider, type OnnxProvider } from "./onnx-provider.js";
+import { openJudge, type OpenedJudge, type PairJudge } from "../judge/judge.js";
+import type { DustmapConfig } from "../config/schema.js";
 import type { JudgeNote } from "./cluster.js";
 import {
   assertHttpProviderAllowed,
@@ -139,8 +140,8 @@ async function runViaEmbed(
   // L4: the judge reads both functions of each candidate pair; the groups it reads as a shared pattern or
   // different work are demoted to low confidence (cluster.ts), never dropped.
   if (judge.judge && pairs.length > 0) {
-    const scores = await judge.judge.score(pairs.map((p) => [p.a.body, p.b.body] as const));
-    pairs = pairs.map((p, k) => ({ ...p, judge: scores[k]! }));
+    const verdicts = await judge.judge.judge(pairs.map((p) => [p.a.body, p.b.body] as const));
+    pairs = pairs.map((p, k) => (verdicts[k] ? { ...p, judged: verdicts[k]! } : p));
   }
 
   return {
@@ -167,7 +168,15 @@ export async function runSemanticAnalysis(
   const cacheDir = semanticCacheDir(ctx);
   const fns = await loadFunctions(ctx, files, extractMinTokens(cfg));
 
-  const judge = await openJudge(cfg);
+  // The scan's judge when there is one; a direct caller (the meter, tests) gets its own, released here.
+  const owned: OpenedJudge | null = ctx.judge ? null : await openJudge(ctx.config.judge, { ...(cfg.modelDir ? { modelDir: cfg.modelDir } : {}), outputDir: resolveOutputDir(ctx.repoRoot, ctx.config.outputDir) });
+  const opened = owned ?? (await ctx.judge!());
+  const note: JudgeNote | null = opened.judge
+    ? { id: opened.judge.id, threshold: opened.judge.threshold, minBand: ctx.config.judge.minBand }
+    : opened.note
+      ? { missing: opened.note }
+      : null;
+  const judge = { judge: opened.judge, note };
   try {
     if (!opts.provider && cfg.provider === "onnx") {
       const onnx = await openOnnxProvider(cfg);
@@ -180,19 +189,7 @@ export async function runSemanticAnalysis(
     const provider = opts.provider ?? createEmbeddingProvider(cfg) ?? createMemoryEmbeddingProvider(cfg.model);
     return await runViaEmbed(cfg, fns, cacheDir, provider, null, null, judge);
   } finally {
-    await judge.judge?.release();
-  }
-}
-
-/** The configured pair judge, or a note why there is none (not installed is not an error; a damaged package is). */
-async function openJudge(cfg: SemanticConfig): Promise<{ judge: PairJudge | null; note: JudgeNote | null }> {
-  if (cfg.pairJudge === "none") return { judge: null, note: null };
-  try {
-    const judge = await openPairJudge(resolveModelDir(cfg), cfg.pairJudge, { device: cfg.device });
-    return { judge, note: { id: `${judge.manifest.id}@${judge.manifest.version} (${judge.variant})`, threshold: judge.manifest.threshold, minBand: cfg.judgedMinBand } };
-  } catch (err) {
-    if (err instanceof OnnxModelError && err.code === "onnx_model_missing") return { judge: null, note: { missing: `pair judge "${cfg.pairJudge}" is not installed` } };
-    throw err;
+    await owned?.judge?.release();
   }
 }
 
@@ -206,7 +203,9 @@ export async function runSemanticAdapter(ctx: AdapterContext): Promise<FindingTy
 export function semanticAdapter(): Adapter {
   return {
     name: "semantic",
-    version: () => `semantic+dm${ADAPTER_REV}`,
+    // Results depend on the embedding model and the judge, not only on the files (V1-01).
+    version: (config: DustmapConfig) =>
+      `semantic+dm${ADAPTER_REV}+${config.semantic.provider}:${config.semantic.model}+judge:${config.judge.provider}:${config.judge.model}:${config.judge.minBand}`,
     run: runSemanticAdapter,
   };
 }

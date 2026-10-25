@@ -76,7 +76,7 @@ export {
 } from "./semantic/index.js";
 export { openVectorCache } from "./semantic/vector-cache.js";
 export { mergeDuplicateLayers, samePlace } from "./scan/merge-duplicates.js";
-export { openPairJudge, loadJudgePackage, truncatePair, type PairJudge, type JudgeManifest } from "./semantic/pair-judge.js";
+export { openPairJudge, loadJudgePackage, truncatePair, type OnnxPairJudge, type JudgeManifest } from "./semantic/pair-judge.js";
 export type {
   EmbeddingProvider,
   SemanticRunResult,
@@ -160,12 +160,17 @@ export {
 } from "./ratchet/index.js";
 export type { RatchetOptions, RatchetResult, BaselineFileType } from "./ratchet/index.js";
 export {
-  annotateWithJudge,
-  assertJudgeReady,
-  createJudgeProvider,
-  createRecordingJudgeProvider,
+  openJudge,
+  groupJudgement,
+  DEFAULT_JUDGE_PACKAGE,
+  createApiJudge,
+  assertApiJudgeReady,
+  parsePairVerdict,
+  scoreOf,
+  judgeApiKey,
   JudgeConfigError,
   JudgeRemoteForbiddenError,
+  PAIR_PROMPT,
 } from "./judge/index.js";
-export type { JudgeProvider, AnnotateJudgeOptions } from "./judge/index.js";
+export type { PairJudge, JudgedPair, OpenedJudge, ApiJudge } from "./judge/index.js";
 

@@ -3,6 +3,7 @@
  */
 import type { FileRoleType, FindingType } from "@dustmap/contract";
 import type { DustmapConfig } from "./config/schema.js";
+import type { OpenedJudge } from "./judge/judge.js";
 
 export type ScanMode = "full" | "diff";
 
@@ -22,10 +23,16 @@ export type AdapterContext = {
   config: DustmapConfig;
   mode: ScanMode;
   readFile: (repoRelativePosix: string) => Promise<string>;
+  /**
+   * The scan's pair judge (V1-01), opened once on first use and released by the scan. Absent in contexts
+   * built outside a scan; an adapter then opens its own from `config.judge`.
+   */
+  judge?: () => Promise<OpenedJudge>;
 };
 
 export type Adapter = {
   name: string;
-  version: () => string;
+  /** Cache key of the adapter's results: change it whenever the same files could give other findings (code, models, settings). */
+  version: (config: DustmapConfig) => string;
   run: (ctx: AdapterContext) => Promise<FindingType[]>;
 };

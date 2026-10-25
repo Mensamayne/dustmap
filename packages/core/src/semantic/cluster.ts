@@ -10,6 +10,7 @@
  */
 import { fingerprint, type FindingType } from "@dustmap/contract";
 import { confidenceFor, lowerConfidence, sharedPattern, type Calibration, type Confidence } from "./calibration.js";
+import { groupJudgement, type JudgedPair } from "../judge/judge.js";
 import type { PairHeadClass } from "./pair-head.js";
 import { pairsAtLeast } from "./similarity.js";
 
@@ -27,8 +28,8 @@ export type SemanticPair = {
   similarity: number;
   /** When set by the PAIR head: `pattern` demotes confidence like sharedPattern. */
   pairClass?: PairHeadClass;
-  /** Pair judge probability of the same job (DUP-04), when a judge read the pair. */
-  judge?: number;
+  /** The pair judge's reading (V1-01), when a judge read the pair. */
+  judged?: JudgedPair;
 };
 
 /**
@@ -157,7 +158,7 @@ export function clusterSemanticPairs(
   const byKey = new Map<string, SemanticFunctionRef>();
   const edgeSims = new Map<string, number>(); // unordered pair of fn keys → max sim
   const pairClassByEdge = new Map<string, PairHeadClass>();
-  const judgeByEdge = new Map<string, number>();
+  const judgeByEdge = new Map<string, JudgedPair>();
 
   for (const p of pairs) {
     if (p.similarity < threshold) continue;
@@ -172,7 +173,7 @@ export function clusterSemanticPairs(
     if (p.similarity >= prev) {
       edgeSims.set(ek, p.similarity);
       if (p.pairClass) pairClassByEdge.set(ek, p.pairClass);
-      if (p.judge !== undefined) judgeByEdge.set(ek, p.judge);
+      if (p.judged !== undefined) judgeByEdge.set(ek, p.judged);
     }
   }
 
@@ -190,15 +191,16 @@ export function clusterSemanticPairs(
         if (s !== undefined) sims.push(s);
       }
     }
-    const judgeScores: number[] = [];
+    const judgedPairs: JudgedPair[] = [];
     for (let i = 0; i < members.length; i++) {
       for (let j = i + 1; j < members.length; j++) {
         const a = members[i]!;
         const b = members[j]!;
         const s = judgeByEdge.get(a < b ? `${a}\n${b}` : `${b}\n${a}`);
-        if (s !== undefined) judgeScores.push(s);
+        if (s !== undefined) judgedPairs.push(s);
       }
     }
+    const judgeScores = judgedPairs.map((v) => v.score);
     // The judge demotes, never deletes: a group whose every judged pair reads as a pattern or different
     // work stays visible at low confidence (type-4 duplicates are where the judge is weakest).
     const judgeThreshold = judged && "id" in judged ? judged.threshold : null;
@@ -238,7 +240,7 @@ export function clusterSemanticPairs(
     // Below the high band the judge's yes is not enough: there it mostly confirms sibling helpers of one
     // file (DUP-08 review on real code: high band 16/17 real, medium band ~0.25).
     const belowBand =
-      !judgeRejects && judged !== null && "id" in judged && judged.minBand === "high" && calibration !== null && confidenceFor(maxSim, calibration) !== "high";
+      !judgeRejects && judgeScores.length > 0 && judged !== null && "id" in judged && judged.minBand === "high" && calibration !== null && confidenceFor(maxSim, calibration) !== "high";
     if (belowBand) confidence = "low";
 
     findings.push({
@@ -269,14 +271,17 @@ export function clusterSemanticPairs(
               {
                 label: "judge",
                 value:
-                  "id" in judged
+                  "id" in judged && judgeScores.length > 0
                     ? `${judged.id}: ${accepted} of ${judgeScores.length} linked pairs read as the same job (probability ${Math.min(...judgeScores).toFixed(2)}–${Math.max(...judgeScores).toFixed(2)}, threshold ${judged.threshold})${judgeRejects ? " — reads as a shared pattern or different work: low confidence, check by hand" : ""}${belowBand ? " — similarity below the high band: low confidence, shown on request" : ""}`
-                    : `not judged — ${judged.missing}; similarity only`,
+                    : "id" in judged
+                      ? `${judged.id}: no pair of this group read (the judge's pair budget was spent); similarity only`
+                      : `not judged — ${judged.missing}; similarity only`,
               },
             ]
           : []),
       ],
       confidence,
+      ...(judged && "id" in judged && judgedPairs.length > 0 ? { judgement: groupJudgement(judged.id, judged.threshold, judgedPairs) } : {}),
       suggestedAction: "review",
       verifyHint:
         shape === "parallel-files"
