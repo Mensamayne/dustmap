@@ -33,7 +33,7 @@ npx dustmap list --report diff          # what the pull request added
 - **Ratchet** in CI blocks only *new* dust, never the old backlog.
 - **Plugins** turn chosen findings into tickets or agent-queue briefs. Nothing is enqueued automatically.
 
-Everything runs locally by default. The optional LLM judge is off unless you turn it on.
+Everything runs locally by default. Two optional models sharpen the duplicate layers — an embedding model (same meaning, different code) and a pair judge (same job, or only the same skeleton?). Each can be Dustmap's local model package, any OpenAI-compatible API (GPT, or Ollama / vLLM on your machine), the Anthropic API (Claude), or nothing; code leaves the machine only with `allowRemote: true`, and keys come only from the environment. Ready configs, privacy and cost: [docs/MODELS.md](docs/MODELS.md).
 
 ## Repository layout
 

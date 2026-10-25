@@ -43,7 +43,7 @@ Every MCP reply has `next`: 1–3 follow-up calls. Prefer them over a parallel w
 
 One finding per copied concept; `dustmap_show` → `group`:
 - `layer`: L1 normalized copy (certain) · L2 near copy · L3 same meaning · token copy. `foundBy`: layers agreeing.
-- `judge`: a pair model read both sides; `low` = pattern or other job — check by hand.
+- `judgement`: a pair judge read both sides — `real-duplicate` (high), `intentional-pattern` (same skeleton, other job — maybe a parameter, check by hand), `uncertain`. None: no judge ran; `judge` evidence says why. Models: Dustmap `docs/MODELS.md`; API keys only in env.
 - `original`: oldest member (git); the rest are copies.
 - `sketch`: common form with `p1…` parameters, only when safe; `sketchBlocked` says why not. Text only — write the change yourself, then re-scan.
 - `parts`: smaller copies inside these places.
