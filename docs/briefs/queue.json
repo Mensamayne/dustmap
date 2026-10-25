@@ -1431,8 +1431,11 @@
         "DUP-02"
       ],
       "epic": "DUP",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T02:58:37.590Z",
+      "gitProofSha": "782a6b862d9d204bb53ef2bc804a4248390f23e1",
+      "closureNotes": "L5: direction from file dates (2.7 s), sketches 125/146 constant groups, 40/494 near copies, 97 CSS groups; 30/30 sketches and 5/5 directions verified; lab 157/157"
     },
     {
       "id": "DUP-06",
