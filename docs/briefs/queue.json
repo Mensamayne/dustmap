@@ -1645,10 +1645,13 @@
         "REL-00"
       ],
       "epic": "REL",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
       "startedAt": "2026-10-25T22:18:32.039Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-25T22:31:24.404Z",
+      "gitProofSha": "7f5bcadb2796ff452598fd7c84d48fa90b6d989d",
+      "closureNotes": "Missing model = note with a how-to; public embedding default, no judge by default, judge.model explicit; HF upload split to REL-06."
     },
     {
       "id": "REL-03",
