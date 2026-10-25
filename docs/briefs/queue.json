@@ -1322,8 +1322,11 @@
         "CON-12"
       ],
       "epic": "CON",
-      "status": "todo",
-      "kind": "feature"
+      "status": "cancelled",
+      "kind": "feature",
+      "startedAt": "2026-10-24T04:57:15.605Z",
+      "startedBy": "agent",
+      "closureNotes": "Dane zbudowane (historia 57 repo: 31k grow, 3,7k extract, 20k merge/move; generator Qwen 6k par; korpus bez testdata/baselines; CSS drift), ale trening na nich nie pobił modelu bazowego. Zastąpione paradygmatem DUP (docs/architecture/duplicates-paradigm.md), decyzja maintainera 25.10.2026."
     },
     {
       "id": "CON-14",
@@ -1335,6 +1338,114 @@
         "CON-13"
       ],
       "epic": "CON",
+      "status": "cancelled",
+      "kind": "feature",
+      "closureNotes": "Trzy przebiegi spadały od pierwszych kroków (0,685 → 0,65): model wektorowy z zasady nie rozdziela wzorca od duplikatu. Zastąpione paradygmatem DUP (docs/architecture/duplicates-paradigm.md), decyzja maintainera 25.10.2026."
+    },
+    {
+      "id": "DUP-00",
+      "title": "Overview: duplikaty i ujednolicenia w pięciu warstwach",
+      "layer": 0,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-00-overview.md",
+      "gates": [],
+      "epic": "DUP",
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-25T00:06:00.618Z",
+      "startedBy": "agent"
+    },
+    {
+      "id": "DUP-01",
+      "title": "L1: kopie po normalizacji (TS/JS) i duplikaty CSS typów I–III",
+      "layer": 1,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-01-normalized-clones.md",
+      "gates": [
+        "DUP-00"
+      ],
+      "epic": "DUP",
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-25T00:05:42.320Z",
+      "startedBy": "agent"
+    },
+    {
+      "id": "DUP-02",
+      "title": "L2: prawie kopie i „zawiera” z diffem",
+      "layer": 2,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-02-near-miss.md",
+      "gates": [
+        "DUP-01"
+      ],
+      "epic": "DUP",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "DUP-03",
+      "title": "Miernik per warstwa",
+      "layer": 2,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-03-layer-meter.md",
+      "gates": [
+        "DUP-01"
+      ],
+      "epic": "DUP",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "DUP-04",
+      "title": "L4: sędzia par — mały model par nauczony na ocenach Qwena",
+      "layer": 3,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-04-pair-judge.md",
+      "gates": [
+        "DUP-03"
+      ],
+      "epic": "DUP",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "DUP-05",
+      "title": "L5: szkic ujednolicenia i kierunek kopii",
+      "layer": 3,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-05-unification-sketch.md",
+      "gates": [
+        "DUP-02"
+      ],
+      "epic": "DUP",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "DUP-06",
+      "title": "Raport i MCP: grupy z warstwą, dowodem i szkicem",
+      "layer": 4,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-06-report-and-mcp.md",
+      "gates": [
+        "DUP-05",
+        "DUP-04"
+      ],
+      "epic": "DUP",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "DUP-07",
+      "title": "Pomiar na Monorepo-A i w labie, decyzja o domyślnych",
+      "layer": 5,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-07-targets-and-defaults.md",
+      "gates": [
+        "DUP-06"
+      ],
+      "epic": "DUP",
       "status": "todo",
       "kind": "feature"
     }

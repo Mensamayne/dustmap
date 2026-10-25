@@ -88,3 +88,16 @@ Statusy **tylko** w [queue.json](queue.json). Jak pracować z kolejką: [../QUEU
 | PAIR-03 | Paczka ONNX (enkoder + pairHead) |
 | PAIR-04 | Wpięcie w skan semantic |
 | PAIR-05 | Porównanie Monorepo-A + werdykt domyślnego |
+
+**Epik DUP — duplikaty i ujednolicenia w pięciu warstwach** (kopie i CSS po normalizacji, prawie kopie, kandydaci z modelu wektorowego, sędzia par, szkic ujednolicenia; zastępuje trening modelu wektorowego z CON-13/14). Overview: [DUP-00-overview.md](DUP-00-overview.md), projekt: [duplicates-paradigm.md](../architecture/duplicates-paradigm.md).
+
+| ID | Co |
+|----|----|
+| DUP-00 | Overview, decyzja „sygnały + szkic ujednolicenia” |
+| DUP-01 | L1: kopie po normalizacji (TS/JS) i CSS typów I–III |
+| DUP-02 | L2: prawie kopie i „zawiera” z diffem |
+| DUP-03 | Miernik per warstwa |
+| DUP-04 | L4: sędzia par (cross-encoder z ocen Qwena) |
+| DUP-05 | L5: szkic ujednolicenia i kierunek kopii |
+| DUP-06 | Raport i MCP: grupy z warstwą, dowodem i szkicem |
+| DUP-07 | Pomiar na Monorepo-A i w labie, domyślne |

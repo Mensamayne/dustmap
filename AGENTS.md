@@ -22,7 +22,7 @@ Working rules were carried over from the Monorepo-A monorepo (same maintainer, s
 
 Corollaries:
 - **Generic, not tailored:** no knowledge of any specific project in `packages/*/src`. Project specifics live in the user's `dustmap.config.json`.
-- **Signals, not prescriptions:** findings say *where it hurts and the evidence*, never *how to refactor*.
+- **Signals + unification sketch:** findings say *where it hurts and the evidence*. Duplicate findings may also carry a **sketch** of the unified form (shared skeleton, parameters, rename map, CSS grouping selector) as evidence — shown only when it is safe, never applied. Decision of the maintainer (25.10.2026, DUP epic): „zapisz epik DUP … z decyzją »sygnały + szkic ujednolicenia«”. Design: [docs/architecture/duplicates-paradigm.md](docs/architecture/duplicates-paradigm.md).
 - **Local by default:** no network calls unless the user's config opts in explicitly.
 
 ## Task queue (kontynuuj rozwój)
