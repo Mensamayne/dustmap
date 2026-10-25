@@ -89,3 +89,45 @@ Scenario `12-prawie-kopie`: a near copy (one changed call, other names), a copy 
 ### Full scan
 
 `npm run verify:targets`: OK. Monorepo-A full scan with L1 + L2 (adapter version 2, fresh cache): 62.3 s, 15002 findings, 5368 of them `duplicate` (jscpd + L1 + L2; deduplication between jscpd and L1/L2 is DUP-06's job). Service-B: 146 findings.
+
+## DUP-03 — one meter per layer (2026-10-25)
+
+`npm run dup:meter -- [--model <onnx package>] [--judge <scores.jsonl>] [--no-l3]` — every layer on the same gold set (`tools/emb/gold`, 1532 pairs: 1339 + 193 trap pairs), each through Dustmap's own code. Positives: same + contains + concept.
+
+### L1/L2 on gold (product thresholds)
+
+| Verdict | Reports | Duplicates | pattern | Precision |
+|---|---:|---:|---:|---:|
+| exact (L1) | 9 | 9 | 0 | 1.00 |
+| css-equal (L1) | 8 | 8 | 0 | 1.00 |
+| shape — other constants (L1) | 15 | 9 | 6 | 0.60 |
+| near-miss (L2) | 38 | 30 | 8 | 0.79 |
+| contains (L2) | 1 | 1 | 0 | 1.00 |
+| **L1 + L2** | **71** | **57** | **14** | **0.80** |
+
+Recall of L1+L2 on gold: same 0.15, contains 0.11, concept 0.00 — most gold duplicates are type 3–4, which is L3/L4's job. Trap: 11/193 reported.
+
+**Correction to DUP-02.** Its acceptance asked for L2 precision ≥ 0.95 *on gold*; DUP-02 was closed on a Monorepo-A review that asked "is this really a near copy?" (30/30 yes). On gold, which asks "do both do the same job?", L2 is 0.79 and L1-shape 0.60. The misses are copies with one responsibility swapped: `‹private›` / `walk` (another file filter), `‹private›` / `‹private›` (another media query), `POST` / `POST` (accept vs reject action). No text rule separates them — similarity of the pattern pairs (0.71–0.87) overlaps that of the duplicates (0.74–0.98). Twelve of the 14 such labels come from the CON-03 labelling; within one family gold is not consistent (`‹private›` ↔ `‹private›` pattern, both ↔ `‹private›` same). Consequence for the epic: L1-shape and L2 report a certain *text* relation; "same job" is decided by L4 or the agent, and DUP-06 shows the two separately.
+
+### L3 — partner in the top k (product path)
+
+Every positive gold pair with both sides in one snapshot: side A is the query, the scan's own units of the whole repository are the pool (`extractUnits`, the `onnx` package `dustmap-same-meaning-private` on GPU), the partner or any piece of it counts as found; the query's own pieces are not candidates.
+
+| Snapshot | Pool | Pairs | recall@10 | recall@20 | recall@50 |
+|---|---:|---:|---:|---:|---:|
+| Monorepo-A `dbe35aa00cd6` | 69 600 | 398 | 0.80 | 0.88 | 0.96 |
+| — same | | 284 | 0.83 | 0.91 | 0.96 |
+| — contains | | 57 | 0.79 | 0.88 | 0.96 |
+| — concept | | 57 | 0.67 | 0.75 | 0.95 |
+| Service-B `0c0aa958e6b3` | 360 | 5 | 1.00 | 1.00 | 1.00 |
+
+(The earlier 92 % at top-20 came from the training repo's pool and side texts; this is the scan's own cut: 0.88.) First run embeds the pool (625 s on GPU); vectors are cached in `.tmp/emb/dup-meter-vectors`.
+
+### L4 — the Qwen 7B judge (`gold-judged.jsonl`, CON-14)
+
+| Set | AP | same | contains | concept | Precision @0.5 | Recall @0.5 | pattern below 0.5 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| test (741) | 0.798 | 0.806 | 0.427 | 0.085 | 0.49 | 0.95 | 0.27 |
+| all (1339) | 0.796 | 0.790 | 0.460 | 0.104 | 0.52 | 0.95 | 0.25 |
+
+Trap: 187/193 at ≥ 0.5. L1-shape + L2 confirmed by the judge: 52 of 54 kept, precision 0.75 (0.74 without the judge) — the Qwen judge does not separate pattern from duplicate on near copies. This is the input DUP-04 has to beat, not copy.

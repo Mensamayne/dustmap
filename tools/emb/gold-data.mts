@@ -13,7 +13,21 @@ import { fileURLToPath } from "node:url";
 export type GoldLabel = "same" | "contains" | "concept" | "pattern" | "different";
 /** CON unit bucket for meter breakdowns (function / fragment / class / css). */
 export type UnitKind = "function" | "fragment" | "class" | "css" | "mixed";
-export type Side = { name: string; code: string; kind?: string };
+/**
+ * `code` is what gets embedded (class members wrapped); private sides also carry the raw `span` and where
+ * it lives (repo, commit, path, lines), so the DUP meter can find the scan's own unit at that place.
+ */
+export type Side = {
+  name: string;
+  code: string;
+  kind?: string;
+  span?: string;
+  path?: string;
+  repo?: string;
+  sha?: string;
+  startLine?: number;
+  endLine?: number;
+};
 export type GoldPair = {
   id: string;
   label: GoldLabel;
@@ -131,7 +145,7 @@ export function loadPrivate(): { pairs: GoldPair[]; note: string } {
     // Class members and object properties are not valid on their own; wrap them for parsers.
     const code =
       r.kind === "class-member" ? `class GoldWrapper {\n${span}\n}` : r.kind === "object-property" ? `const goldWrapper = {\n${span}\n};` : span;
-    return { name: r.name, code, kind: r.kind };
+    return { name: r.name, code, kind: r.kind, span, path: r.path, repo: r.repo, sha: r.sha, startLine: r.startLine, endLine: r.endLine };
   };
   const pairs: GoldPair[] = [];
   let drifted = 0;

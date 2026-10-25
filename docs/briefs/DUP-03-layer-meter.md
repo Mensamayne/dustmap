@@ -42,6 +42,7 @@ Każda warstwa ma własną liczbę: L1/L2 precyzja zgłoszeń (złoto + lab), L3
 - `tools/emb/**`
 - `package.json`
 - `docs/experiments/dup-results.md`
+- Added during work: `packages/core/src/index.ts` (exports `extractUnits`, `openVectorCache`, `nearPairs` for the meter — the product path, not a copy of it); the meter is `tools/emb/dup-meter.mts` beside `eval.mts`, which keeps its EMB role
 
 ## Weryfikacja
 

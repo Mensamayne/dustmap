@@ -73,7 +73,9 @@ export {
   pairFeatures,
   cosinePairBaseline,
   openPairHeadSession,
+  extractUnits,
 } from "./semantic/index.js";
+export { openVectorCache } from "./semantic/vector-cache.js";
 export type {
   EmbeddingProvider,
   SemanticRunResult,
@@ -89,6 +91,7 @@ export type {
 export {
   normalizedClonesAdapter,
   normalizedUnits,
+  nearPairs,
   renameMap,
   literalChanges,
   cssRules,
@@ -99,7 +102,8 @@ export {
   canonicalColor,
   normalizeValue,
 } from "./clones/index.js";
-export type { NormalizedUnit, CssRule } from "./clones/index.js";
+export type { NormalizedUnit, CssRule, NearPair } from "./clones/index.js";
+export type { CodeUnit } from "./semantic/index.js";
 export {
   codeSignalsAdapter,
   runCodeSignals,
