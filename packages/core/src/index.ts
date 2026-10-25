@@ -30,6 +30,7 @@ export type { InitResult } from "./init/run-init.js";
 export { runScan, snapshotRepoPaths, isOutsideRepo } from "./scan/run-scan.js";
 export { UnknownBaseRefError } from "./scan/git.js";
 export { UserInputError } from "./user-input-error.js";
+export { LayerUnavailableError } from "./layer-unavailable.js";
 export {
   REPORT_FILES,
   REPORT_KINDS,
@@ -162,12 +163,12 @@ export type { RatchetOptions, RatchetResult, BaselineFileType } from "./ratchet/
 export {
   openJudge,
   groupJudgement,
-  DEFAULT_JUDGE_PACKAGE,
   createApiJudge,
   assertApiJudgeReady,
   parsePairVerdict,
   scoreOf,
   judgeApiKey,
+  judgeModel,
   JudgeConfigError,
   JudgeRemoteForbiddenError,
   PAIR_PROMPT,

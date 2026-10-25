@@ -55,3 +55,6 @@ npm run verify
 
 1. Commit `Fixes REL-02: …`
 2. `node tools/queue/close.mjs --id REL-02 --note "…"`
+
+- Zmiana w trakcie: Step 3 (karta modelu, wgranie, domyślne źródło `model pull`) przeniesiony do **REL-06** — maintainer nie ma jeszcze konta na Hugging Face (25.10.2026). Notatka „layer off” mówi więc `dustmap model pull <id> --from <url>` i odsyła do `docs/MODELS.md`. `judge.model` bez wartości domyślnej (wcześniej prywatne id): każdy dostawca poza `none` musi go nazwać.
+- Added during work: `packages/core/src/layer-unavailable.ts`, `packages/core/src/index.ts`, `packages/contract/src/report.ts` (pole `note` narzędzia), `packages/cli/src/scan-cmd.ts` (linie `note:` / `error:`), `tools/targets/*.dustmap.config.json` (jawny prywatny sędzia), `tools/emb/dup-meter.mts` nie wymagał zmian

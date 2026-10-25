@@ -69,8 +69,9 @@ export type ClonesConfig = z.infer<typeof ClonesConfig>;
 
 /**
  * Semantic (embedding) duplicate detection — default (EMB-10): Dustmap's own ONNX model package
- * in-process, offline, with calibrated bands (EMB-09). Until EMB-11 publishes a public package the
- * default id is the private one (local install only).
+ * in-process, offline, with calibrated bands (EMB-09). The default id is the public package
+ * (`dustmap model pull dustmap-same-meaning-public`); not installed, the layer is off with a note saying how
+ * to turn it on (REL-02).
  */
 export const SemanticConfig = z
   .object({
@@ -80,7 +81,7 @@ export const SemanticConfig = z
      */
     provider: z.enum(["onnx", "http", "none"]).default("onnx"),
     /** Model: onnx package id (installed under modelDir), or the HTTP model field. */
-    model: z.string().min(1).default("dustmap-same-meaning-private"),
+    model: z.string().min(1).default("dustmap-same-meaning-public"),
     /**
      * `onnx` only: where model packages live (`<modelDir>/<model>/manifest.json`). Default: the user
      * cache, `$DUSTMAP_MODELS_DIR` or `~/.cache/dustmap/models`. Never inside the scanned repo's source.
@@ -154,8 +155,8 @@ export type RatchetConfig = z.infer<typeof RatchetConfig>;
 
 /**
  * The pair judge (layer L4, V1-01): reads both pieces of a candidate pair and gives the probability that
- * they do the same job; groups it rejects drop to low, confirmed copies of L1-shape / L2 rise.
- *   onnx       a Dustmap model package under semantic.modelDir (default; not installed = similarity alone)
+ * they do the same job; same-meaning groups it rejects drop to low, copies it confirms rise to high.
+ *   onnx       a Dustmap model package under semantic.modelDir (not installed = similarity alone)
  *   openai     any OpenAI-compatible chat API (OpenAI, or a local vLLM / Ollama / llama.cpp server)
  *   anthropic  the Anthropic Messages API (Claude)
  *   none       no judge
@@ -164,9 +165,10 @@ export type RatchetConfig = z.infer<typeof RatchetConfig>;
  */
 export const JudgeConfig = z
   .object({
-    provider: z.enum(["onnx", "openai", "anthropic", "none"]).default("onnx"),
-    /** onnx: the package id; openai / anthropic: the API model name. */
-    model: z.string().min(1).default("dustmap-pair-judge-private"),
+    /** Default `none`: there is no public judge package yet; pick an API, a local server or a package (docs/MODELS.md). */
+    provider: z.enum(["onnx", "openai", "anthropic", "none"]).default("none"),
+    /** onnx: the package id; openai / anthropic: the API model name. Required with any provider but none. */
+    model: z.string().min(1).optional(),
     /** API base URL (default the provider's own; e.g. http://127.0.0.1:11434/v1 for a local server). */
     url: z.string().url().optional(),
     /** Allow a non-loopback URL: code pairs leave this machine. */

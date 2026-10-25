@@ -18,7 +18,8 @@ import {
 } from "./cluster.js";
 import { extractFunctions } from "./extract.js";
 import { reportFloor, type Calibration } from "./calibration.js";
-import { openOnnxProvider, type OnnxProvider } from "./onnx-provider.js";
+import { OnnxModelError, openOnnxProvider, type OnnxProvider } from "./onnx-provider.js";
+import { LayerUnavailableError } from "../layer-unavailable.js";
 import { openJudge, type OpenedJudge, type PairJudge } from "../judge/judge.js";
 import type { DustmapConfig } from "../config/schema.js";
 import type { JudgeNote } from "./cluster.js";
@@ -196,8 +197,19 @@ export async function runSemanticAnalysis(
 export async function runSemanticAdapter(ctx: AdapterContext): Promise<FindingType[]> {
   if (ctx.config.semantic.provider === "none") return [];
   if (ctx.config.adapters.semantic?.enabled === false) return [];
-  const { findings } = await runSemanticAnalysis(ctx);
-  return findings;
+  try {
+    const { findings } = await runSemanticAnalysis(ctx);
+    return findings;
+  } catch (err) {
+    // Not installed is the user's setup, not a fault: the layer is off and the note says how to turn it on.
+    if (err instanceof OnnxModelError && err.code === "onnx_model_missing") {
+      const id = ctx.config.semantic.model;
+      throw new LayerUnavailableError(
+        `same-meaning layer off: embedding model "${id}" is not installed. Turn it on by installing the package (\`dustmap model pull ${id} --from <url>\`), by pointing semantic at another model (an OpenAI-compatible API or a local server), or silence this with semantic.provider "none" — see docs/MODELS.md.`,
+      );
+    }
+    throw err;
+  }
 }
 
 export function semanticAdapter(): Adapter {
@@ -205,7 +217,7 @@ export function semanticAdapter(): Adapter {
     name: "semantic",
     // Results depend on the embedding model and the judge, not only on the files (V1-01).
     version: (config: DustmapConfig) =>
-      `semantic+dm${ADAPTER_REV}+${config.semantic.provider}:${config.semantic.model}+judge:${config.judge.provider}:${config.judge.model}:${config.judge.minBand}`,
+      `semantic+dm${ADAPTER_REV}+${config.semantic.provider}:${config.semantic.model}+judge:${config.judge.provider}:${config.judge.model ?? "-"}:${config.judge.minBand}`,
     run: runSemanticAdapter,
   };
 }

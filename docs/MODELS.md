@@ -5,7 +5,7 @@ Dustmap finds duplicates in layers. The first two read text only and need no mod
 - **The embedding model** turns every function into numbers, so functions that *mean* the same thing land close together even when their code differs (`semantic`).
 - **The pair judge** reads two pieces of code side by side and says whether they do the same job (`judge`). It confirms or demotes duplicate groups of every layer that text alone cannot settle: same-meaning groups, copies that differ only in constants, near copies.
 
-Both are chosen in `dustmap.config.json`. Either can be a local model package, an API, or nothing at all. The scan never fails because a model is missing: it falls back to the layers it has and says so in each group's evidence.
+Both are chosen in `dustmap.config.json`. Either can be a local model package, an API, or nothing at all. Out of the box the embedding model is Dustmap's public package and there is no judge. The scan never fails because a model is missing: the layer is off, the report says so in a note (`scan.tools[].note`, and a `note:` line after `dustmap scan`) with how to turn it on, and every other layer runs.
 
 ## What leaves your machine
 
@@ -27,11 +27,13 @@ A local server (Ollama, vLLM, llama.cpp, LM Studio) needs neither a key nor `all
 
 ### Dustmap model package (default)
 
-Runs in-process with ONNX Runtime: offline, GPU when the card has room, CPU otherwise. Packages live in `~/.cache/dustmap/models` (or `$DUSTMAP_MODELS_DIR`); `dustmap model list` shows what is installed.
+Runs in-process with ONNX Runtime: offline, GPU when the card has room, CPU otherwise. Packages live in `~/.cache/dustmap/models` (or `$DUSTMAP_MODELS_DIR`); `dustmap model list` shows what is installed, `dustmap model pull <id> --from <url>` installs one and checks every file's SHA-256 (the only command that touches the network, and only when you run it).
 
 ```json
-{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning-private", "device": "auto" } }
+{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning-public", "device": "auto" } }
 ```
+
+`dustmap-same-meaning-public` (Apache-2.0, ~380 MB with both variants): `microsoft/unixcoder-base` tuned on permissively licensed code only (MIT / Apache / BSD packages and synthetic rewrites), with a privacy check of the training set; AP 0.787 on Dustmap's held-out gold (base model 0.672). Packages trained on private code are marked `private` and are never downloaded or published.
 
 ### Any OpenAI-compatible embeddings API
 
@@ -66,10 +68,12 @@ A mix leaves the confidence as it was. The verdict is in the finding's `judgemen
 
 Verdicts are cached in `<outputDir>/cache/judge/`, so a re-scan reads only pairs whose code changed.
 
-### Dustmap judge package (default)
+### A Dustmap judge package
+
+There is no public judge package yet (the one measured below is trained on private code and stays local). With a package installed:
 
 ```json
-{ "judge": { "provider": "onnx", "model": "dustmap-pair-judge-private", "device": "auto" } }
+{ "judge": { "provider": "onnx", "model": "<package id>", "device": "auto" } }
 ```
 
 Not installed → the scan says so in each group (`not judged — pair judge "…" is not installed`) and keeps similarity alone.
@@ -100,7 +104,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 { "judge": { "provider": "openai", "model": "qwen2.5-coder:7b", "url": "http://127.0.0.1:11434/v1" } }
 ```
 
-### No judge
+### No judge (default)
 
 ```json
 { "judge": { "provider": "none" } }
@@ -112,8 +116,8 @@ Similarity alone decides; no group carries a verdict.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `provider` | `onnx` | `onnx` \| `openai` \| `anthropic` \| `none` |
-| `model` | `dustmap-pair-judge-private` | package id (`onnx`) or the API model name |
+| `provider` | `none` | `onnx` \| `openai` \| `anthropic` \| `none` |
+| `model` | — | package id (`onnx`) or the API model name |
 | `url` | the provider's own | API base URL; loopback needs no key |
 | `allowRemote` | `false` | allow a non-loopback URL (code pairs leave the machine) |
 | `device` | `auto` | `onnx` only: GPU variant when the card has ≥ 2.5 GB free, else CPU |
@@ -131,7 +135,7 @@ An API judge makes one request per new pair: two code pieces of at most 6 000 ch
 `npm run dup:meter` scores any judge on Dustmap's gold pairs through the scan's own factory:
 
 ```bash
-npm run dup:meter -- --no-l3 --judge-provider onnx
+npm run dup:meter -- --no-l3 --judge-provider onnx --judge-model <package id>
 npm run dup:meter -- --no-l3 --judge-provider anthropic --judge-model claude-haiku-5-5 --allow-remote --judge-limit 200
 ```
 

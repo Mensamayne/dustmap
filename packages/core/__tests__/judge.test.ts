@@ -11,7 +11,6 @@ import { DustmapConfig, formatConfigError, type JudgeConfig } from "../src/confi
 import {
   assertApiJudgeReady,
   createApiJudge,
-  DEFAULT_JUDGE_PACKAGE,
   groupJudgement,
   JudgeConfigError,
   JudgeRemoteForbiddenError,
@@ -79,15 +78,16 @@ describe("pair judge (V1-01)", () => {
     expect(msg).toContain('enabled → judge.provider ("none" = no judge)');
   });
 
-  it("an API judge needs a model name, a key for a remote API, and allowRemote", () => {
-    expect(() => assertApiJudgeReady(cfg({ provider: "openai" }), DEFAULT_JUDGE_PACKAGE)).toThrow(/set the API model name/);
-    expect(() => assertApiJudgeReady(cfg({ provider: "openai", model: "gpt-x" }), DEFAULT_JUDGE_PACKAGE)).toThrow(JudgeConfigError);
+  it("a judge needs a model name; an API judge also a key for a remote API, and allowRemote", async () => {
+    expect(() => assertApiJudgeReady(cfg({ provider: "openai" }))).toThrow(/judge.model is not set — name the API model/);
+    await expect(openJudge(cfg({ provider: "onnx" }), { outputDir: out() })).rejects.toThrow(/name the judge package/);
+    expect(() => assertApiJudgeReady(cfg({ provider: "openai", model: "gpt-x" }))).toThrow(JudgeConfigError);
     process.env.OPENAI_API_KEY = "test-key";
-    expect(() => assertApiJudgeReady(cfg({ provider: "openai", model: "gpt-x" }), DEFAULT_JUDGE_PACKAGE)).toThrow(JudgeRemoteForbiddenError);
-    expect(() => assertApiJudgeReady(cfg({ provider: "openai", model: "gpt-x", allowRemote: true }), DEFAULT_JUDGE_PACKAGE)).not.toThrow();
+    expect(() => assertApiJudgeReady(cfg({ provider: "openai", model: "gpt-x" }))).toThrow(JudgeRemoteForbiddenError);
+    expect(() => assertApiJudgeReady(cfg({ provider: "openai", model: "gpt-x", allowRemote: true }))).not.toThrow();
     delete process.env.OPENAI_API_KEY;
     // A local server (Ollama, vLLM) needs neither a key nor allowRemote.
-    expect(() => assertApiJudgeReady(cfg({ provider: "openai", model: "qwen2.5-coder", url: "http://127.0.0.1:11434/v1" }), DEFAULT_JUDGE_PACKAGE)).not.toThrow();
+    expect(() => assertApiJudgeReady(cfg({ provider: "openai", model: "qwen2.5-coder", url: "http://127.0.0.1:11434/v1" }))).not.toThrow();
   });
 
   it("OpenAI-compatible: both pieces of code go in the prompt; verdicts are cached; the pair budget holds", async () => {
@@ -136,7 +136,7 @@ describe("pair judge (V1-01)", () => {
     const v = (over: Partial<typeof base>) => semanticAdapter().version({ ...base, ...over });
     const now = v({});
     expect(v({ semantic: { ...base.semantic, model: "other-embedding" } })).not.toBe(now);
-    expect(v({ judge: { ...base.judge, provider: "none" } })).not.toBe(now);
+    expect(v({ judge: { ...base.judge, provider: "onnx" } })).not.toBe(now);
     expect(v({ judge: { ...base.judge, provider: "anthropic", model: "claude-x" } })).not.toBe(now);
     expect(v({})).toBe(now);
   });

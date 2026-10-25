@@ -1645,8 +1645,10 @@
         "REL-00"
       ],
       "epic": "REL",
-      "status": "todo",
-      "kind": "feature"
+      "status": "in_progress",
+      "kind": "feature",
+      "startedAt": "2026-10-25T22:18:32.039Z",
+      "startedBy": "agent"
     },
     {
       "id": "REL-03",
@@ -1687,6 +1689,20 @@
       "epic": "REL",
       "status": "todo",
       "kind": "feature"
+    },
+    {
+      "id": "REL-06",
+      "title": "Model publiczny na Hugging Face",
+      "layer": 4,
+      "segment": "release",
+      "brief": "docs/briefs/REL-06-public-model-hub.md",
+      "gates": [
+        "REL-02"
+      ],
+      "epic": "REL",
+      "status": "blocked",
+      "kind": "feature",
+      "closureNotes": "Czeka na konto maintainera na Hugging Face (25.10.2026)."
     }
   ]
 }

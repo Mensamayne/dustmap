@@ -35,9 +35,11 @@ describe("dustmap CLI e2e (real bin)", () => {
     const report = Report.parse(JSON.parse(readFileSync(path.join(out, "report.json"), "utf8")));
     expect(report.summary.byCategory["dead-code"]).toBeGreaterThan(0);
     // No semantic model installed (vitest points DUSTMAP_MODELS_DIR at an empty dir): the scan still
-    // completes and the semantic tool says what is missing instead of failing the run.
+    // completes, no tool reports an error, and the semantic layer's note says how to turn it on (REL-02).
     const semantic = report.scan.tools.find((t) => t.name === "semantic");
-    expect(semantic?.error).toMatch(/is not installed/);
+    expect(report.scan.tools.filter((t) => t.error)).toEqual([]);
+    expect(semantic?.note).toMatch(/"dustmap-same-meaning-public" is not installed\. Turn it on by installing the package/);
+    expect(scan.stdout).toMatch(/^note: semantic — same-meaning layer off/m);
     expect(report.findings.some((f) => f.source === "knip" || f.kind.startsWith("unused-"))).toBe(
       true,
     );

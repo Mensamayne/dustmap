@@ -55,11 +55,15 @@ function endpoint(cfg: JudgeConfig): string {
   return /\/chat\/completions$/i.test(base) ? base : `${base}/chat/completions`;
 }
 
+/** The judge's model: a package id or an API model name — every provider but none names one. */
+export function judgeModel(cfg: JudgeConfig): string {
+  if (!cfg.model) throw new JudgeConfigError(`judge.provider is "${cfg.provider}" but judge.model is not set — name the ${cfg.provider === "onnx" ? "judge package" : "API model"}.`);
+  return cfg.model;
+}
+
 /** Check an API judge can run before any request: a model name, a key, and the remote rule. */
-export function assertApiJudgeReady(cfg: JudgeConfig, defaultModel: string): void {
-  if (cfg.model === defaultModel) {
-    throw new JudgeConfigError(`judge.provider is "${cfg.provider}" but judge.model is still the local package "${defaultModel}" — set the API model name.`);
-  }
+export function assertApiJudgeReady(cfg: JudgeConfig): void {
+  judgeModel(cfg);
   const url = endpoint(cfg);
   const local = isLoopbackUrl(url);
   if (!judgeApiKey() && !local) {
@@ -99,6 +103,7 @@ export type ApiJudge = {
 };
 
 export function createApiJudge(cfg: JudgeConfig, fetchImpl: FetchLike = fetch as FetchLike): ApiJudge {
+  const model = judgeModel(cfg);
   const url = endpoint(cfg);
   const key = judgeApiKey();
   const requests = { count: 0 };
@@ -109,13 +114,13 @@ export function createApiJudge(cfg: JudgeConfig, fetchImpl: FetchLike = fetch as
         ? await fetchImpl(url, {
             method: "POST",
             headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
-            body: JSON.stringify({ model: cfg.model, max_tokens: 200, system: PAIR_PROMPT, messages: [{ role: "user", content: userPrompt(a, b) }] }),
+            body: JSON.stringify({ model, max_tokens: 200, system: PAIR_PROMPT, messages: [{ role: "user", content: userPrompt(a, b) }] }),
           })
         : await fetchImpl(url, {
             method: "POST",
             headers: { "content-type": "application/json", ...(key ? { authorization: `Bearer ${key}` } : {}) },
             body: JSON.stringify({
-              model: cfg.model,
+              model,
               temperature: 0,
               max_tokens: 200,
               messages: [
@@ -130,7 +135,7 @@ export function createApiJudge(cfg: JudgeConfig, fetchImpl: FetchLike = fetch as
     return parsePairVerdict(text);
   };
   return {
-    id: `${cfg.provider}:${cfg.model}`,
+    id: `${cfg.provider}:${model}`,
     requests,
     async judge(pairs) {
       const out: JudgedPair[] = [];

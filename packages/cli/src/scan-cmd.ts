@@ -81,6 +81,10 @@ export async function runScanCommand(args: ScanArgs): Promise<ScanCommandResult>
       `Scanned ${result.filesScanned.length} files · ${result.report.findings.length} findings` +
         (cats ? ` · ${cats}` : ""),
     );
+    for (const t of result.report.scan.tools) {
+      if (t.error) lines.push(`error: ${t.name} — ${t.error}`);
+      if (t.note) lines.push(`note: ${t.name} — ${t.note}`);
+    }
     if (topPlaces.length > 0) {
       lines.push("Top places:");
       for (const [i, p] of topPlaces.slice(0, 10).entries()) {

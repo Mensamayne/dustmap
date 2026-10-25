@@ -17,7 +17,7 @@ import type { JudgeConfig } from "../config/schema.js";
 import { OnnxModelError, resolveModelDir } from "../semantic/onnx-provider.js";
 import { openPairJudge } from "../semantic/pair-judge.js";
 import type { FetchLike } from "../semantic/provider.js";
-import { assertApiJudgeReady, createApiJudge } from "./llm.js";
+import { assertApiJudgeReady, createApiJudge, judgeModel } from "./llm.js";
 
 /** A judge's reading of one pair. */
 export type JudgedPair = {
@@ -44,17 +44,15 @@ export type PairJudge = {
 /** The judge of a scan, or why there is none (`null` note: the user chose none). */
 export type OpenedJudge = { judge: PairJudge | null; note: string | null };
 
-/** The package id a fresh config names; an API judge must name its own model instead. */
-export const DEFAULT_JUDGE_PACKAGE = "dustmap-pair-judge-private";
-
 export async function openJudge(
   cfg: JudgeConfig,
   opts: { modelDir?: string; outputDir: string; fetch?: FetchLike },
 ): Promise<OpenedJudge> {
   if (cfg.provider === "none") return { judge: null, note: null };
   if (cfg.provider === "onnx") {
+    const id = judgeModel(cfg);
     try {
-      const onnx = await openPairJudge(resolveModelDir({ modelDir: opts.modelDir }), cfg.model, { device: cfg.device });
+      const onnx = await openPairJudge(resolveModelDir({ modelDir: opts.modelDir }), id, { device: cfg.device });
       const judge = cachedJudge({
         id: `onnx:${onnx.manifest.id}@${onnx.manifest.version} (${onnx.variant})`,
         cacheKey: `onnx:${onnx.manifest.id}@${onnx.manifest.version}`,
@@ -66,11 +64,11 @@ export async function openJudge(
       });
       return { judge, note: null };
     } catch (err) {
-      if (err instanceof OnnxModelError && err.code === "onnx_model_missing") return { judge: null, note: `pair judge "${cfg.model}" is not installed` };
+      if (err instanceof OnnxModelError && err.code === "onnx_model_missing") return { judge: null, note: `pair judge "${id}" is not installed` };
       throw err;
     }
   }
-  assertApiJudgeReady(cfg, DEFAULT_JUDGE_PACKAGE);
+  assertApiJudgeReady(cfg);
   const api = createApiJudge(cfg, opts.fetch);
   const judge = cachedJudge({ id: api.id, cacheKey: api.id, threshold: 0.5, read: api.judge, budget: cfg.maxPairs, outputDir: opts.outputDir, release: async () => {} });
   return { judge, note: null };

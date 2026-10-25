@@ -22,6 +22,7 @@ import { toPosix } from "../posix.js";
 import { rankingWeightsFromConfig, summarizeFindings } from "../rank/index.js";
 import { mergeDuplicateLayers } from "./merge-duplicates.js";
 import { judgeTextDuplicates, readsTextJudge } from "./judge-duplicates.js";
+import { LayerUnavailableError } from "../layer-unavailable.js";
 import { openAdapterCache } from "./cache.js";
 import { gitHead } from "./git.js";
 import { takeInventory } from "./inventory.js";
@@ -153,7 +154,7 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
         tools.push({ name: adapter.name, version });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        tools.push({ name: adapter.name, version, error: message });
+        tools.push(err instanceof LayerUnavailableError ? { name: adapter.name, version, note: message } : { name: adapter.name, version, error: message });
       }
     }
 
@@ -169,7 +170,7 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
       try {
         visible = await judgeTextDuplicates(kept, await judge(), readFile);
       } catch (err) {
-        tools.push({ name: "pair-judge", version: `${config.judge.provider}:${config.judge.model}`, error: err instanceof Error ? err.message : String(err) });
+        tools.push({ name: "pair-judge", version: `${config.judge.provider}:${config.judge.model ?? "-"}`, error: err instanceof Error ? err.message : String(err) });
       }
     }
     const summary = summarizeFindings(visible, rankingWeightsFromConfig(config.ranking));

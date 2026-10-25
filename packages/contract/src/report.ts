@@ -15,6 +15,11 @@ export const ScanTool = z
     version: z.string().min(1),
     /** Set when the adapter threw; other adapters still contribute findings. */
     error: z.string().min(1).optional(),
+    /**
+     * Set when the layer could not run here by the user's setup, not by a fault — e.g. its model is not
+     * installed — with how to turn it on (REL-02). The scan is complete without it.
+     */
+    note: z.string().min(1).optional(),
   })
   .strict();
 export type ScanTool = z.infer<typeof ScanTool>;
