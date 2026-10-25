@@ -71,7 +71,7 @@ export function runInitCommand(args: InitArgs): CmdResult {
   ];
   if (!args.agent) {
     lines.push(
-      `dalej: dustmap scan ${repoRoot === process.cwd() ? "." : repoRoot}`,
+      `next: dustmap scan ${repoRoot === process.cwd() ? "." : repoRoot}`,
     );
   }
 

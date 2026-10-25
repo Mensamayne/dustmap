@@ -42,7 +42,7 @@ export function runRatchetCommand(args: RatchetArgs, cwd = process.cwd()): CmdRe
     }
     return {
       exitCode: 0,
-      stdout: `Updated baseline with ${baseline.fingerprints.length} fingerprints (≥ ${options.minConfidence})\ndalej: dustmap ratchet --out ${outDir}\n`,
+      stdout: `Updated baseline with ${baseline.fingerprints.length} fingerprints (≥ ${options.minConfidence})\nnext: dustmap ratchet --out ${outDir}\n`,
       stderr: "",
     };
   }
@@ -71,7 +71,7 @@ export function runRatchetCommand(args: RatchetArgs, cwd = process.cwd()): CmdRe
   if (result.exitCode === 0) {
     return {
       exitCode: 0,
-      stdout: `Ratchet clean · baseline ${result.baselineSize} · no new findings ≥ ${options.minConfidence}\ndalej: dustmap summary --out ${outDir}\n`,
+      stdout: `Ratchet clean · baseline ${result.baselineSize} · no new findings ≥ ${options.minConfidence}\nnext: dustmap summary --out ${outDir}\n`,
       stderr: "",
     };
   }
@@ -82,7 +82,7 @@ export function runRatchetCommand(args: RatchetArgs, cwd = process.cwd()): CmdRe
       const loc = f.locations[0]?.path ?? "?";
       return `  - ${f.fingerprint} ${f.kind} ${f.confidence} ${loc}`;
     }),
-    `dalej: dustmap ratchet --update-baseline --out ${outDir}`,
+    `next: dustmap ratchet --update-baseline --out ${outDir}`,
   ];
   return { exitCode: 1, stdout: `${lines.join("\n")}\n`, stderr: "" };
 }

@@ -30,10 +30,14 @@ describe("dustmap CLI e2e (real bin)", () => {
     const scan = dustmap(["scan", knipApp, "--out", out]);
     expect(scan.status, scan.stderr || scan.stdout).toBe(0);
     expect(scan.stdout).toMatch(/findings/i);
-    expect(scan.stdout).toMatch(/dalej:\s*dustmap summary/);
+    expect(scan.stdout).toMatch(/next:\s*dustmap summary/);
 
     const report = Report.parse(JSON.parse(readFileSync(path.join(out, "report.json"), "utf8")));
     expect(report.summary.byCategory["dead-code"]).toBeGreaterThan(0);
+    // No semantic model installed (vitest points DUSTMAP_MODELS_DIR at an empty dir): the scan still
+    // completes and the semantic tool says what is missing instead of failing the run.
+    const semantic = report.scan.tools.find((t) => t.name === "semantic");
+    expect(semantic?.error).toMatch(/is not installed/);
     expect(report.findings.some((f) => f.source === "knip" || f.kind.startsWith("unused-"))).toBe(
       true,
     );
@@ -41,7 +45,7 @@ describe("dustmap CLI e2e (real bin)", () => {
     const summary = dustmap(["summary", "--out", out]);
     expect(summary.status, summary.stderr || summary.stdout).toBe(0);
     expect(summary.stdout).toMatch(/dead-code:\s*\d+/);
-    expect(summary.stdout).toMatch(/dalej:/);
+    expect(summary.stdout).toMatch(/next:/);
   });
 
   it("summary without a report exits 2", () => {

@@ -92,9 +92,9 @@ export async function runScanCommand(args: ScanArgs): Promise<ScanCommandResult>
     lines.push(`Report: ${result.reportPath}`);
     if (mode === "diff") {
       lines.push(`Diff vs ${args.diff} only — the full map (report.json) is unchanged.`);
-      lines.push(`dalej: dustmap list --report diff --out ${outputDir}`);
+      lines.push(`next: dustmap list --report diff --out ${outputDir}`);
     } else {
-      lines.push(`dalej: dustmap summary --out ${outputDir}`);
+      lines.push(`next: dustmap summary --out ${outputDir}`);
     }
   }
 

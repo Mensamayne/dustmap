@@ -89,7 +89,7 @@ describe("dustmap CLI full loop (real bin)", () => {
 
     const listText = dustmap(["list", "--limit", "1", "--out", out], repoRoot);
     expect(listText.status, listText.stderr || listText.stdout).toBe(0);
-    expect(listText.stdout).toMatch(/^dalej: /m);
+    expect(listText.stdout).toMatch(/^next: /m);
 
     const badList = dustmap(["list", "--min-confidence", "certain", "--out", out], repoRoot);
     expect(badList.status).toBe(2);

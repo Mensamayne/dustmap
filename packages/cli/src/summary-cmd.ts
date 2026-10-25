@@ -120,8 +120,8 @@ export function runSummaryCommand(args: SummaryArgs, cwd = process.cwd()): Summa
   const topFp = report.summary.topPlaces[0]?.findingFingerprints[0];
   lines.push(
     topFp
-      ? `dalej: dustmap show ${topFp}${reportFlag(args.report)} --out ${outDir}`
-      : `dalej: dustmap summary${reportFlag(args.report)} --out ${outDir} --json`,
+      ? `next: dustmap show ${topFp}${reportFlag(args.report)} --out ${outDir}`
+      : `next: dustmap summary${reportFlag(args.report)} --out ${outDir} --json`,
   );
 
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };

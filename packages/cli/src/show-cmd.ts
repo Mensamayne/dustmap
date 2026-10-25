@@ -54,6 +54,6 @@ export function runShowCommand(args: ShowArgs, cwd = process.cwd()): CmdResult {
       `  ${finding.judgement.reason}`,
     );
   }
-  lines.push(`dalej: dustmap decide ${finding.fingerprint} keep --reason "…"${reportFlag(args.report)} --out ${outDir}`);
+  lines.push(`next: dustmap decide ${finding.fingerprint} keep --reason "…"${reportFlag(args.report)} --out ${outDir}`);
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };
 }

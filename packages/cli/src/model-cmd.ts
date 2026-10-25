@@ -103,7 +103,7 @@ export async function runModelPull(args: ModelPullArgs, cwd = process.cwd(), fet
       exitCode: 0,
       stdout: args.json
         ? `${JSON.stringify(summary, null, 2)}\n`
-        : `Pobrano ${manifest.id} ${manifest.version} (licencja ${manifest.licence}, ${(bytes / 1024 / 1024).toFixed(1)} MB) do ${final}. Sumy SHA-256 zgodne. Od teraz działa bez sieci.\n`,
+        : `Downloaded ${manifest.id} ${manifest.version} (licence ${manifest.licence}, ${(bytes / 1024 / 1024).toFixed(1)} MB) to ${final}. SHA-256 sums match; it runs offline from now on.\n`,
       stderr: "",
     };
   } catch (err) {
@@ -130,8 +130,8 @@ export function runModelList(args: ModelListArgs, cwd = process.cwd()): CmdResul
   if (args.json) return { exitCode: 0, stdout: `${JSON.stringify({ dir, models: rows }, null, 2)}\n`, stderr: "" };
   const lines = rows.map((r) =>
     r.ok
-      ? `  ${r.id} ${r.version} · ${r.private ? "prywatny" : `licencja ${r.licence}`} · warianty ${r.variants.join(", ")}${r.calibrated ? " · skalibrowany" : ""} · ${(r.bytes / 1024 / 1024).toFixed(0)} MB`
-      : `  ${r.id} — USZKODZONY: ${r.error}`,
+      ? `  ${r.id} ${r.version} · ${r.private ? "private" : `licence ${r.licence}`} · variants ${r.variants.join(", ")}${r.calibrated ? " · calibrated" : ""} · ${(r.bytes / 1024 / 1024).toFixed(0)} MB`
+      : `  ${r.id} — DAMAGED: ${r.error}`,
   );
-  return { exitCode: 0, stdout: `Modele w ${dir}:\n${lines.length ? lines.join("\n") : "  (brak — dustmap model pull <id>)"}\n`, stderr: "" };
+  return { exitCode: 0, stdout: `Models in ${dir}:\n${lines.length ? lines.join("\n") : "  (none — dustmap model pull <id>)"}\n`, stderr: "" };
 }

@@ -243,11 +243,11 @@ export function runInitAgent(args: InitAgentArgs): InitAgentResult {
 
   const lines =
     written.length === 0
-      ? ["Agent files already up to date (zero changes).", `dalej: dustmap scan ${root === process.cwd() ? "." : root}`]
+      ? ["Agent files already up to date (zero changes).", `next: dustmap scan ${root === process.cwd() ? "." : root}`]
       : [
           `Updated agent wiring (${written.length} file(s)):`,
           ...written.map((w) => `  ${w}`),
-          `dalej: dustmap scan ${root === process.cwd() ? "." : root}`,
+          `next: dustmap scan ${root === process.cwd() ? "." : root}`,
         ];
 
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "", plans };

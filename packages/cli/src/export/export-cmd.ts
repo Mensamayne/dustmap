@@ -29,7 +29,7 @@ export function runExportCommand(args: ExportArgs, cwd = process.cwd()): CmdResu
     writeFileSync(dest, body.endsWith("\n") ? body : `${body}\n`, "utf8");
     return {
       exitCode: 0,
-      stdout: `Wrote ${args.to} to ${dest}\ndalej: dustmap summary --out ${outDir}\n`,
+      stdout: `Wrote ${args.to} to ${dest}\nnext: dustmap summary --out ${outDir}\n`,
       stderr: "",
     };
   }

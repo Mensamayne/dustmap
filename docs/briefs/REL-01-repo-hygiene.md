@@ -55,3 +55,5 @@ npm run verify
 
 1. Commit `Fixes REL-01: …`
 2. `node tools/queue/close.mjs --id REL-01 --note "…"`
+
+- Added during work: niezapisany wpis CON-13 w `docs/experiments/emb-env.md` (log pobrań) i asercja w `packages/cli/__tests__/cli-e2e.test.ts` (skan bez modelu kończy się) — pozostałości wcześniejszej pracy w tych samych plikach

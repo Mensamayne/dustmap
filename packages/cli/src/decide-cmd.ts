@@ -55,7 +55,7 @@ export function runDecideCommand(args: DecideArgs, cwd = process.cwd()): CmdResu
     muted
       ? "Next scan will hide this finding from the report (until the code fingerprint changes)."
       : "Verdict is fix — finding stays visible until resolved.",
-    `dalej: dustmap scan --out ${outDir} (a full scan drops muted findings from the map)`,
+    `next: dustmap scan --out ${outDir} (a full scan drops muted findings from the map)`,
   ];
   return { exitCode: 0, stdout: `${lines.join("\n")}\n`, stderr: "" };
 }

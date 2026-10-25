@@ -18,7 +18,7 @@ Ten plik mówi z góry, co trzeba ściągnąć z internetu, żeby douczać model
 
 | Co | Propozycja | Ile |
 |----|-----------|-----|
-| Kod treningu (Python, małe pliki, git) | `C:\Users\lukas\JAVA-VS\dustmap-emb` (obok Dustmapa) | < 1 MB |
+| Kod treningu (Python, małe pliki, git) | `../dustmap-emb` (osobne repo obok Dustmapa) | < 1 MB |
 | Środowisko Pythona, wagi modeli, dane, checkpointy | **`E:\dustmap-emb-data`** (`venv\`, `hf-cache\`, `data\`, `runs\`) — C: jest prawie pełny | ≤ 25 GB łącznie |
 
 - [x] zgoda na **E:\dustmap-emb-data**
@@ -127,3 +127,9 @@ Gdy model będzie gotowy: `onnxruntime-node` (MIT, ~60–100 MB) i biblioteka to
 1. `uv venv --python 3.11 <miejsce>\venv` i instalacja pozycji z zaznaczonym `[x]` (wersje przypięte w `pyproject.toml` repo `dustmap-emb`).
 2. `python env-check.py` — ma pokazać: karta widoczna w PyTorch, VRAM, wolne miejsce, wersje. Wynik trafia tutaj.
 3. `smoke.py` — 100 kroków douczania małego modelu na 200 parach syntetycznych; czas kroku i zużycie VRAM trafiają tutaj.
+
+## CON-13 (24.10.2026)
+
+- **G1 Qwen/Qwen2.5-Coder-7B-Instruct** @ `c03e6d358207e414f1eca0bb1891e29f1db0e242` — generator par (nie enkoder, nie trenowany), Apache-2.0 (LICENSE na dysku), tylko safetensors (4 pliki, 15,2 GB), bez `trust_remote_code`. Zgoda ogólna maintainera na pobrania.
+- **bitsandbytes 0.48.2** (MIT) w venv na E: — ładowanie G1 w 4 bitach na karcie.
+- **Pełna historia 47 otwartych klonów** (`git backfill`, git 2.49) — kopie na E:, licencje bez zmian (CON-04).
