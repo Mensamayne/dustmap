@@ -50,7 +50,10 @@ export function samePlace(a: Place, b: Place): boolean {
 const covers = (a: FindingType, b: FindingType) => a.locations.every((p) => b.locations.some((q) => samePlace(p, q)));
 
 /** Merge duplicate-category findings that stand for the same places; other findings pass through. */
-export function mergeDuplicateLayers(all: readonly FindingType[]): FindingType[] {
+export function mergeDuplicateLayers(
+  all: readonly FindingType[],
+  opts: { tokenCopyAloneMax?: FindingType["confidence"] } = {},
+): FindingType[] {
   const dups = all.filter((f) => DUPLICATE_CATEGORIES.has(f.category));
   const rest = all.filter((f) => !DUPLICATE_CATEGORIES.has(f.category));
   const parent = dups.map((_, k) => k);
@@ -87,6 +90,16 @@ export function mergeDuplicateLayers(all: readonly FindingType[]): FindingType[]
     const layerOf = (f: FindingType) => LAYERS[layerIndex(f)]?.name ?? f.kind;
     const layers: Evidence = { label: "layer", value: layerOf(lead) };
     if (members.length === 1) {
+      // A token copy alone is capped: token runs cross unit boundaries and catch boilerplate.
+      const cap = opts.tokenCopyAloneMax ?? "medium";
+      if (lead.kind === "clone-cluster" && CONFIDENCE_RANK[lead.confidence] > CONFIDENCE_RANK[cap]) {
+        merged.push({
+          ...lead,
+          confidence: cap,
+          evidence: [...lead.evidence, layers, { label: "token-only", value: `only a token copy (jscpd) — no layer that reads whole functions or rules agrees; ${lead.confidence} capped at ${cap}` }],
+        });
+        continue;
+      }
       merged.push({ ...lead, evidence: [...lead.evidence, layers] });
       continue;
     }

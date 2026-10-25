@@ -57,6 +57,12 @@ export const ClonesConfig = z
      * added 5 of 269 directions over file dates alone (2.7 s); such members simply get no direction.
      */
     maxBlames: z.number().int().nonnegative().default(0),
+    /**
+     * Highest confidence of a token copy (jscpd) no layer that reads whole units confirms (DUP-07). Token
+     * runs ignore unit boundaries and catch boilerplate and import lists: on a reviewed sample such
+     * findings were right ~6 times in 10, against 17/17 for high findings a unit-level layer confirmed.
+     */
+    tokenCopyAloneMax: z.enum(["low", "medium", "high"]).default("medium"),
   })
   .strict();
 export type ClonesConfig = z.infer<typeof ClonesConfig>;

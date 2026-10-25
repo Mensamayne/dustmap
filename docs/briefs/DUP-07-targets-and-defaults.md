@@ -43,6 +43,7 @@ Całość mierzona tam, gdzie się liczy: przegląd 60 losowych grup na Monorepo
 - `../dustmap-lab/**`
 - `packages/core/src/config/schema.ts`
 - `tools/targets/*.dustmap.config.json`
+- Added during work: `packages/core/src/scan/merge-duplicates.ts`, `packages/core/src/scan/run-scan.ts` (`clones.tokenCopyAloneMax` applied where layers are known); target configs needed no change
 
 ## Weryfikacja
 

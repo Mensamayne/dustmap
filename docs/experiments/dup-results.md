@@ -232,3 +232,48 @@ Monorepo-A (saved full report): duplicate findings 6 402 → **5 695**; **324** 
 MCP: `dustmap_list` gives duplicates `places`, `layer`, `hasSketch`; `dustmap_show` adds `group` {layer, foundBy, judge, original, sketch, sketchBlocked, parts, places}. The playbook (and the embedded guide) has a Duplicates section (guide 3.7 KB of 4 KB). E2E test: an agent goes guide → scan → list → show → decide on a repo with an original and a copy made 20 days later, and reads the original, the age gap and a sketch with `p1` from the group.
 
 Lab: 02 now expects the three copied files as one group led by L1 with jscpd in `found-by` (two new checks); 03 green with the honest split; full lab 159/159.
+
+## DUP-07 — measured on Monorepo-A and in the lab; defaults (2026-10-25)
+
+Full Monorepo-A scan with every layer (jscpd, L1, L2, L5, semantic + pair judge, merge): 5 794 duplicate findings. Hand review of random groups (verdict per group: real duplicate / pattern / noise).
+
+### Review, before the default change (`.tmp/dup07-review.mjs`, seeds 101 / 202 / 303)
+
+| Band | Reviewed | Real | Pattern | Noise | Precision |
+|---|---:|---:|---:|---:|---:|
+| high | 20 | 18 | 1 | 1 | **0.90** |
+| medium | 20 | 17 | 3 | 0 | **0.85** |
+| high + medium | 40 | 35 | 4 | 1 | **0.875** |
+| low | 20 | 5 | 11 | 4 | 0.25 |
+
+- 3 of the 5 high/medium misses were token copies (jscpd) no other layer confirmed: `try/catch` + trace boilerplate, a fragment spanning a function and a zod schema, a response-parsing fragment.
+- low is almost all semantic groups the judge rejected: 15 of 20 rightly hidden from the default report (icons, ice/sweet form fields, API vs SMTP tests …); the 5 real ones are the judge's known gap (DUP-08): a type or a language apart — `‹private›` `.js` / `.ts`, `countName`, `‹private›` / `‹private›`, a copied `fetcher`, a dose-band check.
+
+### Token copies alone
+
+10 more random high token copies no other layer confirmed (seed 404): 6–7 real, 1 pattern (handler prologues), 2 noise (import lists). With the first round: ≈ 0.6 over 13 groups, against 17/17 for high findings a unit-level layer confirmed. Token runs ignore function boundaries; certainty belongs to the layers that read whole units.
+
+### Defaults (decision)
+
+| Setting | Default | Why |
+|---|---|---|
+| L1 / L2 / L5 (`normalized` adapter) | on | L1 17/17 on gold; L2 + judge 0.97; review above |
+| `clones.copyDirection` / `maxBlames` | on / 0 | file dates 2.7 s cover 264 of 269 directions |
+| `semantic.pairJudge` | `dustmap-pair-judge-private` (when installed; CPU, GPU only with ≥ 2.5 GB free) | medium-up precision 0.72 → 0.87 on gold; demotes, never deletes |
+| `clones.tokenCopyAloneMax` (new) | `medium` | token copy alone ≈ 0.6 precision vs 17/17 confirmed |
+| report floor | medium (unchanged) | low is 0.25 precision — visible on request only |
+| target configs | unchanged | they set only the embedding model; the defaults apply |
+
+After the change (same scan): high 3 107 → **2 659** (448 lone token copies to medium; 16 confirmed token copies stay high), medium 2 356, low 779. 10 more random high groups (seed 505): **10/10** real; with the 17 high groups of the first round that stay high: **27/27**. Medium is estimated at ≈ 0.80 (the reviewed 0.85 pool plus the capped token copies at ≈ 0.6); high + medium ≈ 0.91.
+
+Service-B: 145 findings, 25 duplicate (short report kept).
+
+### Lab
+
+All duplicate scenarios green: 02 (copies, one group led by L1), 03 (same meaning, honest split), 11 (L1 + CSS I–III), 12 (near copies), 13 (sketch and direction) — full lab 159/159, no known DUP bugs.
+
+### What the epic leaves open
+
+- DUP-08: the judge's gap on copies a name, type or language apart, AP 0.736 < 0.80, CPU 4.4 pairs/s.
+- jscpd blocks that cross function boundaries still overlap unit-level findings (708 partial overlaps on Monorepo-A) — different statements, kept apart on purpose.
+- BUG-13: CLI tests block the vitest worker (flaky timeout in `npm run verify`).

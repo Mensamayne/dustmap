@@ -78,6 +78,16 @@ describe("one finding per duplicated concept (DUP-06)", () => {
     expect(mergeDuplicateLayers([one, inner])).toHaveLength(2);
   });
 
+  it("a token copy no other layer confirms is capped (default medium) and says why; confirmed it keeps high", () => {
+    const alone = mergeDuplicateLayers([finding("clone-cluster", ab(1, 12), "high")]);
+    expect(alone[0]!.confidence).toBe("medium");
+    expect(alone[0]!.evidence.find((e) => e.label === "token-only")?.value).toContain("high capped at medium");
+    expect(mergeDuplicateLayers([finding("clone-cluster", ab(1, 12), "high")], { tokenCopyAloneMax: "high" })[0]!.confidence).toBe("high");
+    const confirmed = mergeDuplicateLayers([finding("clone-cluster", ab(1, 12), "high"), finding("exact-clone", ab(1, 12), "high")]);
+    expect(confirmed).toHaveLength(1);
+    expect(confirmed[0]!.confidence).toBe("high");
+  });
+
   it("other categories pass through untouched", () => {
     const dead = finding("unused-file", [{ path: "src/x.ts", startLine: 1, endLine: 1 }], "high");
     expect(mergeDuplicateLayers([dead])).toEqual([dead]);

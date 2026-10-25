@@ -151,7 +151,7 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
   // Dedupe by fingerprint (last wins), then one finding per duplicated concept across layers (DUP-06).
   const byFp = new Map<string, FindingType>();
   for (const f of findings) byFp.set(f.fingerprint, f);
-  const unique = mergeDuplicateLayers([...byFp.values()]);
+  const unique = mergeDuplicateLayers([...byFp.values()], { tokenCopyAloneMax: config.clones.tokenCopyAloneMax });
   // keep / wontfix mute from ranking and category counts (fingerprint change brings them back).
   const visible = applyDecisions(unique, loadDecisions(outputDir));
   const summary = summarizeFindings(visible, rankingWeightsFromConfig(config.ranking));
