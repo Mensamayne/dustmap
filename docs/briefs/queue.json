@@ -1418,8 +1418,11 @@
         "DUP-03"
       ],
       "epic": "DUP",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T14:23:59.163Z",
+      "gitProofSha": "8211c6a77d030cf9edb7290513ba7b75625dced9",
+      "closureNotes": "Judge in scan, demotes not drops. Test AP 0.735 (<0.80 target; Qwen 0.798, emb 0.705), trap 51/193, L2 precision 0.97, semantic medium-up 0.87; CPU 4.4 pairs/s (<50), GPU 75. Gaps -> DUP-08"
     },
     {
       "id": "DUP-05",
@@ -1476,6 +1479,19 @@
       "kind": "bug",
       "severity": "medium",
       "source": "npm run verify, DUP-03/DUP-05, 2026-10-25"
+    },
+    {
+      "id": "DUP-08",
+      "title": "Sędzia par v2: kopie z innymi nazwami jako duplikaty, szybkość na CPU",
+      "layer": 3,
+      "segment": "duplicates",
+      "brief": "docs/briefs/DUP-08-judge-v2.md",
+      "gates": [
+        "DUP-04"
+      ],
+      "epic": "DUP",
+      "status": "todo",
+      "kind": "feature"
     }
   ]
 }
