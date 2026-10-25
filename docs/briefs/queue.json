@@ -1451,8 +1451,11 @@
         "DUP-04"
       ],
       "epic": "DUP",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T16:40:18.441Z",
+      "gitProofSha": "698cae2c1c3133f3c264fea0373a01e44a4d2f99",
+      "closureNotes": "One finding per same set of places (6402->5695 on Monorepo-A, 324 multi-layer), subsets kept honest (lab 03), parts folded; MCP group view + playbook; agent e2e; lab 159/159"
     },
     {
       "id": "DUP-07",
