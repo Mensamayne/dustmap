@@ -9,6 +9,7 @@
  * rewritten history and that the final tree is byte-identical to this repo's HEAD tree.
  *
  *   node tools/release/public-history.mjs --out <empty dir> [--filter-repo <git-filter-repo executable>]
+ *   node tools/release/public-history.mjs --audit <rewritten clone>
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -73,7 +74,7 @@ export function audit(repo, { aliasFile = privatePath("release-aliases.json"), t
     for (const re of names) if (re.test(text)) problems.push(`${where}: names ${re.source}`);
     for (const t of terms) if (text.includes(t)) problems.push(`${where}: term ${t}`);
   }
-  const messages = git(repo, ["log", "--all", "--format=%H%n%B%n\u0000"]).toString();
+  const messages = git(repo, ["log", "--all", "--format=%H%n%B"]).toString();
   for (const re of names) if (re.test(messages)) problems.push(`commit messages: names ${re.source}`);
   for (const t of terms) if (messages.includes(t)) problems.push(`commit messages: term ${t}`);
   const files = git(repo, ["log", "--all", "--name-only", "--format="]).toString().split("\n");
@@ -85,8 +86,19 @@ export function audit(repo, { aliasFile = privatePath("release-aliases.json"), t
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const out = opt("out");
   const filterRepo = opt("filter-repo") ?? "git-filter-repo";
+  const auditOnly = opt("audit");
+  if (auditOnly) {
+    const { problems, blobs } = audit(path.resolve(auditOnly));
+    const sourceTree = git(repoRoot, ["rev-parse", "HEAD^{tree}"]).toString().trim();
+    const publicTree = git(path.resolve(auditOnly), ["rev-parse", "HEAD^{tree}"]).toString().trim();
+    if (publicTree !== sourceTree) problems.push("final tree differs from this repo's HEAD tree");
+    console.log(`blobs checked ${blobs}`);
+    for (const p of problems.slice(0, 50)) console.log(`  - ${p}`);
+    console.log(problems.length ? `public history: ${problems.length} problem(s)` : "public history: clean");
+    process.exit(problems.length ? 1 : 0);
+  }
   if (!out) {
-    console.error("Usage: node tools/release/public-history.mjs --out <empty dir> [--filter-repo <exe>]");
+    console.error("Usage: node tools/release/public-history.mjs --out <empty dir> [--filter-repo <exe>]  |  --audit <rewritten clone>");
     process.exit(2);
   }
   if (!existsSync(privatePath("release-aliases.json"))) {
