@@ -99,10 +99,13 @@ function snapshotPathspecs(config: DustmapConfigType, sha: string): string[] {
 function extractSnapshot(sha: string, dest: string, config: DustmapConfigType): string {
   const full = git(targetDir, ["rev-parse", "--verify", `${sha}^{commit}`]);
   const marker = path.join(dest, ".dustmap-snapshot");
-  if (existsSync(marker) && readFileSync(marker, "utf8").trim() === full) return full;
+  const pathspecs = snapshotPathspecs(config, full);
+  // The marker names the commit and the file set: adding an extension (CSS, DUP-01) re-extracts.
+  const stamp = `${full}\n${pathspecs.join("\n")}`;
+  if (existsSync(marker) && readFileSync(marker, "utf8").trim() === stamp) return full;
   rmSync(dest, { recursive: true, force: true });
   mkdirSync(dest, { recursive: true });
-  const archive = spawnSync("git", ["archive", "--format=tar", full, "--", ...snapshotPathspecs(config, full)], {
+  const archive = spawnSync("git", ["archive", "--format=tar", full, "--", ...pathspecs], {
     cwd: targetDir,
     maxBuffer: 2 * 1024 * 1024 * 1024,
   });
@@ -112,7 +115,7 @@ function extractSnapshot(sha: string, dest: string, config: DustmapConfigType): 
   // A fresh repo in the copy (never in the target) so .gitignore / .gitattributes rules apply as in the original.
   git(dest, ["init", "-q"]);
   writeFileSync(path.join(dest, ".git", "info", "exclude"), ".dustmap-snapshot\n");
-  writeFileSync(marker, `${full}\n`);
+  writeFileSync(marker, `${stamp}\n`);
   return full;
 }
 

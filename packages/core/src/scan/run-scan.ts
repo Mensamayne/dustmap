@@ -24,6 +24,7 @@ import { dedupeSemanticAgainstClones } from "../semantic/dedupe-vs-clones.js";
 import { openAdapterCache } from "./cache.js";
 import { gitHead } from "./git.js";
 import { takeInventory } from "./inventory.js";
+import { isStyleFile } from "./languages.js";
 import { reportFilePath, writeScanTarget } from "./report-file.js";
 
 export type RunScanOptions = {
@@ -88,7 +89,11 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
   mkdirSync(outputDir, { recursive: true });
 
   const { files, contents, cacheKeys, roles, byRole } = takeInventory(repoRoot, config, opts.mode, opts.baseRef);
-  const filesWithRole = (...wanted: FileRoleType[]) => files.filter((f) => wanted.includes(roles.get(f)!));
+  // Script detectors see script files only; stylesheets reach the CSS layer apart (DUP-01).
+  const scriptFiles = files.filter((f) => !isStyleFile(f));
+  const filesWithRole = (...wanted: FileRoleType[]) => scriptFiles.filter((f) => wanted.includes(roles.get(f)!));
+  const styleFilesWithRole = (...wanted: FileRoleType[]) =>
+    files.filter((f) => isStyleFile(f) && wanted.includes(roles.get(f)!));
   const readFile = async (rel: string) => {
     const hit = contents.get(rel);
     if (hit !== undefined) return hit;
@@ -125,9 +130,10 @@ export async function runScan(opts: RunScanOptions): Promise<RunScanResult> {
       adapterRuns++;
       const produced = await adapter.run({
         repoRoot,
-        files,
+        files: scriptFiles,
         roles,
         filesWithRole,
+        styleFilesWithRole,
         config,
         mode: opts.mode,
         readFile,

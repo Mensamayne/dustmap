@@ -22,6 +22,10 @@ export const FindingKind = z.enum([
   "unused-dependency",
   "unlisted-dependency",
   "clone-cluster",
+  /** DUP-01: functions / classes identical after renaming their local names (and optionally literals). */
+  "exact-clone",
+  /** DUP-01: CSS rules or declaration sets equivalent by duplication types I–III (Mazinanian et al., FSE 2014). */
+  "css-duplicate",
   "semantic-cluster",
   "complexity",
   "large-file",

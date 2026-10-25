@@ -26,6 +26,28 @@ export const AdapterConfig = z
 export type AdapterConfig = z.infer<typeof AdapterConfig>;
 
 /**
+ * Duplicates by normalization (DUP-01, layer L1): no model, certain by construction. Script units
+ * identical after renaming their local names; CSS rules equivalent by duplication types I–III.
+ */
+export const ClonesConfig = z
+  .object({
+    /** Smallest function / class considered, in normalized tokens. */
+    minTokens: z.number().int().positive().default(40),
+    /** Smallest function / class considered, in source lines. */
+    minLines: z.number().int().positive().default(4),
+    /** A whole CSS rule takes part when it sets at least this many property families (`margin-*` = one). */
+    cssMinRuleDeclarations: z.number().int().positive().default(2),
+    /** Shared declaration sets inside one stylesheet are reported from this many property families. */
+    cssMinSharedProperties: z.number().int().positive().default(3),
+    /** …and only when extracting them saves at least this many declarations (property families × (|rules| − 1)). */
+    cssMinSavedDeclarations: z.number().int().positive().default(8),
+    /** …and at most this many opportunities per stylesheet, best saving first (FSE 2014 ranking). */
+    cssMaxSharedSetsPerFile: z.number().int().positive().default(3),
+  })
+  .strict();
+export type ClonesConfig = z.infer<typeof ClonesConfig>;
+
+/**
  * Semantic (embedding) duplicate detection — default (EMB-10): Dustmap's own ONNX model package
  * in-process, offline, with calibrated bands (EMB-09). Until EMB-11 publishes a public package the
  * default id is the private one (local install only).
@@ -173,6 +195,8 @@ export const DustmapConfig = z
   .object({
     include: z.array(z.string().min(1)).default([
       "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}",
+      // Stylesheets reach only the CSS duplicate layer (DUP-01); script detectors never see them.
+      "**/*.{css,scss}",
     ]),
     exclude: z.array(z.string().min(1)).default([
       "**/node_modules/**",
@@ -185,6 +209,7 @@ export const DustmapConfig = z
     layers: z.array(LayerRule).default([]),
     adapters: z.record(z.string(), AdapterConfig).default({}),
     semantic: SemanticConfig.default({}),
+    clones: ClonesConfig.default({}),
     classify: ClassifyConfig.default({}),
     ranking: RankingConfig.default({}),
     ratchet: RatchetConfig.default({}),

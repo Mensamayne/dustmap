@@ -87,6 +87,20 @@ export type {
   GoldLikeLabel,
 } from "./semantic/index.js";
 export {
+  normalizedClonesAdapter,
+  normalizedUnits,
+  renameMap,
+  literalChanges,
+  cssRules,
+  ruleKey,
+  duplicationTypes,
+  expandDeclaration,
+  familyOf,
+  canonicalColor,
+  normalizeValue,
+} from "./clones/index.js";
+export type { NormalizedUnit, CssRule } from "./clones/index.js";
+export {
   codeSignalsAdapter,
   runCodeSignals,
   collectFileMetrics,

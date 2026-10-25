@@ -73,6 +73,7 @@ Skan zgłasza dwa nowe rodzaje znalezisk, bez żadnego modelu i z pewnością z 
 - `packages/contract/src/finding.ts`, `packages/contract/src/*.test.ts`, `packages/contract/src/sarif.ts`
 - `packages/core/src/clones/**`, `packages/core/src/adapters/index.ts`, `packages/core/src/config/schema.ts`, `packages/core/src/index.ts`, `packages/core/__tests__/**`
 - `../dustmap-lab/scenarios/**`, `../dustmap-lab/results/**`, `docs/experiments/dup-results.md`
+- Added during work: `packages/core/src/adapter.ts`, `packages/core/src/scan/run-scan.ts`, `packages/core/src/scan/languages.ts` (stylesheets reach only L1, script adapters never see them); `tools/targets/run.mts` (the snapshot marker includes the pathspecs, so adding `*.css` re-extracts it)
 
 ## Weryfikacja
 

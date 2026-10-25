@@ -5,6 +5,7 @@
  * and callers report "no detectors" instead of running a scan.
  */
 import type { Adapter } from "../adapter.js";
+import { normalizedClonesAdapter } from "../clones/index.js";
 import { semanticAdapter } from "../semantic/index.js";
 import { codeSignalsAdapter } from "../signals/code/index.js";
 import { gitSignalsAdapter } from "../signals/git/index.js";
@@ -17,6 +18,7 @@ export function builtinAdapters(): Adapter[] {
   return [
     knipAdapter(),
     jscpdAdapter(),
+    normalizedClonesAdapter(),
     semanticAdapter(),
     codeSignalsAdapter(),
     gitSignalsAdapter(),
