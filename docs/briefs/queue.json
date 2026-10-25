@@ -1402,8 +1402,11 @@
         "DUP-01"
       ],
       "epic": "DUP",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T02:37:42.308Z",
+      "gitProofSha": "933266c53d3042ebcf84eb711436f687c42b4a34",
+      "closureNotes": "dup:meter: L1 exact 1.00, L1-shape 0.60, L2 0.79 on gold (DUP-02 gold criterion not met); L3 recall@20 0.88 Monorepo-A; Qwen L4 AP 0.798, trap 187/193; BUG-13 filed for CLI test worker timeout"
     },
     {
       "id": "DUP-04",
@@ -1457,6 +1460,19 @@
       "epic": "DUP",
       "status": "todo",
       "kind": "feature"
+    },
+    {
+      "id": "BUG-13",
+      "title": "Testy CLI blokują wątek vitest (spawnSync) — Timeout calling onTaskUpdate",
+      "layer": 100,
+      "segment": "cli",
+      "brief": "docs/briefs/BUG-13-cli-tests-block-worker.md",
+      "gates": [],
+      "epic": "BUG",
+      "status": "todo",
+      "kind": "bug",
+      "severity": "medium",
+      "source": "npm run verify, DUP-03/DUP-05, 2026-10-25"
     }
   ]
 }
