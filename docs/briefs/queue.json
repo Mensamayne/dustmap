@@ -1517,6 +1517,70 @@
       "completedAt": "2026-10-25T16:59:53.031Z",
       "gitProofSha": "716deef5dc2e4e48c0e0e16e6af6c42c46f0456d",
       "closureNotes": "stripComments returns LF; the judge on one pair 0.022 -> 0.998 through the scan cut; 10883/10886 Monorepo-A files were CRLF; regression test for every unit kind"
+    },
+    {
+      "id": "V1-00",
+      "title": "Overview: domknięcie v1 — wymienne modele, sędzia albo bez sędziego",
+      "layer": 0,
+      "segment": "duplicates",
+      "brief": "docs/briefs/V1-00-overview.md",
+      "gates": [],
+      "epic": "V1",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "V1-01",
+      "title": "Jeden wymienny sędzia par: paczka / API OpenAI / Anthropic / brak",
+      "layer": 1,
+      "segment": "duplicates",
+      "brief": "docs/briefs/V1-01-pluggable-judge.md",
+      "gates": [
+        "V1-00"
+      ],
+      "epic": "V1",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "V1-02",
+      "title": "Sędzia także na L1-kształt i L2",
+      "layer": 2,
+      "segment": "duplicates",
+      "brief": "docs/briefs/V1-02-judge-text-layers.md",
+      "gates": [
+        "V1-01"
+      ],
+      "epic": "V1",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "V1-03",
+      "title": "Miernik dla dowolnego sędziego",
+      "layer": 2,
+      "segment": "duplicates",
+      "brief": "docs/briefs/V1-03-meter-any-judge.md",
+      "gates": [
+        "V1-01"
+      ],
+      "epic": "V1",
+      "status": "todo",
+      "kind": "feature"
+    },
+    {
+      "id": "V1-04",
+      "title": "Dokumentacja konfiguracji modeli i laboratorium",
+      "layer": 3,
+      "segment": "duplicates",
+      "brief": "docs/briefs/V1-04-docs-and-lab.md",
+      "gates": [
+        "V1-02",
+        "V1-03"
+      ],
+      "epic": "V1",
+      "status": "todo",
+      "kind": "feature"
     }
   ]
 }
