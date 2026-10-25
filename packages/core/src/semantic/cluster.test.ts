@@ -31,11 +31,11 @@ describe("semantic cluster", () => {
   it("the pair judge's reading is evidence: its probability range, or that no judge read the pairs", () => {
     const a = fn("src/a.ts", "a", "function a(){ return 1 }");
     const b = fn("src/b.ts", "b", "function b(){ return 2 }");
-    const judged = clusterSemanticPairs([{ a, b, similarity: 0.91, judge: 0.87 }], 0.82, null, null, { id: "j@1", threshold: 0.5 });
+    const judged = clusterSemanticPairs([{ a, b, similarity: 0.91, judge: 0.87 }], 0.82, null, null, { id: "j@1", threshold: 0.5, minBand: "medium" as const });
     expect(judged[0]?.evidence.find((e) => e.label === "judge")?.value).toBe("j@1: 1 of 1 linked pairs read as the same job (probability 0.87–0.87, threshold 0.5)");
     expect(judged[0]?.confidence).toBe("medium");
     // Rejected: demoted to low and said so, never dropped (type-4 duplicates are the judge's weak spot).
-    const rejected = clusterSemanticPairs([{ a, b, similarity: 0.91, judge: 0.12 }], 0.82, null, null, { id: "j@1", threshold: 0.5 });
+    const rejected = clusterSemanticPairs([{ a, b, similarity: 0.91, judge: 0.12 }], 0.82, null, null, { id: "j@1", threshold: 0.5, minBand: "medium" as const });
     expect(rejected).toHaveLength(1);
     expect(rejected[0]?.confidence).toBe("low");
     expect(rejected[0]?.evidence.find((e) => e.label === "judge")?.value).toContain("0 of 1 linked pairs read as the same job");
@@ -43,6 +43,18 @@ describe("semantic cluster", () => {
     const missing = clusterSemanticPairs([{ a, b, similarity: 0.91 }], 0.82, null, null, { missing: 'pair judge "j" is not installed' });
     expect(missing[0]?.evidence.find((e) => e.label === "judge")?.value).toBe('not judged — pair judge "j" is not installed; similarity only');
     expect(clusterSemanticPairs([{ a, b, similarity: 0.91 }], 0.82)[0]?.evidence.some((e) => e.label === "judge")).toBe(false);
+  });
+
+  it("with minBand high, a judged group below the high similarity band stays low and says why", () => {
+    const a = fn("src/a.ts", "a", "function a(){ return 1 }");
+    const b = fn("src/b.ts", "b", "function b(){ return 2 }");
+    const cal = { bands: { high: 0.9, medium: 0.8, low: 0.5 } };
+    const note = { id: "j@1", threshold: 0.5, minBand: "high" as const };
+    const below = clusterSemanticPairs([{ a, b, similarity: 0.85, judge: 0.95 }], 0.8, cal, null, note);
+    expect(below[0]?.confidence).toBe("low");
+    expect(below[0]?.evidence.find((e) => e.label === "judge")?.value).toContain("similarity below the high band");
+    const above = clusterSemanticPairs([{ a, b, similarity: 0.95, judge: 0.95 }], 0.8, cal, null, note);
+    expect(above[0]?.confidence).toBe("high");
   });
 
   it("does not link a nested helper to its outer function in the same file", () => {

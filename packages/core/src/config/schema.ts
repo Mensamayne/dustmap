@@ -108,6 +108,12 @@ export const SemanticConfig = z
      * CPU only. Not installed → similarity alone (the group says so); `none` turns it off.
      */
     pairJudge: z.string().min(1).default("dustmap-pair-judge-private"),
+    /**
+     * Lowest similarity band a judged group is reported from (medium-and-up). `high`: below it the group
+     * stays at low even when the judge says yes — on real code that band held mostly sibling helpers of one
+     * file (reviewed: high band 16/17 duplicates, medium band ~1 in 4).
+     */
+    judgedMinBand: z.enum(["high", "medium"]).default("high"),
   })
   .strict();
 export type SemanticConfig = z.infer<typeof SemanticConfig>;

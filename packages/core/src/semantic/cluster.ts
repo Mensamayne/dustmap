@@ -31,8 +31,11 @@ export type SemanticPair = {
   judge?: number;
 };
 
-/** What judged the pairs of a run: a judge package id with its threshold, or why none did. */
-export type JudgeNote = { id: string; threshold: number } | { missing: string };
+/**
+ * What judged the pairs of a run: a judge package id with its threshold and the lowest similarity band a
+ * judged group may be reported from, or why no judge did.
+ */
+export type JudgeNote = { id: string; threshold: number; minBand: "high" | "medium" } | { missing: string };
 
 export function cosineSimilarity(a: number[], b: number[]): number {
   const n = Math.min(a.length, b.length);
@@ -232,6 +235,11 @@ export function clusterSemanticPairs(
     const parallelTwins = shape === "parallel-files";
     if (pattern || parallelTwins || pairHeadPattern) confidence = lowerConfidence(confidence);
     if (judgeRejects) confidence = "low";
+    // Below the high band the judge's yes is not enough: there it mostly confirms sibling helpers of one
+    // file (DUP-08 review on real code: high band 16/17 real, medium band ~0.25).
+    const belowBand =
+      !judgeRejects && judged !== null && "id" in judged && judged.minBand === "high" && calibration !== null && confidenceFor(maxSim, calibration) !== "high";
+    if (belowBand) confidence = "low";
 
     findings.push({
       fingerprint: fp,
@@ -262,7 +270,7 @@ export function clusterSemanticPairs(
                 label: "judge",
                 value:
                   "id" in judged
-                    ? `${judged.id}: ${accepted} of ${judgeScores.length} linked pairs read as the same job (probability ${Math.min(...judgeScores).toFixed(2)}–${Math.max(...judgeScores).toFixed(2)}, threshold ${judged.threshold})${judgeRejects ? " — reads as a shared pattern or different work: low confidence, check by hand" : ""}`
+                    ? `${judged.id}: ${accepted} of ${judgeScores.length} linked pairs read as the same job (probability ${Math.min(...judgeScores).toFixed(2)}–${Math.max(...judgeScores).toFixed(2)}, threshold ${judged.threshold})${judgeRejects ? " — reads as a shared pattern or different work: low confidence, check by hand" : ""}${belowBand ? " — similarity below the high band: low confidence, shown on request" : ""}`
                     : `not judged — ${judged.missing}; similarity only`,
               },
             ]

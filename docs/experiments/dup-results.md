@@ -277,3 +277,48 @@ All duplicate scenarios green: 02 (copies, one group led by L1), 03 (same meanin
 - DUP-08: the judge's gap on copies a name, type or language apart, AP 0.736 < 0.80, CPU 4.4 pairs/s.
 - jscpd blocks that cross function boundaries still overlap unit-level findings (708 partial overlaps on Monorepo-A) — different statements, kept apart on purpose.
 - BUG-13: CLI tests block the vitest worker (flaky timeout in `npm run verify`).
+
+## DUP-08 — the judge v2 attempt, and what it found instead (2026-10-25)
+
+### Correction to DUP-04 and DUP-07: most of the judge's "misses" were line endings (BUG-14)
+
+The scan cut unit bodies with the file's line endings: 10 883 of the 10 886 script files of the Monorepo-A snapshot are CRLF (`git archive` converts like a Windows checkout). The judge and the embedding model were trained on LF text, and the meter fed them LF text, so the meter never showed it. One pair, `‹private›` `.js` / `.ts`: **0.998 from LF, 0.022 from the scan's cut**. BUG-14 made every unit body LF (`stripComments`).
+
+So the DUP-04 statement "the judge is confidently wrong on copies that differ in an identifier" and the DUP-07 "5 real duplicates in low are the judge's gap" were mostly this bug. Through the fixed path the same judge (v0.1, run C) accepts 7 of the 8 reviewed real duplicates (`‹private›` 0.999, `‹private›` 0.998, `‹private›` 0.77, `‹private›` 0.71, `countName` 0.60, `‹private›`, a dose-band check); its own errors on the 14 hand-reviewed pairs: `‹private›` (another constant, a split case in gold too), and two wrongly accepted pairs — `tryLoad…` / `load…` (one calls the other) and build vs strip of a link.
+
+The embedding model was robust to it: L3 recall@20 on Monorepo-A 0.88 before and after (the meter's L3 runs the scan's cut).
+
+### The planned fix: variants a type or a language apart — negative result
+
+`data/judge/type_variants.mjs`: 16 000 positives that provably keep behaviour (8 000 TypeScript sides with types erased by the compiler, 8 000 with type names consistently renamed), through the same leak gate. Trained on top of run C's data:
+
+| Run | Test AP | pattern < 0.5 | Trap ≥ 0.5 | L1-shape + L2 kept: precision (dups) |
+|---|---:|---:|---:|---|
+| C (shipped) | **0.736** | **0.86** | **51** | **0.97 (32/40)** |
+| D (+ variants, 512 tokens) | 0.701 | 0.73 | 91 | 0.90 (37/40) |
+| E (+ variants, 256 tokens) | 0.689 | 0.66 | 82 | 0.82 (37/40) |
+
+The variants only made the judge say "same" more readily. C stays (`dustmap-pair-judge-private` 0.1.0).
+
+### CPU speed — boundary
+
+| Judge | CPU (fp32, all cores) | GPU (fp16) |
+|---|---:|---:|
+| C, 512 tokens | 4.4 pairs/s | 75 pairs/s |
+| E, 256 tokens | 7.6 pairs/s | — |
+
+A 126 M-parameter cross-encoder does not reach 50 pairs/s on this CPU even at half the input, and the shorter input costs quality (above). 50/s on the CPU needs a different, much smaller model — new work with its own quality risk; the scan uses the GPU variant when the card has room (≥ 2.5 GB free per nvidia-smi) and the CPU otherwise.
+
+### New default from the fixed path: judged groups from the high band
+
+With LF input the judge confirmed many more semantic groups (Monorepo-A: high 730, medium 343, low 411; before the fix 472 / 110 / 903). Hand review of the confirmed ones (seeds 611, 733, 919): **high band 16/17 real**; **medium band ~1 in 4** (15 groups: mostly sibling helpers of one file — `‹private›` / `‹private›`, two dialog hooks, primary / secondary button, caller and callee — the trap's kind of pair, where the judge says yes 26 % of the time). New `semantic.judgedMinBand` (default `high`): a judged group below the high similarity band stays low with that reason. Semantic now: high 730, medium 142 (high-band groups one step down for a shared pattern or parallel files), low 612.
+
+### Final full scan (every layer, judge, merge, BUG-14)
+
+Monorepo-A: 14 395 findings, 5 795 duplicate: high **2 901** (CSS 2 017, semantic 573, L1 299, confirmed token copies 12), medium 2 333, low 561; 312 s (first scan after the body change re-embeds every function). Service-B: 145 findings.
+
+### Acceptance
+
+- AP ≥ 0.80 on test: **not met** — 0.736 (C); the planned data (variants) made it worse; Qwen 0.798 remains the reference.
+- ≥ 50 pairs/s on CPU: **boundary documented** — 4.4 (512) / 7.6 (256); GPU 75.
+- On the way: BUG-14 (fixed), and `judgedMinBand` from a review through the fixed path.

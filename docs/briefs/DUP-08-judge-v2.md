@@ -39,6 +39,7 @@ Sędzia par z DUP-04 (`dustmap-pair-judge-private`) dobrze odrzuca wzorce (puła
 - `../dustmap-emb/data/judge/**`
 - `packages/core/src/semantic/pair-judge.ts`
 - `docs/experiments/dup-results.md`
+- Added during work: `packages/core/src/semantic/cluster.ts`, `packages/core/src/semantic/run.ts`, `packages/core/src/config/schema.ts` (`semantic.judgedMinBand`, from the review through the fixed path); BUG-14 split off as its own task
 
 ## Weryfikacja
 
