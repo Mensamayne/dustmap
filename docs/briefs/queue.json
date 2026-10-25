@@ -1526,8 +1526,11 @@
       "brief": "docs/briefs/V1-00-overview.md",
       "gates": [],
       "epic": "V1",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T19:52:18.788Z",
+      "gitProofSha": "3c6245e7138b4d03fb54d06a5cad82a8ea5b5c21",
+      "closureNotes": "Epic V1 planned from the maintainer's decision: any embedding, any judge (package / OpenAI / Anthropic / none)"
     },
     {
       "id": "V1-01",
