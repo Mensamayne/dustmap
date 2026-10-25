@@ -1595,8 +1595,13 @@
         "V1-03"
       ],
       "epic": "V1",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "startedAt": "2026-10-25T21:50:59.636Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-25T21:56:19.479Z",
+      "gitProofSha": "acceef9f7a6c611690037949a8c68cf0557da7e5",
+      "closureNotes": "docs/MODELS.md with ready configs for every embedding and judge mode; lab scenario 14 checks the judge modes on a fake loopback API; lab 174/174."
     }
   ]
 }
