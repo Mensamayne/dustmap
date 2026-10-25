@@ -5,7 +5,7 @@ import type { Adapter } from "../adapter.js";
 import { runNormalizedClones } from "./run.js";
 
 /** Bump when the normalization or grouping changes, so cached results are recomputed. */
-const VERSION = "2";
+const VERSION = "3";
 
 export function normalizedClonesAdapter(): Adapter {
   return { name: "normalized", version: () => VERSION, run: runNormalizedClones };

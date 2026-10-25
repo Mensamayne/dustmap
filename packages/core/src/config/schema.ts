@@ -49,6 +49,14 @@ export const ClonesConfig = z
     nearMinSimilarity: z.number().gt(0).lte(1).default(0.7),
     /** Contains: shared tokens / tokens of the smaller unit. */
     containMinCoverage: z.number().gt(0).lte(1).default(0.9),
+    /** L5 (DUP-05): name the original of each group from git history (read-only). */
+    copyDirection: z.boolean().default(true),
+    /**
+     * …and date members created the same day, or sharing a file, by their own lines (`git blame -L`), at
+     * most this many times per scan. Off by default: on a 2.5k-commit monorepo 2000 blames took 248 s and
+     * added 5 of 269 directions over file dates alone (2.7 s); such members simply get no direction.
+     */
+    maxBlames: z.number().int().nonnegative().default(0),
   })
   .strict();
 export type ClonesConfig = z.infer<typeof ClonesConfig>;

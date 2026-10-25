@@ -53,6 +53,13 @@ describe("cssRules and duplication types (Gmail examples, FSE 2014 fig. 5)", () 
     expect(duplicationTypes(a!, b!)).toEqual(["II"]);
   });
 
+  it("type II: font-weight keywords are their numbers; relative ones stay apart", () => {
+    const [a, b, c] = rules(".a { color: red; font-weight: bold }\n.b { color: red; font-weight: 700 }\n.c { color: red; font-weight: bolder }");
+    expect(ruleKey(a!)).toBe(ruleKey(b!));
+    expect(ruleKey(c!)).not.toBe(ruleKey(a!));
+    expect(expandDeclaration("font-weight", "normal")).toEqual([["font-weight", "400"]]);
+  });
+
   it("type III: border-bottom longhands vs shorthand", () => {
     const [a, b] = rules(
       ".sG0wIf { border-bottom-color: #e5e5e5; border-bottom-style: solid; border-bottom-width: 1px }\nbody .aeN { border-bottom: 1px solid #e5e5e5 }",

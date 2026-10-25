@@ -131,3 +131,38 @@ Every positive gold pair with both sides in one snapshot: side A is the query, t
 | all (1339) | 0.796 | 0.790 | 0.460 | 0.104 | 0.52 | 0.95 | 0.25 |
 
 Trap: 187/193 at ≥ 0.5. L1-shape + L2 confirmed by the judge: 52 of 54 kept, precision 0.75 (0.74 without the judge) — the Qwen judge does not separate pattern from duplicate on near copies. This is the input DUP-04 has to beat, not copy.
+
+## DUP-05 — L5: copy direction and unification sketch (2026-10-25)
+
+Every L1/L2 finding gets two more pieces of evidence:
+
+- **`direction`** — which member is the original: one read-only `git log -M --name-status` pass dates every file by its first commit (renames and moves followed). Members created the same day, or sharing a file, get no direction unless `clones.maxBlames` > 0 allows line-level dating (`git blame -L`, median author time). No history → no direction, never a guess.
+- **`sketch`** / **`sketch-blocked`** — the common form, or why there is none.
+  - Script units (anti-unification, Getafix/Aroma; safety per Tsantalis et al., TSE 2015): reference and copies aligned by logical lines; differences allowed only token for token in literals or plain names (a value or a callback). The sketch is the reference's own text with `p1…p4` spliced in — in a template string as `${p}`, in JSX as `{p}`, in a component as new props; new parameters go in front of optional ones. It must parse. Blocked with a reason: added/removed steps, another property or quoted key, a type, an assignment target, a JSX tag, more than 4 differing values, a component taking a props object, a whole class.
+  - CSS (Mazinanian et al., FSE 2014): a grouping rule `.a, .b { … }`, tried at the first and the last member's place; offered only if no rule in between sets a moved property to another value with the same specificity. Rules in different stylesheets or contexts are never grouped (their order depends on page loading).
+- L1 also gained one type-II equivalence found on the way: `font-weight: bold` = `700`, `normal` = `400`.
+
+### Monorepo-A (`dbe35aa00cd6`)
+
+| Kind | Findings | Sketch | Blocked | Direction |
+|---|---:|---:|---:|---:|
+| exact-clone / high | 542 | — (identical) | — | 264 |
+| exact-clone / medium (other constants) | 146 | 125 | 21 | 35 |
+| near-clone / near-miss | 494 | 40 | 454 | 198 |
+| near-clone / contains | 52 | — | — | 11 |
+| css-duplicate / high | 2021 | 65 | 1956 | 704 |
+| css-duplicate / medium | 265 | 32 | 233 | 0 |
+
+Why near copies are mostly blocked: another line structure 198, another property 60, more than 4 values 19, a type 24 — near copies usually differ in steps, which is exactly what a parameter cannot carry. CSS whole-rule groups: 1860 of the blocked ones span several stylesheets (copied design-system folders).
+
+Time: L1+L2+L5 47 s (L5 sketches ~0 s extra after caching unit details); direction 2.7 s (file dates). Line-level dating with 2000 blames took 248 s and added 5 directions of 269 — hence off by default.
+
+### Review
+
+- **30 sketches** (seeds 5, 9, 23): 10 constant-parameter sketches, 10 near-copy sketches, 10 CSS grouping sketches. Passing the listed values to the common form gives each original: 30/30 after two fixes found in the review — a type name taken as a value (`‹private›: p1` → now "another type"), and a required parameter placed after an optional one (`‹private›(‹private›?: string, p1)` → now in front). Known limit: a parameter's type is the reference value's type (`typeof ‹private›`); it may need widening by hand.
+- **5 directions** checked against the target's own history (`git log --follow -M`): 5/5 — e.g. `‹private›` is a `C100` copy of `‹private›` made 18 days later; `‹private›` was copied from `agent-forensics-mcp`.
+- The first measurement also found 45 sketches that did not parse (template-string pieces and JSX attributes replaced with their delimiters, positional parameters added to components): fixed, 0 now.
+
+### Lab
+
+Scenario `13-szkic-i-kierunek`: an original 30 days old and its copy with other constants 5 days old (direction "25 days later", sketch with `p1…p3`), a copy with an added step (blocked: "adds 1 step"), CSS grouping without and with an overriding rule in between. 11/11; full lab 157/157.

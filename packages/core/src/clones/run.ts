@@ -9,12 +9,17 @@
  *                   inside another; evidence: the line diff after normalization and the rename map.
  * A group whose every member lies inside a member of a larger group is dropped (a helper copied
  * together with its outer function is one finding, not two).
+ * Layer L5 (DUP-05) adds evidence to these findings: which member is the original (git history), and a
+ * sketch of the common form when it is safe — or why there is none.
  */
-import { fingerprint, type FindingType } from "@dustmap/contract";
+import { fingerprint, type Evidence, type FindingType } from "@dustmap/contract";
 import type { AdapterContext } from "../adapter.js";
 import { cssRules, duplicationTypes, familyOf, ruleKey, type CssRule } from "./normalize-css.js";
 import { diffCounts, diffText, nearGroups, nearPairs, nearRenames, type NearGroup } from "./near-miss.js";
-import { literalChanges, normalizedUnits, renameMap, type NormalizedUnit } from "./normalize-ts.js";
+import { directionText, openHistory, type HistoryReader, type Placed } from "./direction.js";
+import { literalChanges, normalizedUnits, renameMap, unitDetail, type NormalizedUnit, type UnitDetail } from "./normalize-ts.js";
+import { sketchCss } from "./unify-css.js";
+import { sketchScript, sketchText } from "./unify-ts.js";
 
 const SOURCE = "normalized";
 const MAX_RULES_FOR_SHARED_SETS = 1500;
@@ -38,7 +43,7 @@ function outermost<T extends { path: string; startLine: number; endLine: number 
   return pruned.filter((g) => !pruned.some((h) => h !== g && g.every((m) => h.some((o) => inside(m, o)))));
 }
 
-function cloneFinding(members: NormalizedUnit[], level: "exact" | "shape"): FindingType {
+function cloneFinding(members: NormalizedUnit[], level: "exact" | "shape", explained: Evidence[]): FindingType {
   const sorted = [...members].sort(byLocation);
   const ref = sorted[0]!;
   const renames = sorted
@@ -69,6 +74,7 @@ function cloneFinding(members: NormalizedUnit[], level: "exact" | "shape"): Find
       { label: "tokens", value: String(ref.tokens) },
       ...(renames.length ? [{ label: "renamed", value: `reference ${ref.name}; ${renames.join(" | ")}` }] : [{ label: "renamed", value: "none — the same text" }]),
       ...(literals.length ? [{ label: "constants", value: literals.join(" | ") }] : []),
+      ...explained,
     ],
     confidence: level === "exact" ? "high" : "medium",
     suggestedAction: "review",
@@ -84,7 +90,7 @@ const MAX_DIFF_LINES = 16;
 
 const MAX_GROUP_LINES = 12;
 
-function nearFinding(g: NearGroup, identicalCopies: (u: NormalizedUnit) => number): FindingType {
+function nearFinding(g: NearGroup, identicalCopies: (u: NormalizedUnit) => number, explained: Evidence[]): FindingType {
   const pct = (x: number) => `${Math.round(x * 100)}%`;
   const units = [g.center, ...g.members.map((m) => m.unit)];
   const first = g.members[0]!.pair;
@@ -121,6 +127,7 @@ function nearFinding(g: NearGroup, identicalCopies: (u: NormalizedUnit) => numbe
         label: "diff",
         value: `${first.a.name} → ${first.b.name}\n${diffText(first, MAX_DIFF_LINES) || "no line differs after normalization; the locals are used in another order"}`,
       },
+      ...explained,
     ],
     confidence: "medium",
     suggestedAction: "review",
@@ -132,7 +139,7 @@ function nearFinding(g: NearGroup, identicalCopies: (u: NormalizedUnit) => numbe
   };
 }
 
-function cssFinding(rules: CssRule[], shared: string[] | null): FindingType {
+function cssFinding(rules: CssRule[], shared: string[] | null, explained: Evidence[]): FindingType {
   const sorted = [...rules].sort(byLocation);
   const types = new Set<string>();
   for (const r of sorted.slice(1)) for (const t of duplicationTypes(sorted[0]!, r)) types.add(t);
@@ -149,6 +156,7 @@ function cssFinding(rules: CssRule[], shared: string[] | null): FindingType {
       { label: "selectors", value: selectors.join(" | ") },
       ...(sorted[0]!.context ? [{ label: "context", value: sorted[0]!.context }] : []),
       { label: "declarations", value: decls.slice(0, 24).join("; ") + (decls.length > 24 ? `; … (+${decls.length - 24})` : "") },
+      ...explained,
     ],
     confidence: shared ? "medium" : "high",
     suggestedAction: "review",
@@ -226,19 +234,61 @@ function closedSets(rules: CssRule[], minFamilies: number, wholeKeys: Set<string
   return out;
 }
 
+/**
+ * Layer L5 for one scan: copy direction from history (opened once, only when there is a group) and
+ * sketches. Unit details are parsed again only for members of groups that get a sketch.
+ */
+function explainer(ctx: AdapterContext) {
+  const cfg = ctx.config.clones;
+  let history: HistoryReader | undefined;
+  const details = new Map<string, Promise<UnitDetail | null>>();
+  const detail = (u: NormalizedUnit) => {
+    const k = `${u.path}:${u.startLine}:${u.name}`;
+    if (!details.has(k)) details.set(k, ctx.readFile(u.path).then((src) => unitDetail(u.path, src, u.startLine, u.name)));
+    return details.get(k)!;
+  };
+  const direction = (members: readonly Placed[]): Evidence[] => {
+    if (!cfg.copyDirection) return [];
+    history ??= openHistory(ctx.repoRoot, cfg.maxBlames);
+    const d = history.direction(members);
+    return d ? [{ label: "direction", value: directionText(members, d) }] : [];
+  };
+  const script = async (ref: NormalizedUnit, copies: readonly NormalizedUnit[]): Promise<Evidence[]> => {
+    const r = await detail(ref);
+    const cs = await Promise.all(copies.map(detail));
+    if (!r || cs.some((c) => !c)) return [{ label: "sketch-blocked", value: "a unit could not be read again" }];
+    const sk = sketchScript(r, cs as UnitDetail[]);
+    return sk.safe ? [{ label: "sketch", value: sketchText(sk, [ref.name, ...copies.map((c) => c.name)]) }] : [{ label: "sketch-blocked", value: sk.reason }];
+  };
+  const css = (group: CssRule[], shared: string[], whole: boolean, stylesheet: CssRule[]): Evidence[] => {
+    const sk = sketchCss(group, shared, whole, stylesheet);
+    return [sk.safe ? { label: "sketch", value: sk.text } : { label: "sketch-blocked", value: sk.reason }];
+  };
+  return { direction, script, css };
+}
+
+const placed = (u: { path: string; startLine: number; endLine: number }, symbol: string): Placed => ({ path: u.path, startLine: u.startLine, endLine: u.endLine, symbol });
+
 export async function runNormalizedClones(ctx: AdapterContext): Promise<FindingType[]> {
   const cfg = ctx.config.clones;
   const findings: FindingType[] = [];
+  const explain = explainer(ctx);
 
   const units: NormalizedUnit[] = [];
   for (const file of ctx.filesWithRole("source")) units.push(...normalizedUnits(file, await ctx.readFile(file), cfg.minTokens, cfg.minLines));
   const exact = outermost(groupBy(units, (u) => `${u.kind}\n${u.exactKey}`));
   const inExact = new Set(exact.flat());
-  for (const g of exact) findings.push(cloneFinding(g, "exact"));
+  for (const g of exact) findings.push(cloneFinding(g, "exact", explain.direction([...g].sort(byLocation).map((u) => placed(u, u.name)))));
   const shape = outermost(groupBy(units, (u) => `${u.kind}\n${u.shapeKey}`))
     // A shape group adds something only when it is not one exact group already.
     .filter((g) => !g.every((m) => inExact.has(m)) || new Set(g.map((m) => m.exactKey)).size > 1);
-  for (const g of shape) findings.push(cloneFinding(g, "shape"));
+  for (const g of shape) {
+    const sorted = [...g].sort(byLocation);
+    // One copy per distinct text: identical members add no column of values.
+    const distinct = sorted.filter((m, k) => sorted.findIndex((o) => o.exactKey === m.exactKey) === k);
+    const explained = [...explain.direction(sorted.map((u) => placed(u, u.name))), ...(await explain.script(distinct[0]!, distinct.slice(1)))];
+    findings.push(cloneFinding(g, "shape", explained));
+  }
   // L2 pairs one unit per L1 group; the others are named as its identical copies (the L1 finding lists them).
   const copies = new Map<NormalizedUnit, number>();
   const copied = new Set<NormalizedUnit>();
@@ -252,7 +302,14 @@ export async function runNormalizedClones(ctx: AdapterContext): Promise<FindingT
     (x, y) => x.exactKey === y.exactKey || x.shapeKey === y.shapeKey,
     (u) => copies.has(u) || !copied.has(u),
   );
-  for (const g of nearGroups(near)) findings.push(nearFinding(g, (u) => copies.get(u) ?? 0));
+  for (const g of nearGroups(near)) {
+    const members = [g.center, ...g.members.map((m) => m.unit)];
+    const explained = [
+      ...explain.direction(members.map((u) => placed(u, u.name))),
+      ...(g.relation === "near-miss" ? await explain.script(g.center, g.members.map((m) => m.unit)) : []),
+    ];
+    findings.push(nearFinding(g, (u) => copies.get(u) ?? 0, explained));
+  }
 
   const rules: CssRule[] = [];
   for (const file of ctx.styleFilesWithRole?.("source") ?? []) rules.push(...cssRules(file, await ctx.readFile(file)));
@@ -260,9 +317,19 @@ export async function runNormalizedClones(ctx: AdapterContext): Promise<FindingT
   const eligible = rules.filter((r) => new Set([...r.decls.keys()].map(familyOf)).size >= cfg.cssMinRuleDeclarations);
   const whole = groupBy(eligible, ruleKey);
   const wholeKeys = new Set(whole.map((g) => ruleKey(g[0]!)));
-  for (const g of whole) findings.push(cssFinding(g, null));
+  const byFile = new Map<string, CssRule[]>();
+  for (const r of rules) {
+    const list = byFile.get(r.path);
+    if (list) list.push(r);
+    else byFile.set(r.path, [r]);
+  }
+  const cssPlaced = (g: CssRule[]) => [...g].sort(byLocation).map((r) => placed(r, r.selector));
+  for (const g of whole) {
+    const decls = [...g[0]!.decls.entries()].map(([k, v]) => `${k}: ${v}`).sort();
+    findings.push(cssFinding(g, null, [...explain.direction(cssPlaced(g)), ...explain.css(g, decls, true, byFile.get(g[0]!.path) ?? [])]));
+  }
   for (const s of sharedSets(rules, cfg.cssMinSharedProperties, wholeKeys, cfg.cssMinSavedDeclarations, cfg.cssMaxSharedSetsPerFile)) {
-    findings.push(cssFinding(s.rules, s.decls));
+    findings.push(cssFinding(s.rules, s.decls, [...explain.direction(cssPlaced(s.rules)), ...explain.css(s.rules, s.decls, false, byFile.get(s.rules[0]!.path) ?? [])]));
   }
 
   return findings.sort((a, b) => a.fingerprint.localeCompare(b.fingerprint));

@@ -42,6 +42,7 @@ Do grupy duplikatów dochodzi wyjaśnienie: który kawałek jest kopią którego
 - `packages/core/src/clones/**`
 - `packages/contract/src/finding.ts` (pole szkicu, jeśli potrzebne)
 - `../dustmap-lab/**`
+- Added during work: `packages/core/src/config/schema.ts` (`clones.copyDirection`, `clones.maxBlames`); no contract change — direction and sketch are evidence entries (`direction`, `sketch`, `sketch-blocked`)
 
 ## Weryfikacja
 

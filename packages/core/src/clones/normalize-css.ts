@@ -58,6 +58,11 @@ export function expandDeclaration(prop: string, value: string): Array<[string, s
   if (p.startsWith("--") || isOpaqueValue(value)) return [[p, value.trim().replace(/\s+/g, " ")]];
   const tokens = topLevelTokens(value);
   const norm = (v: string) => normalizeValue(v);
+  // Type II: the weight keywords are their numbers (`bold` = 700); `bolder` / `lighter` are relative and stay.
+  if (p === "font-weight") {
+    const w = value.trim().toLowerCase();
+    return [[p, w === "bold" ? "700" : w === "normal" ? "400" : norm(value)]];
+  }
   if (p === "margin" || p === "padding") {
     const b = box(tokens);
     if (b) return SIDES.map((s, i) => [`${p}-${s}`, norm(b[i]!)]);

@@ -136,9 +136,84 @@ function ownsLine(n: ts.Node): boolean {
 
 const CLOSERS = new Set([")", "]", "}"]);
 
+/** Role of a token for the unification sketch (DUP-05): what a difference at this token may become. */
+export type TokenRole = "local" | "literal" | "name" | "member" | "type" | "target" | "tag" | "syntax";
+
+/** One normalized token with its place in the file (only built for sketches, never for a whole scan). */
+export type TokenDetail = {
+  /** Text as in the line (locals as `$`, literals by value). */
+  text: string;
+  /** Source text of the token. */
+  source: string;
+  start: number;
+  end: number;
+  /** Index into the unit's `lines`. */
+  line: number;
+  role: TokenRole;
+  /**
+   * Where a parameter goes when this literal differs and how it is written there: inside a template
+   * string between its delimiters (`${p}`), or as a JSX expression (`{p}`) for JSX text and attribute
+   * strings. Absent: the whole token is replaced by the parameter name.
+   */
+  slot?: { start: number; end: number; write: "template" | "jsx" };
+};
+
+/** Parameter slot of a literal token (see TokenDetail.slot). */
+function slotOf(t: ts.Node, sf: ts.SourceFile): TokenDetail["slot"] {
+  const start = t.getStart(sf);
+  const end = t.getEnd();
+  switch (t.kind) {
+    case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+    case ts.SyntaxKind.TemplateTail:
+      return { start: start + 1, end: end - 1, write: "template" };
+    case ts.SyntaxKind.TemplateHead:
+    case ts.SyntaxKind.TemplateMiddle:
+      return { start: start + 1, end: end - 2, write: "template" };
+    case ts.SyntaxKind.JsxText:
+      return { start, end, write: "jsx" };
+    case ts.SyntaxKind.StringLiteral:
+      return ts.isJsxAttribute(t.parent) ? { start, end, write: "jsx" } : undefined;
+    default:
+      return undefined;
+  }
+}
+
+function inTypePosition(n: ts.Node): boolean {
+  // The token itself may be a type (`string`); an identifier is never a stop (it also counts as an expression).
+  if (ts.isTypeNode(n)) return true;
+  for (let p: ts.Node | undefined = n.parent; p; p = p.parent) {
+    if (ts.isTypeNode(p) || ts.isTypeAliasDeclaration(p) || ts.isInterfaceDeclaration(p) || ts.isHeritageClause(p) || ts.isTypeParameterDeclaration(p)) return true;
+    if (ts.isStatement(p) || ts.isExpression(p) || ts.isClassElement(p)) return false;
+  }
+  return false;
+}
+
+function isAssignmentTarget(id: ts.Identifier): boolean {
+  const p = id.parent;
+  if (ts.isBinaryExpression(p) && p.left === id && p.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && p.operatorToken.kind <= ts.SyntaxKind.LastAssignment) return true;
+  return (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && (p.operator === ts.SyntaxKind.PlusPlusToken || p.operator === ts.SyntaxKind.MinusMinusToken);
+}
+
+function roleOf(t: ts.Node, local: boolean): TokenRole {
+  if (local) return "local";
+  // Anything inside a type (keywords, literal types, names) differs only through a type parameter.
+  if (inTypePosition(t)) return "type";
+  // A quoted key (`{ "a": 1 }`, `"b"() {}`) names a member; written as a parameter it would be the key `p1`.
+  const owner = t.parent as ts.Node & { name?: ts.Node };
+  if (literalKind(t.kind) && owner.name === t && (ts.isObjectLiteralElementLike(owner) || ts.isClassElement(owner) || ts.isTypeElement(owner) || ts.isEnumMember(owner))) return "member";
+  if (literalKind(t.kind)) return "literal";
+  if (!ts.isIdentifier(t)) return "syntax";
+  const p = t.parent;
+  if ((ts.isJsxOpeningElement(p) || ts.isJsxClosingElement(p) || ts.isJsxSelfClosingElement(p)) && p.tagName === t) return "tag";
+  if (isMemberName(t)) return "member";
+  if (isAssignmentTarget(t)) return "target";
+  return "name";
+}
+
 function normalize(
   root: ts.Node,
   sf: ts.SourceFile,
+  detail?: TokenDetail[],
 ): { exact: string[]; shape: string[]; locals: string[]; literals: string[]; lines: NormalizedLine[] } {
   const bound = localNames(root);
   const renamed = new Set<number>();
@@ -175,6 +250,10 @@ function normalize(
     line.text = line.tokens ? `${line.text} ${text}` : text;
     line.tokens++;
     if (local) line.locals.push(local);
+    if (detail) {
+      const slot = slotOf(t, sf);
+      detail.push({ text, source: t.getText(sf), start: t.getStart(sf), end: t.getEnd(), line: lines.indexOf(line), role: roleOf(t, local !== undefined), ...(slot ? { slot } : {}) });
+    }
   };
   for (const [k, { node: t, text: raw }] of kept.entries()) {
     // A trailing comma is formatting: `f(a, b,)` is `f(a, b)`.
@@ -241,6 +320,122 @@ export function normalizedUnits(path: string, source: string, minTokens: number,
       if (name) add(functionAnchor(node), "function", name);
     } else if ((ts.isClassDeclaration(node) || ts.isClassExpression(node)) && node.name) {
       add(node, "class", node.name.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+export type UnitDetail = {
+  unit: NormalizedUnit;
+  tokens: TokenDetail[];
+  /**
+   * Where parameters go in the unit's own function: appended to its parameter list (`positional`; a bare
+   * arrow parameter gets wrapped), or — for a component that renders JSX — added to its destructured
+   * props (`props-add`) or written as a new props pattern (`props-new`). Null: `paramBlock` says why.
+   */
+  paramInsert: {
+    at: number;
+    /** `before`: the new parameters go in front of an optional, defaulted or rest parameter (followed by a comma). */
+    comma: boolean | "before";
+    wrap: { start: number; end: number } | null;
+    mode: "positional" | "props-add" | "props-new";
+  } | null;
+  paramBlock?: string;
+  /** The file text the offsets point into, and where the unit starts in it. */
+  source: string;
+  offset: number;
+  /** The unit is a class member: parse it inside a class. */
+  member: boolean;
+};
+
+/** The function a unit stands for: the node itself or the function bound by a variable statement. */
+function ownFunction(root: ts.Node): ts.FunctionLikeDeclaration | null {
+  if (isFunctionLike(root)) return root;
+  let found: ts.FunctionLikeDeclaration | null = null;
+  const visit = (n: ts.Node): void => {
+    if (found) return;
+    if (isFunctionLike(n) && functionAnchor(n) === root) found = n;
+    else ts.forEachChild(n, visit);
+  };
+  visit(root);
+  return found;
+}
+
+/**
+ * One unit again, with token positions and roles (DUP-05 sketches). Found by its start line and name in
+ * a fresh parse of the file, so a scan never keeps positions for all its units.
+ */
+export function unitDetail(path: string, source: string, startLine: number, name: string): UnitDetail | null {
+  if (!SCRIPT.test(path)) return null;
+  const sf = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, scriptKindOf(path));
+  let out: UnitDetail | null = null;
+  const tryUnit = (root: ts.Node, kind: NormalizedUnit["kind"], unitName: string): void => {
+    if (out || unitName !== name) return;
+    const start = root.getStart(sf);
+    if (sf.getLineAndCharacterOfPosition(start).line + 1 !== startLine) return;
+    const tokens: TokenDetail[] = [];
+    const n = normalize(root, sf, tokens);
+    const fn = kind === "function" ? ownFunction(root) : null;
+    let paramInsert: UnitDetail["paramInsert"] = null;
+    let paramBlock: string | undefined;
+    if (fn) {
+      const ps = fn.parameters;
+      const open = fn.getChildren(sf).some((c) => c.kind === ts.SyntaxKind.OpenParenToken);
+      const last = ps[ps.length - 1];
+      let jsx = false;
+      const findJsx = (x: ts.Node): void => {
+        if (jsx) return;
+        if (ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x) || ts.isJsxFragment(x)) jsx = true;
+        else ts.forEachChild(x, findJsx);
+      };
+      if (fn.body) findJsx(fn.body);
+      if (jsx && ps.length === 0) paramInsert = { at: ps.pos, comma: false, wrap: null, mode: "props-new" };
+      else if (jsx && ps.length === 1 && ts.isObjectBindingPattern(ps[0]!.name)) {
+        const els = ps[0]!.name.elements;
+        paramInsert = { at: els.length ? els[els.length - 1]!.getEnd() : els.pos, comma: els.length > 0, wrap: null, mode: "props-add" };
+      } else if (jsx) paramBlock = "a component that takes its props as one object: the values would be new props";
+      else {
+        // Required parameters cannot follow optional, defaulted or rest ones: insert in front of the first such.
+        const loose = ps.find((p) => p.questionToken || p.initializer || p.dotDotDotToken);
+        paramInsert = loose
+          ? { at: loose.getStart(sf), comma: "before", wrap: null, mode: "positional" }
+          : last
+            ? { at: last.getEnd(), comma: true, wrap: open ? null : { start: last.getStart(sf), end: last.getEnd() }, mode: "positional" }
+            : { at: ps.pos, comma: false, wrap: null, mode: "positional" };
+      }
+    }
+    out = {
+      unit: {
+        path,
+        kind,
+        name: unitName,
+        startLine,
+        endLine: sf.getLineAndCharacterOfPosition(root.getEnd()).line + 1,
+        body: source.slice(start, root.getEnd()),
+        tokens: n.exact.length,
+        locals: n.locals,
+        literals: n.literals,
+        exactKey: key(n.exact),
+        shapeKey: key(n.shape),
+        lines: n.lines,
+      },
+      tokens,
+      paramInsert,
+      ...(paramBlock ? { paramBlock } : {}),
+      source,
+      offset: start,
+      member: ts.isClassElement(root),
+    };
+  };
+  const visit = (node: ts.Node): void => {
+    if (out) return;
+    if (isFunctionLike(node) && node.body) {
+      const unitName = functionUnitName(node, sf);
+      if (unitName) tryUnit(functionAnchor(node), "function", unitName);
+    } else if ((ts.isClassDeclaration(node) || ts.isClassExpression(node)) && node.name) {
+      tryUnit(node, "class", node.name.text);
     }
     ts.forEachChild(node, visit);
   };
