@@ -1496,8 +1496,11 @@
         "DUP-04"
       ],
       "epic": "DUP",
-      "status": "in_progress",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "completedAt": "2026-10-25T19:45:45.370Z",
+      "gitProofSha": "86c974290e52727c682d50f6027b2e6e5df62b13",
+      "closureNotes": "AP>=0.80 not met (0.736; variants made it worse: 0.701/0.689); CPU boundary 4.4/7.6 pairs/s (GPU 75); misses were mostly CRLF (BUG-14); judgedMinBand high from review (high band 16/17, medium ~1/4)"
     },
     {
       "id": "BUG-14",
