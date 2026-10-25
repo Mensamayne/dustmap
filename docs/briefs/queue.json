@@ -1576,8 +1576,13 @@
         "V1-01"
       ],
       "epic": "V1",
-      "status": "todo",
-      "kind": "feature"
+      "status": "done",
+      "kind": "feature",
+      "startedAt": "2026-10-25T21:49:25.189Z",
+      "startedBy": "agent",
+      "completedAt": "2026-10-25T21:50:51.849Z",
+      "gitProofSha": "0271687eaecb629f38ed4c5787acfe26f8812109",
+      "closureNotes": "dup:meter scores any judge through openJudge; package reproduces DUP-08 numbers; API path on a recorded server, re-run fully cached."
     },
     {
       "id": "V1-04",
