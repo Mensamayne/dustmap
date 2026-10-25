@@ -45,4 +45,47 @@ Scenario `11-kopie-i-css` in `../dustmap-lab`: copies with other names, other co
 
 ### Full scan
 
-`npm run verify:targets`: OK. Monorepo-A full scan with L1 on: 20817 findings, 11183 of them `duplicate` (jscpd + L1 together; deduplication between jscpd and L1 is DUP-06's job).
+`npm run verify:targets`: OK. (Correction, DUP-02: the 20817 findings / 11183 `duplicate` first written here came from a stale adapter cache holding the unranked 6604 CSS sets; the adapter version was not bumped during development. The fresh number is below.)
+
+## DUP-02 — L2: near copies and "contains" (2026-10-25)
+
+What L2 reports (`near-clone`, medium), no model:
+
+- **near-miss** — the shared part of two units is ≥ 70% of the larger one (NiCad's 0.3 difference threshold): someone changed or added lines. Near copies form one finding per family, around the unit with most near copies.
+- **contains** — ≥ 90% of the smaller unit appears, in order, inside the larger one, which adds more: an extended copy ("could call it instead"). One finding per contained unit, listing every unit that contains it.
+
+How:
+
+- **Logical lines, not the author's line breaks** (NiCad pretty-printing): one line per statement, class or type member, object property, switch clause, JSX element part; locals blindly renamed to `$`; literals by value; trailing commas dropped (also from the L1 keys).
+- **Candidates** from an inverted index of distinct lines with prefix filtering (SourcererCC): lines ordered rare first; only the first |lines| − ⌈0.5·|lines|⌉ + 1 lines of the smaller unit are looked up.
+- **Verification**: longest common subsequence of lines, weighted by tokens; the diff of that subsequence is the evidence (shared / changed / only-in counts, rename map, `-`/`+` lines with file line numbers and original text).
+- **No double reporting**: one unit per L1 group takes part ("+N identical copies, see exact-clone"); a pair inside an already reported pair or L1 group is dropped; a pair where one side matches a piece of the other directly (a method vs the class that holds its copy) gives way to that inner pair.
+
+### Counts and time
+
+| Target (snapshot) | near-miss | contains | L1 + L2 time | L2 cost |
+|---|---:|---:|---:|---:|
+| Monorepo-A `dbe35aa00cd6` | 494 | 52 | 59 s | +41 s (budget 60 s) |
+| Service-B `0c0aa958e6b3` | 4 | 1 | 0.3 s | — |
+
+Families of near copies on Monorepo-A: 411 of 2, 58 of 3, 15 of 4, 4 of 5, 6 of 6+. Before folding identical copies into one representative there were 22 families of 6+ (largest 49: recursive directory walkers in `‹private›`); before grouping, 1524 pair findings.
+
+### Precision — 30 random findings on Monorepo-A
+
+A finding counts as correct when its members really are near copies (or the smaller unit really is contained), as the evidence says.
+
+| Kind | Draws | Correct | Examples |
+|---|---:|---:|---|
+| near-miss | 20 (19 distinct; seeds 41, 97) | 20 | `‹private›` / `‹private›` (only the default constant name), `‹private›` / `‹private›`, `‹private›` / `‹private›`, `‹private›` / `‹private›`, `‹private›` (lab copy) / `‹private›` (+ one `if`) |
+| contains | 10 (seed 43) | 10 | `parseArgs` and its extended copy with more flags, `encodeCursor` + a cap, `‹private›` inside `‹private›`, `‹private›` inside the opt-out variant |
+| **Total** | **30** | **30** | precision 1.00 (target ≥ 0.95) |
+
+Defects found by the review and fixed before the count: the same function wrapped differently (and with a trailing comma) was a near copy → logical lines; a method was "contained" in a whole class because that class held its near copy → inner pairs win; families of copy-pasted script helpers flooded as pairs → grouping; identical members of a family repeated L1 → one representative; the diff printed one file line several times (JSX) and only the first line of a wrapped statement → printed once, up to three file lines.
+
+### Lab
+
+Scenario `12-prawie-kopie`: a near copy (one changed call, other names), a copy with four added steps (contains), a method copied into another class. Traps: the same function wrapped by a formatter (must be an L1 copy, not a near copy), another skeleton of the same size. Result: 12/12; full lab 146/146.
+
+### Full scan
+
+`npm run verify:targets`: OK. Monorepo-A full scan with L1 + L2 (adapter version 2, fresh cache): 62.3 s, 15002 findings, 5368 of them `duplicate` (jscpd + L1 + L2; deduplication between jscpd and L1/L2 is DUP-06's job). Service-B: 146 findings.

@@ -5,12 +5,13 @@ import type { Adapter } from "../adapter.js";
 import { runNormalizedClones } from "./run.js";
 
 /** Bump when the normalization or grouping changes, so cached results are recomputed. */
-const VERSION = "1";
+const VERSION = "2";
 
 export function normalizedClonesAdapter(): Adapter {
   return { name: "normalized", version: () => VERSION, run: runNormalizedClones };
 }
 
+export { nearPairs, nearGroups, lineDiff, diffCounts, nearRenames, diffText, type NearPair, type NearGroup, type NearOptions } from "./near-miss.js";
 export { normalizedUnits, renameMap, literalChanges, type NormalizedUnit } from "./normalize-ts.js";
 export { cssRules, ruleKey, duplicationTypes, expandDeclaration, familyOf, type CssRule } from "./normalize-css.js";
 export { canonicalColor, normalizeValue } from "./css-values.js";

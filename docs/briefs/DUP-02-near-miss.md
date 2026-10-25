@@ -43,6 +43,7 @@ Skan zgłasza kopie, w których ktoś coś dopisał lub zmienił (typ 3), oraz p
 - `packages/contract/src/finding.ts` (jeśli potrzebny nowy rodzaj)
 - `../dustmap-lab/**`
 - `docs/experiments/dup-results.md`
+- Added during work: `packages/core/src/config/schema.ts` (thresholds `nearMinLines`, `nearMinSimilarity`, `containMinCoverage` live in config, like the L1 ones)
 
 ## Weryfikacja
 

@@ -26,6 +26,8 @@ export const FindingKind = z.enum([
   "exact-clone",
   /** DUP-01: CSS rules or declaration sets equivalent by duplication types I–III (Mazinanian et al., FSE 2014). */
   "css-duplicate",
+  /** DUP-02: a copy with lines changed or added (near-miss), or a unit whose code sits inside another (contains). */
+  "near-clone",
   "semantic-cluster",
   "complexity",
   "large-file",

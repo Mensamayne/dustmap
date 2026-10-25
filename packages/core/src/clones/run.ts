@@ -5,12 +5,15 @@
  *   css-duplicate — CSS rules whose whole declaration sets are equivalent (types I–III, high), and
  *                   declaration sets of ≥ N property families shared by rules of one stylesheet
  *                   (medium: grouping them needs the order check of DUP-05).
+ *   near-clone    — (DUP-02, layer L2) a copy with lines changed or added, or a unit whose code sits
+ *                   inside another; evidence: the line diff after normalization and the rename map.
  * A group whose every member lies inside a member of a larger group is dropped (a helper copied
  * together with its outer function is one finding, not two).
  */
 import { fingerprint, type FindingType } from "@dustmap/contract";
 import type { AdapterContext } from "../adapter.js";
 import { cssRules, duplicationTypes, familyOf, ruleKey, type CssRule } from "./normalize-css.js";
+import { diffCounts, diffText, nearGroups, nearPairs, nearRenames, type NearGroup } from "./near-miss.js";
 import { literalChanges, normalizedUnits, renameMap, type NormalizedUnit } from "./normalize-ts.js";
 
 const SOURCE = "normalized";
@@ -73,6 +76,58 @@ function cloneFinding(members: NormalizedUnit[], level: "exact" | "shape"): Find
       level === "exact"
         ? "The listed units are the same code under other local names; keep one and call it from the other places, then re-scan."
         : "The listed units share their code and differ only in constants; one unit with those constants as parameters would replace them — check that callers agree, then re-scan.",
+    source: SOURCE,
+  };
+}
+
+const MAX_DIFF_LINES = 16;
+
+const MAX_GROUP_LINES = 12;
+
+function nearFinding(g: NearGroup, identicalCopies: (u: NormalizedUnit) => number): FindingType {
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+  const units = [g.center, ...g.members.map((m) => m.unit)];
+  const first = g.members[0]!.pair;
+  const renames = nearRenames(first.ops);
+  const shape =
+    g.relation === "near-miss"
+      ? units.length === 2
+        ? `near copy: ${pct(first.similarity)} of the normalized code is shared`
+        : `${units.length} near copies of one code: each shares at least ${pct(Math.min(...g.members.map((m) => m.pair.similarity)))} with the copy it is listed against`
+      : `the code of ${g.center.name} appears, in order, inside ${g.members.length === 1 ? g.members[0]!.unit.name : `${g.members.length} larger units`}`;
+  const memberLines = g.members.slice(0, MAX_GROUP_LINES).map(({ unit, pair }) => {
+    const c = diffCounts(pair.ops);
+    const [x, y] = pair.a === unit ? [pair.b, pair.a] : [pair.a, pair.b];
+    const share = g.relation === "near-miss" ? `${pct(pair.similarity)} shared with ${x.name}` : `contains ${pct(pair.coverage)} of ${g.center.name}`;
+    const n = identicalCopies(y);
+    const more = n ? ` (+${n} identical ${n === 1 ? "copy" : "copies"}, see exact-clone)` : "";
+    return `${y.name} (${y.path}:${y.startLine})${more}: ${share}; lines ${c.same} shared, ${c.changed} changed, ${c.onlyA} only in ${pair.a.name}, ${c.onlyB} only in ${pair.b.name}`;
+  });
+  const centerCopies = identicalCopies(g.center);
+  if (centerCopies) memberLines.unshift(`${g.center.name} (${g.center.path}:${g.center.startLine}) (+${centerCopies} identical ${centerCopies === 1 ? "copy" : "copies"}, see exact-clone)`);
+  if (g.members.length > MAX_GROUP_LINES) memberLines.push(`… (+${g.members.length - MAX_GROUP_LINES} more)`);
+  return {
+    fingerprint: fingerprint("near-clone", units.map((u) => u.body).sort(), [g.relation, ...[...new Set(units.map((u) => u.name))].sort()]),
+    kind: "near-clone",
+    category: "duplicate",
+    locations: units.map((m) => ({ path: m.path, startLine: m.startLine, endLine: m.endLine, symbol: m.name })),
+    evidence: [
+      { label: "shape", value: shape },
+      { label: "relation", value: g.relation },
+      { label: "unit", value: [...new Set(units.map((u) => u.kind))].join(" / ") },
+      { label: "members", value: memberLines.join("\n") },
+      { label: "renamed", value: renames.length ? `${first.a.name} → ${first.b.name}: ${renames.map(([a, b]) => `${a} → ${b}`).join(", ")}` : "none" },
+      {
+        label: "diff",
+        value: `${first.a.name} → ${first.b.name}\n${diffText(first, MAX_DIFF_LINES) || "no line differs after normalization; the locals are used in another order"}`,
+      },
+    ],
+    confidence: "medium",
+    suggestedAction: "review",
+    verifyHint:
+      g.relation === "near-miss"
+        ? "These units are one code with the listed lines changed or added; check whether the differences are intended, and whether one unit with a parameter or an extra step could serve them all, then re-scan."
+        : `The code of ${g.center.name} is repeated inside the listed units; check whether they could call ${g.center.name} instead, then re-scan.`,
     source: SOURCE,
   };
 }
@@ -184,6 +239,20 @@ export async function runNormalizedClones(ctx: AdapterContext): Promise<FindingT
     // A shape group adds something only when it is not one exact group already.
     .filter((g) => !g.every((m) => inExact.has(m)) || new Set(g.map((m) => m.exactKey)).size > 1);
   for (const g of shape) findings.push(cloneFinding(g, "shape"));
+  // L2 pairs one unit per L1 group; the others are named as its identical copies (the L1 finding lists them).
+  const copies = new Map<NormalizedUnit, number>();
+  const copied = new Set<NormalizedUnit>();
+  for (const g of groupBy(units, (u) => `${u.kind}\n${u.shapeKey}`)) {
+    copies.set([...g].sort(byLocation)[0]!, g.length - 1);
+    for (const u of g) copied.add(u);
+  }
+  const near = nearPairs(
+    units,
+    { minLines: cfg.nearMinLines, minSimilarity: cfg.nearMinSimilarity, minCoverage: cfg.containMinCoverage },
+    (x, y) => x.exactKey === y.exactKey || x.shapeKey === y.shapeKey,
+    (u) => copies.has(u) || !copied.has(u),
+  );
+  for (const g of nearGroups(near)) findings.push(nearFinding(g, (u) => copies.get(u) ?? 0));
 
   const rules: CssRule[] = [];
   for (const file of ctx.styleFilesWithRole?.("source") ?? []) rules.push(...cssRules(file, await ctx.readFile(file)));

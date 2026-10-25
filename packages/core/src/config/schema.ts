@@ -43,6 +43,12 @@ export const ClonesConfig = z
     cssMinSavedDeclarations: z.number().int().positive().default(8),
     /** …and at most this many opportunities per stylesheet, best saving first (FSE 2014 ranking). */
     cssMaxSharedSetsPerFile: z.number().int().positive().default(3),
+    /** Near copies (DUP-02, L2): smallest unit, in normalized lines that carry more than brackets. */
+    nearMinLines: z.number().int().positive().default(5),
+    /** Near copy: shared tokens / tokens of the larger unit (NiCad's 0.3 difference threshold). */
+    nearMinSimilarity: z.number().gt(0).lte(1).default(0.7),
+    /** Contains: shared tokens / tokens of the smaller unit. */
+    containMinCoverage: z.number().gt(0).lte(1).default(0.9),
   })
   .strict();
 export type ClonesConfig = z.infer<typeof ClonesConfig>;

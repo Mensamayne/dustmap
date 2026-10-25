@@ -5,7 +5,9 @@
  * imported names stay, because they carry the meaning (`it.price` is not `p.weightG`). Two keys per
  * unit: with literals kept (a copy with other local names) and with literals as kind placeholders (a
  * copy that also changed its constants). Tokens come from the syntax tree, so comments and
- * formatting never matter.
+ * formatting never matter. For near copies (DUP-02, layer L2) each unit also keeps its normalized
+ * logical lines (one per statement, member, property or JSX element part), with every local blindly
+ * renamed to `$` as NiCad does, so an inserted line does not shift the names of the lines after it.
  */
 import { createHash } from "node:crypto";
 import ts from "typescript";
@@ -28,6 +30,20 @@ export type NormalizedUnit = {
   exactKey: string;
   /** Locals renamed, literals replaced by their kind. */
   shapeKey: string;
+  /** Normalized source lines of the unit (L2). */
+  lines: NormalizedLine[];
+};
+
+export type NormalizedLine = {
+  /** 1-based file line where the logical line starts. */
+  line: number;
+  /** Every file line holding one of its tokens, ascending (a wrapped call; `if (…) {` and its `}`). */
+  spans: number[];
+  /** Tokens of the line joined by spaces; locals as `$`, literals by value. */
+  text: string;
+  tokens: number;
+  /** Local names on the line, in order (for the rename map of a near copy). */
+  locals: string[];
 };
 
 const SCRIPT = /\.(?:[cm]?[jt]s|[jt]sx)$/i;
@@ -97,7 +113,33 @@ function leaves(node: ts.Node, sf: ts.SourceFile, out: ts.Node[]): void {
   for (const c of children) if (!ts.isJSDoc(c)) leaves(c, sf, out);
 }
 
-function normalize(root: ts.Node, sf: ts.SourceFile): { exact: string[]; shape: string[]; locals: string[]; literals: string[] } {
+/**
+ * Owner of a logical line: a statement, class or type member, object property, switch clause, enum
+ * member, or JSX element part. Lines follow syntax, not the author's line breaks, so a wrapped
+ * signature and the same signature on one line are one line (NiCad's pretty-printing).
+ */
+function ownsLine(n: ts.Node): boolean {
+  return (
+    (ts.isStatement(n) && !ts.isBlock(n)) ||
+    ts.isClassElement(n) ||
+    ts.isTypeElement(n) ||
+    ts.isObjectLiteralElementLike(n) ||
+    ts.isCaseOrDefaultClause(n) ||
+    ts.isEnumMember(n) ||
+    ts.isJsxOpeningElement(n) ||
+    ts.isJsxClosingElement(n) ||
+    ts.isJsxSelfClosingElement(n) ||
+    ts.isJsxText(n) ||
+    (ts.isJsxExpression(n) && ts.isJsxElement(n.parent))
+  );
+}
+
+const CLOSERS = new Set([")", "]", "}"]);
+
+function normalize(
+  root: ts.Node,
+  sf: ts.SourceFile,
+): { exact: string[]; shape: string[]; locals: string[]; literals: string[]; lines: NormalizedLine[] } {
   const bound = localNames(root);
   const renamed = new Set<number>();
   const mark = (n: ts.Node): void => {
@@ -105,24 +147,45 @@ function normalize(root: ts.Node, sf: ts.SourceFile): { exact: string[]; shape: 
     ts.forEachChild(n, mark);
   };
   mark(root);
+  const leafNodes: ts.Node[] = [];
+  leaves(root, sf, leafNodes);
+  const kept: Array<{ node: ts.Node; text: string }> = [];
+  for (const t of leafNodes) {
+    if (t.kind === ts.SyntaxKind.EndOfFileToken || DROPPED_KEYWORDS.has(t.kind)) continue;
+    const text = t.kind === ts.SyntaxKind.JsxText ? t.getText(sf).replace(/\s+/g, " ").trim() : t.getText(sf);
+    if (text) kept.push({ node: t, text });
+  }
   const order = new Map<string, number>();
   const exact: string[] = [];
   const shape: string[] = [];
   const literals: string[] = [];
-  const tokens: ts.Node[] = [];
-  leaves(root, sf, tokens);
-  for (const t of tokens) {
-    if (t.kind === ts.SyntaxKind.EndOfFileToken || DROPPED_KEYWORDS.has(t.kind)) continue;
-    let text = t.getText(sf);
-    if (t.kind === ts.SyntaxKind.JsxText) {
-      text = text.replace(/\s+/g, " ").trim();
-      if (!text) continue;
+  const lines: NormalizedLine[] = [];
+  const byOwner = new Map<ts.Node, NormalizedLine>();
+  const onLine = (t: ts.Node, text: string, local?: string): void => {
+    let owner = t;
+    while (owner !== root && !ownsLine(owner)) owner = owner.parent;
+    const at = sf.getLineAndCharacterOfPosition(t.getStart(sf)).line + 1;
+    let line = byOwner.get(owner);
+    if (!line) {
+      line = { line: at, spans: [], text: "", tokens: 0, locals: [] };
+      byOwner.set(owner, line);
+      lines.push(line);
     }
+    if (line.spans[line.spans.length - 1] !== at) line.spans.push(at);
+    line.text = line.tokens ? `${line.text} ${text}` : text;
+    line.tokens++;
+    if (local) line.locals.push(local);
+  };
+  for (const [k, { node: t, text: raw }] of kept.entries()) {
+    // A trailing comma is formatting: `f(a, b,)` is `f(a, b)`.
+    if (raw === "," && CLOSERS.has(kept[k + 1]?.text ?? "")) continue;
+    let text = raw;
     if (ts.isIdentifier(t) && renamed.has(t.getStart(sf))) {
       if (!order.has(t.text)) order.set(t.text, order.size);
       const ph = `$${order.get(t.text)}`;
       exact.push(ph);
       shape.push(ph);
+      onLine(t, "$", t.text);
       continue;
     }
     const lit = literalKind(t.kind);
@@ -133,12 +196,14 @@ function normalize(root: ts.Node, sf: ts.SourceFile): { exact: string[]; shape: 
       literals.push(text);
       exact.push(text);
       shape.push(lit);
+      onLine(t, text);
       continue;
     }
     exact.push(text);
     shape.push(text);
+    onLine(t, text);
   }
-  return { exact, shape, locals: [...order.keys()], literals };
+  return { exact, shape, locals: [...order.keys()], literals, lines };
 }
 
 const key = (tokens: string[]): string => createHash("sha256").update(tokens.join("\u0001")).digest("hex").slice(0, 32);
@@ -167,6 +232,7 @@ export function normalizedUnits(path: string, source: string, minTokens: number,
       literals: n.literals,
       exactKey: key(n.exact),
       shapeKey: key(n.shape),
+      lines: n.lines,
     });
   };
   const visit = (node: ts.Node): void => {

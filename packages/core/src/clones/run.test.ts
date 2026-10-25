@@ -80,6 +80,27 @@ describe("normalized adapter (DUP-01 L1)", () => {
     expect(shared.locations.map((l) => l.symbol)).toEqual([".card", ".panel", ".box"]);
   });
 
+  it("L2: a near copy is one finding against one copy of an identical pair, with the diff as evidence", async () => {
+    const base = `export function loadUser(id) {
+  const row = db.users.find(id);
+  if (!row) throw new Error("missing user");
+  const profile = mapProfile(row.profile);
+  const roles = row.roles.map((r) => r.name);
+  audit.log("user.load", row.id);
+  return { id: row.id, profile, roles };
+}`;
+    const findings = await runNormalizedClones(
+      ctx({ "a.ts": base, "b.ts": base.replace(/\brow\b/g, "rec"), "c.ts": base.replace("audit.log", "audit.trace") }),
+    );
+    const near = findings.filter((f) => f.kind === "near-clone");
+    expect(near).toHaveLength(1);
+    expect(near[0]!.locations.map((l) => l.path)).toEqual(["a.ts", "c.ts"]);
+    const ev = (label: string) => near[0]!.evidence.find((e) => e.label === label)!.value;
+    expect(ev("relation")).toBe("near-miss");
+    expect(ev("members")).toContain("(+1 identical copy, see exact-clone)");
+    expect(ev("diff")).toContain('+ loadUser:6 audit.trace("user.load", row.id);');
+  });
+
   it("no style inventory → no CSS findings, scripts still checked", async () => {
     const c = ctx({ "a.ts": cart });
     delete c.styleFilesWithRole;
