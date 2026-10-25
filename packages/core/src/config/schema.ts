@@ -96,6 +96,12 @@ export const SemanticConfig = z
     url: z.string().url().optional(),
     /** Allow non-loopback URLs for `http` (code would leave the machine). Default false. */
     allowRemote: z.boolean().default(false),
+    /**
+     * Pair judge (DUP-04, layer L4): a model package under modelDir that reads both functions of a
+     * candidate pair at once; pairs it reads as a shared pattern or different work are not reported.
+     * CPU only. Not installed → similarity alone (the group says so); `none` turns it off.
+     */
+    pairJudge: z.string().min(1).default("dustmap-pair-judge-private"),
   })
   .strict();
 export type SemanticConfig = z.infer<typeof SemanticConfig>;

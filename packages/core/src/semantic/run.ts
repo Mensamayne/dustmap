@@ -18,7 +18,9 @@ import {
 } from "./cluster.js";
 import { extractFunctions } from "./extract.js";
 import { reportFloor, type Calibration } from "./calibration.js";
-import { openOnnxProvider, type OnnxProvider } from "./onnx-provider.js";
+import { OnnxModelError, openOnnxProvider, resolveModelDir, type OnnxProvider } from "./onnx-provider.js";
+import { openPairJudge, type PairJudge } from "./pair-judge.js";
+import type { JudgeNote } from "./cluster.js";
 import {
   assertHttpProviderAllowed,
   createEmbeddingProvider,
@@ -27,8 +29,8 @@ import {
 } from "./provider.js";
 import { openVectorCache } from "./vector-cache.js";
 
-/** Bump when extraction, scoring or clustering changes (adapter cache key): 2 per-side bodies (BUG-07), 3 parser extraction (EMB-08), 4 calibrated confidence + patterns (EMB-09), 5 onnx default, jscpd path removed (EMB-10), 6 average-linkage groups (EMB-10), 7 PAIR pair-head filter. */
-const ADAPTER_REV = "7";
+/** Bump when extraction, scoring or clustering changes (adapter cache key): 2 per-side bodies (BUG-07), 3 parser extraction (EMB-08), 4 calibrated confidence + patterns (EMB-09), 5 onnx default, jscpd path removed (EMB-10), 6 average-linkage groups (EMB-10), 7 PAIR pair-head filter, 8 pair judge (DUP-04). */
+const ADAPTER_REV = "8";
 
 /** Report threshold for providers without calibration (HTTP; DUST-15 spike value). */
 const UNCALIBRATED_THRESHOLD = 0.82;
@@ -96,6 +98,7 @@ async function runViaEmbed(
   provider: EmbeddingProvider,
   calibration: Calibration | null = null,
   onnx: OnnxProvider | null = null,
+  judge: { judge: PairJudge | null; note: JudgeNote | null } = { judge: null, note: null },
 ): Promise<SemanticRunResult> {
   // Explicit config wins; a calibrated model reports from its own floor; anything else uses the spike value.
   const threshold = cfg.threshold ?? (calibration ? reportFloor(calibration) : null) ?? UNCALIBRATED_THRESHOLD;
@@ -133,8 +136,15 @@ async function runViaEmbed(
     pairs = scored;
   }
 
+  // L4: the judge reads both functions of each candidate pair; the groups it reads as a shared pattern or
+  // different work are demoted to low confidence (cluster.ts), never dropped.
+  if (judge.judge && pairs.length > 0) {
+    const scores = await judge.judge.score(pairs.map((p) => [p.a.body, p.b.body] as const));
+    pairs = pairs.map((p, k) => ({ ...p, judge: scores[k]! }));
+  }
+
   return {
-    findings: clusterSemanticPairs(pairs, threshold, calibration, similarity),
+    findings: clusterSemanticPairs(pairs, threshold, calibration, similarity, judge.note),
     stats: { newEmbeddings, functions: fns.length, pairs: pairs.length },
   };
 }
@@ -157,16 +167,33 @@ export async function runSemanticAnalysis(
   const cacheDir = semanticCacheDir(ctx);
   const fns = await loadFunctions(ctx, files, extractMinTokens(cfg));
 
-  if (!opts.provider && cfg.provider === "onnx") {
-    const onnx = await openOnnxProvider(cfg);
-    try {
-      return await runViaEmbed(cfg, fns, cacheDir, onnx, onnx.calibration, onnx);
-    } finally {
-      await onnx.release();
+  const judge = await openJudge(cfg);
+  try {
+    if (!opts.provider && cfg.provider === "onnx") {
+      const onnx = await openOnnxProvider(cfg);
+      try {
+        return await runViaEmbed(cfg, fns, cacheDir, onnx, onnx.calibration, onnx, judge);
+      } finally {
+        await onnx.release();
+      }
     }
+    const provider = opts.provider ?? createEmbeddingProvider(cfg) ?? createMemoryEmbeddingProvider(cfg.model);
+    return await runViaEmbed(cfg, fns, cacheDir, provider, null, null, judge);
+  } finally {
+    await judge.judge?.release();
   }
-  const provider = opts.provider ?? createEmbeddingProvider(cfg) ?? createMemoryEmbeddingProvider(cfg.model);
-  return runViaEmbed(cfg, fns, cacheDir, provider);
+}
+
+/** The configured pair judge, or a note why there is none (not installed is not an error; a damaged package is). */
+async function openJudge(cfg: SemanticConfig): Promise<{ judge: PairJudge | null; note: JudgeNote | null }> {
+  if (cfg.pairJudge === "none") return { judge: null, note: null };
+  try {
+    const judge = await openPairJudge(resolveModelDir(cfg), cfg.pairJudge, { device: cfg.device });
+    return { judge, note: { id: `${judge.manifest.id}@${judge.manifest.version} (${judge.variant})`, threshold: judge.manifest.threshold } };
+  } catch (err) {
+    if (err instanceof OnnxModelError && err.code === "onnx_model_missing") return { judge: null, note: { missing: `pair judge "${cfg.pairJudge}" is not installed` } };
+    throw err;
+  }
 }
 
 export async function runSemanticAdapter(ctx: AdapterContext): Promise<FindingType[]> {

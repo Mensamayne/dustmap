@@ -49,6 +49,8 @@ Rozstrzygnięcie pary przez model, który widzi oba kawałki naraz (cross-encode
 - `../dustmap-emb/configs/**`
 - `packages/core/src/semantic/**`
 - `docs/experiments/dup-results.md`
+- Added during work: `packages/core/src/config/schema.ts` (`semantic.pairJudge`), `packages/core/src/index.ts` (judge exports), `tools/emb/dup-meter.mts` (`--judge-package`: the meter scores gold through the scan's judge); `../dustmap-emb/common.py` + `train.py` (`cap_gpu`: every GPU job ≤ 8 GB and ≤ free − 0.5 GB per nvidia-smi — maintainer, 25.10.2026)
+- Plan change: Steps 1–2 (20 000 Qwen judgements) not run — Qwen's existing labels are 5 650 same / 2 pattern and fail the trap (187/193); the judge learns from the embedding training pairs + gold validation half A instead (dup-results.md)
 
 ## Weryfikacja
 

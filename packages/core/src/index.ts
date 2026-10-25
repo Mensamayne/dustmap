@@ -76,6 +76,7 @@ export {
   extractUnits,
 } from "./semantic/index.js";
 export { openVectorCache } from "./semantic/vector-cache.js";
+export { openPairJudge, loadJudgePackage, truncatePair, type PairJudge, type JudgeManifest } from "./semantic/pair-judge.js";
 export type {
   EmbeddingProvider,
   SemanticRunResult,

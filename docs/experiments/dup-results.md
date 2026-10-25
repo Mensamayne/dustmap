@@ -166,3 +166,55 @@ Time: L1+L2+L5 47 s (L5 sketches ~0 s extra after caching unit details); directi
 ### Lab
 
 Scenario `13-szkic-i-kierunek`: an original 30 days old and its copy with other constants 5 days old (direction "25 days later", sketch with `p1…p3`), a copy with an added step (blocked: "adds 1 step"), CSS grouping without and with an overriding rule in between. 11/11; full lab 157/157.
+
+## DUP-04 — L4: the pair judge (2026-10-25)
+
+A cross-encoder that reads both pieces at once (`microsoft/unixcoder-base`, the approved W4 base) and gives the probability of the same job. Package `dustmap-pair-judge-private` (`dustmap-pair-judge/1`: `model.onnx` fp32 for the CPU, `model.fp16.onnx` for the GPU, SHA-256 checked). In the scan: `semantic.pairJudge` (default this package; `none` = off; not installed = similarity only, said in the group's evidence). Semantic pairs at or above the report floor go through the judge; a group whose every judged pair is below 0.5 is **demoted to low** with the evidence "reads as a shared pattern or different work" — never dropped (see the lab below).
+
+### Why not distillation from Qwen (the brief's plan)
+
+The 7 424 real candidate pairs Qwen 7B had judged were labelled `same` 5 650 times and `pattern` 2 times, median side 111 characters; on gold Qwen put 187 of 193 trap pairs at ≥ 0.5 and only 27 % of patterns below it. A student of that teacher inherits exactly the blindness L4 exists to fix — the 20 000 further Qwen judgements were not run. The judge learns instead from the labelled training pairs of the embedding work (158 544: rewrites, grows, merges vs signature / same-name / sibling / skeleton negatives, already through the leakage gate) plus half of the gold validation split; the other half selects the checkpoint; test and trap are never trained on.
+
+### Training series (GPU capped at ≤ 8 GB and ≤ free − 0.5 GB per nvidia-smi; peak 2.95 GB)
+
+| Run | Train pairs | lr | gold-val-A ×w | Test AP | pattern < 0.5 | Trap ≥ 0.5 | L1-shape + L2 kept by judge: precision (dups kept) |
+|---|---:|---:|---:|---:|---:|---:|---|
+| first | 60 000 | 2e-5 | ×3 | 0.638 | 0.86 | 74/193 | 0.91 (32/40) |
+| A | 60 000 | 1e-5 | ×10 | 0.699 | 0.80 | 114/193 | 0.84 (37/40) |
+| B | 20 000 | 1e-5 | ×10 | 0.716 | 0.74 | 82/193 | 0.88 (37/40) |
+| **C** | **150 000** | 1e-5 | ×10 | **0.736** | **0.86** | **51/193** | **0.97 (32/40)** |
+| Qwen 7B (CON-14) | — | — | — | 0.798 | 0.27 | 187/193 | 0.75 (39/40) |
+| embedding EMB-15 (cosine) | — | — | — | 0.705 | — | — | — |
+
+Judge score + cosine in one logistic model (fit on validation): test AP 0.710 but trap 193/193 — the cosine brings back exactly the pairs the judge rejects; not used.
+
+### Package and the scan's path
+
+- Export checks: fp32 vs PyTorch max |Δ| 7·10⁻⁶; fp16 max |Δ| 0.0035. Weight-only int8 was rejected: aggregate AP unchanged but one score moved by 0.30.
+- Through the scan's own code (`npm run dup:meter -- --judge-package dustmap-pair-judge-private`): CPU fp32 test AP **0.735** = PyTorch 0.735 (the Node pair encoding — RoBERTa pair template, longest-first truncation, checked on 72 length pairs against the Python tokenizer — is exact); GPU fp16 0.729 with every decision at 0.5 unchanged.
+- Speed: **CPU 4.4 pairs/s**, **GPU 75 pairs/s**. The GPU variant runs only when `nvidia-smi` shows ≥ 2.5 GB free (DirectML cannot be capped); otherwise the CPU.
+
+### Semantic layer on Monorepo-A, with and without the judge
+
+| | Pairs | Groups | high | medium | low | Time |
+|---|---:|---:|---:|---:|---:|---:|
+| similarity only | 8 143 | 1 485 | 918 | 531 | 36 | 257 s (incl. re-embedding 22 342 functions) |
+| judge deleting rejected pairs (first version) | 3 443 | 592 | 492 | 98 | 2 | 125 s |
+| **judge demoting (shipped)** | 8 143 | 1 485 | 472 | 110 | 903 | 119 s |
+
+On gold, pairs at or above the medium band: precision 0.72 → 0.87, duplicates kept 75 of 99, trap 173 → 49; high band 0.81 → 0.89.
+
+Review on Monorepo-A:
+- **20 random high groups kept by the judge: 20/20 duplicates** (one borderline: `‹private›` / `‹private›`, one condition apart — a parameter candidate; `‹private›` in `‹private›` is the Babel output of `‹private›`).
+- **10 random groups the judge removed: 5 correct removals** (caller/callee, build vs strip of one link, string vs number variant, different translation logic, server vs local variant), **5 real or borderline duplicates lost**: `‹private›` / `‹private›`, `‹private›` ×3 (only a type name differs), `‹private›` ×8 (only a constant differs), `‹private›` ×2, `prune` / `‹private›`. Lowering the threshold does not help (test: recall 0.76 at 0.5, 0.84 at 0.05 while the trap doubles); the judge is confidently wrong on copies that differ in an identifier — its negatives (same signature, same name) taught it that other names mean other work. L1/L2 still report several of these as text copies (DUP-06 merges the layers).
+
+### Lab: why the judge demotes instead of deleting
+
+The first version dropped rejected pairs. Lab scenario `03-ten-sam-sens` (planted same-meaning pairs) went red: 4 planted duplicates disappeared — sum by loop / `reduce` / recursion, a renamed `cache-dir` twin, two parsers of the last user message. That is type 4, where the judge is weakest (concept AP 0.12). Demoting keeps them (low, with the judge's reading as evidence); the default report from medium keeps the precision gain. Scenario 03: 16/16 again; full lab green.
+
+### Acceptance — not met, follow-up queued
+
+- AP ≥ 0.80 on test: **0.736** (Qwen 0.798, embedding 0.705).
+- ≥ 50 pairs/s on CPU: **4.4** (GPU 75).
+- Met: the judge in the scan with a threshold; L2 precision on gold 0.74 → 0.97; semantic precision 0.72 → 0.87; trap false alarms −70 %.
+- DUP-08 (queued): positives for "copies that differ only in names or constants" (L1-shape / L2 pairs) and a smaller or shorter-input judge for the CPU.

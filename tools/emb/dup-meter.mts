@@ -12,7 +12,10 @@
  *           AP and precision at 0.5 on the held-out test split and on everything.
  *   trap  — the same-file sibling pairs (hard negatives): how many each layer would report.
  *
- *   npm run dup:meter -- [--model <onnx package id>] [--device auto|gpu|cpu] [--judge <scores.jsonl>] [--no-l3]
+ *   npm run dup:meter -- [--model <onnx package id>] [--device auto|gpu|cpu] [--judge <scores.jsonl> | --judge-package <id>] [--no-l3]
+ *
+ * `--judge-package` scores the gold pairs with an installed pair-judge package through the scan's own
+ * code (pair-judge.ts, CPU); `--judge` reads scores another tool wrote.
  *
  * Positives are same + contains + concept, as in the EMB meter. Private pairs are read from the pinned
  * snapshots; nothing with code is written — vectors go to the git-ignored .tmp/emb cache.
@@ -29,6 +32,8 @@ import {
   nearPairs,
   normalizedUnits,
   openOnnxProvider,
+  openPairJudge,
+  resolveModelDir,
   openVectorCache,
   ruleKey,
   takeInventory,
@@ -221,7 +226,7 @@ async function reportL3(pairs: GoldPair[], model: string, device: "auto" | "gpu"
  * A text relation (same shape, near copy, contains) is certain; whether both sides do the same job is the
  * judge's call. The combined line is what a report would show when it keeps only judged duplicates.
  */
-function reportL4(pairs: GoldPair[], trap: GoldPair[], file: string, judged: Judged[]): void {
+function readScores(file: string): Map<string, number> {
   const scores = new Map<string, number>();
   for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
     if (!line.trim()) continue;
@@ -229,9 +234,26 @@ function reportL4(pairs: GoldPair[], trap: GoldPair[], file: string, judged: Jud
     const s = r.judge?.score ?? r.score;
     if (typeof s === "number") scores.set(r.id, s);
   }
+  return scores;
+}
+
+/** Gold pairs scored by an installed judge package through the scan's code path (CPU). */
+async function judgeScores(all: GoldPair[], id: string): Promise<{ scores: Map<string, number>; seconds: number; variant: string }> {
+  const judge = await openPairJudge(resolveModelDir({}), id, { device: (arg("device", "auto") as "auto" | "gpu" | "cpu") });
+  try {
+    const t0 = Date.now();
+    const s = await judge.score(all.map((p) => [p.a.code, p.b.code] as const));
+    const variant = judge.variant + (judge.gpuFallbackReason ? ` — ${judge.gpuFallbackReason}` : "");
+    return { scores: new Map(all.map((p, k) => [p.id, s[k]!])), seconds: (Date.now() - t0) / 1000, variant };
+  } finally {
+    await judge.release();
+  }
+}
+
+function reportL4(pairs: GoldPair[], trap: GoldPair[], scores: Map<string, number>, source: string, judged: Judged[]): void {
   const scored = (set: GoldPair[]) => set.map((p) => ({ ...p, score: scores.get(p.id) ?? null }));
   const covered = pairs.filter((p) => scores.has(p.id)).length;
-  console.log(`\nL4 — sędzia par · ${path.basename(file)} · oceny dla ${covered}/${pairs.length} par (brak oceny liczy się jako 0)`);
+  console.log(`\nL4 — sędzia par · ${source} · oceny dla ${covered}/${pairs.length} par (brak oceny liczy się jako 0)`);
   for (const [name, set] of [
     ["test", pairs.filter((p) => p.split === "test")],
     ["całość", pairs],
@@ -265,9 +287,13 @@ async function main(): Promise<void> {
     const device = arg("device", "auto") as "auto" | "gpu" | "cpu";
     await reportL3(gold.pairs, arg("model", "dustmap-same-meaning-private")!, device);
   }
-  const judge = arg("judge");
-  if (judge) reportL4(pairs, trap, path.resolve(judge), judged);
-  else console.log("\nL4 — sędzia par: brak pliku ocen (--judge <scores.jsonl>)");
+  const judgeFile = arg("judge");
+  const judgePackage = arg("judge-package");
+  if (judgePackage) {
+    const { scores, seconds, variant } = await judgeScores(gold.pairs, judgePackage);
+    reportL4(pairs, trap, scores, `${judgePackage} (${variant}, ${(gold.pairs.length / seconds).toFixed(1)} par/s)`, judged);
+  } else if (judgeFile) reportL4(pairs, trap, readScores(path.resolve(judgeFile)), path.basename(judgeFile), judged);
+  else console.log("\nL4 — sędzia par: brak ocen (--judge <scores.jsonl> albo --judge-package <id>)");
 }
 
 main().catch((err) => {

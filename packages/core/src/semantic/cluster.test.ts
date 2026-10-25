@@ -28,6 +28,23 @@ describe("semantic cluster", () => {
     expect(findings[0]?.evidence.find((e) => e.label === "shape")?.value).toBe("copies: 3 functions");
   });
 
+  it("the pair judge's reading is evidence: its probability range, or that no judge read the pairs", () => {
+    const a = fn("src/a.ts", "a", "function a(){ return 1 }");
+    const b = fn("src/b.ts", "b", "function b(){ return 2 }");
+    const judged = clusterSemanticPairs([{ a, b, similarity: 0.91, judge: 0.87 }], 0.82, null, null, { id: "j@1", threshold: 0.5 });
+    expect(judged[0]?.evidence.find((e) => e.label === "judge")?.value).toBe("j@1: 1 of 1 linked pairs read as the same job (probability 0.87–0.87, threshold 0.5)");
+    expect(judged[0]?.confidence).toBe("medium");
+    // Rejected: demoted to low and said so, never dropped (type-4 duplicates are the judge's weak spot).
+    const rejected = clusterSemanticPairs([{ a, b, similarity: 0.91, judge: 0.12 }], 0.82, null, null, { id: "j@1", threshold: 0.5 });
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]?.confidence).toBe("low");
+    expect(rejected[0]?.evidence.find((e) => e.label === "judge")?.value).toContain("0 of 1 linked pairs read as the same job");
+    expect(rejected[0]?.evidence.find((e) => e.label === "judge")?.value).toContain("low confidence, check by hand");
+    const missing = clusterSemanticPairs([{ a, b, similarity: 0.91 }], 0.82, null, null, { missing: 'pair judge "j" is not installed' });
+    expect(missing[0]?.evidence.find((e) => e.label === "judge")?.value).toBe('not judged — pair judge "j" is not installed; similarity only');
+    expect(clusterSemanticPairs([{ a, b, similarity: 0.91 }], 0.82)[0]?.evidence.some((e) => e.label === "judge")).toBe(false);
+  });
+
   it("does not link a nested helper to its outer function in the same file", () => {
     const outer = fn("src/x.ts", "outer", "function outer(){ function inner(){} }", 1);
     outer.endLine = 20;
