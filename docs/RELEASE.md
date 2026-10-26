@@ -25,7 +25,7 @@ Every tool works without `private/`: the gold set is its public part, `verify:ta
    node tools/release/public-history.mjs --out ../dustmap-public --filter-repo <path to git-filter-repo>
    ```
 
-   It clones this repo, drops the private data files from every commit, runs every blob and every commit message through the alias rules, the pair-table rule of old research notes and the term list (each term → `‹private›`), then audits every blob and message of the result and checks that the final tree is byte-identical to this repo's HEAD tree. Exit 0 = clean. `--audit <dir>` re-checks a produced clone. Measured 26.10.2026: 139 → 138 commits (one touched only dropped files), 1 055 blobs clean, final tree identical, `npm ci` + `verify` green with no private data, models or git identity.
+   It clones this repo, drops the private data files from every commit, runs every blob and every commit message through the alias rules, the pair-table rule of old research notes and the term list (each term → `‹private›`), then audits every blob and message of the result and checks that the final tree is byte-identical to this repo's HEAD tree. Exit 0 = clean. `--audit <dir>` re-checks a produced clone. Measured 26.10.2026 (after REL-05 close): 141 → 140 commits (one touched only dropped files), 1 058 blobs clean, final tree identical, `npm ci` + `verify` green with no private data, models or git identity.
 3. **Check the clone like CI.** In the output directory: `npm ci` and `npm run verify` with no `private/`, no installed models and no global git identity.
 4. **Push** — only by the maintainer, or by an agent after the maintainer's explicit yes:
 
