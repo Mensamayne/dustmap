@@ -1716,11 +1716,13 @@
         "REL-02"
       ],
       "epic": "REL",
-      "status": "in_progress",
+      "status": "done",
       "kind": "feature",
-      "closureNotes": "Maintainer 26.10.2026: HF account Mensamayne; former private models may be published (MIT); upload dustmap-same-meaning + dustmap-pair-judge.",
+      "closureNotes": "Published dustmap-same-meaning + dustmap-pair-judge (MIT) to Mensamayne/dustmap-models; DEFAULT_MODEL_SOURCE set; pull without --from verified on a clean dir.",
       "startedAt": "2026-10-26T01:37:09.913Z",
-      "startedBy": "agent"
+      "startedBy": "agent",
+      "completedAt": "2026-10-26T01:47:13.944Z",
+      "gitProofSha": "e58444cdc7daed78a29e0cde109bce1c85379a81"
     }
   ]
 }
