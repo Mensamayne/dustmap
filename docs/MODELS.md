@@ -27,13 +27,13 @@ A local server (Ollama, vLLM, llama.cpp, LM Studio) needs neither a key nor `all
 
 ### Dustmap model package (default)
 
-Runs in-process with ONNX Runtime: offline, GPU when the card has room, CPU otherwise. Packages live in `~/.cache/dustmap/models` (or `$DUSTMAP_MODELS_DIR`); `dustmap model list` shows what is installed, `dustmap model pull <id> --from <url>` installs one and checks every file's SHA-256 (the only command that touches the network, and only when you run it).
+Runs in-process with ONNX Runtime: offline, GPU when the card has room, CPU otherwise. Packages live in `~/.cache/dustmap/models` (or `$DUSTMAP_MODELS_DIR`); `dustmap model list` shows what is installed, `dustmap model pull <id>` installs one from Hugging Face ([Mensamayne/dustmap-models](https://huggingface.co/Mensamayne/dustmap-models)) and checks every file's SHA-256 (the only command that touches the network, and only when you run it). Pass `--from <url>` only for a mirror.
 
 ```json
-{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning-public", "device": "auto" } }
+{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning", "device": "auto" } }
 ```
 
-`dustmap-same-meaning-public` (Apache-2.0, ~380 MB with both variants): `microsoft/unixcoder-base` tuned on permissively licensed code only (MIT / Apache / BSD packages and synthetic rewrites), with a privacy check of the training set; AP 0.787 on Dustmap's held-out gold (base model 0.672). Packages trained on private code are marked `private` and are never downloaded or published.
+`dustmap-same-meaning` (MIT, ~395 MB with both variants): `microsoft/unixcoder-base` fine-tuned for Dustmap's same-meaning task. Card: [docs/models/dustmap-same-meaning.md](models/dustmap-same-meaning.md). A package marked `private: true` in its manifest is still refused by `model pull`.
 
 ### Any OpenAI-compatible embeddings API
 
@@ -70,13 +70,15 @@ Verdicts are cached in `<outputDir>/cache/judge/`, so a re-scan reads only pairs
 
 ### A Dustmap judge package
 
-There is no public judge package yet (the one measured below is trained on private code and stays local). With a package installed:
-
-```json
-{ "judge": { "provider": "onnx", "model": "<package id>", "device": "auto" } }
+```bash
+dustmap model pull dustmap-pair-judge
 ```
 
-Not installed → the scan says so in each group (`not judged — pair judge "…" is not installed`) and keeps similarity alone.
+```json
+{ "judge": { "provider": "onnx", "model": "dustmap-pair-judge", "device": "auto" } }
+```
+
+MIT, ONNX (CPU fp32 / GPU fp16). Card: [docs/models/dustmap-pair-judge.md](models/dustmap-pair-judge.md). Default config still has `judge.provider: "none"` — opt in as above. Not installed → the scan says so in each group (`not judged — pair judge "…" is not installed`) and keeps similarity alone.
 
 ### GPT, or any OpenAI-compatible chat API
 

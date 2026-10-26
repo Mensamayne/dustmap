@@ -38,7 +38,7 @@ describe("dustmap CLI e2e (real bin)", () => {
     // completes, no tool reports an error, and the semantic layer's note says how to turn it on (REL-02).
     const semantic = report.scan.tools.find((t) => t.name === "semantic");
     expect(report.scan.tools.filter((t) => t.error)).toEqual([]);
-    expect(semantic?.note).toMatch(/"dustmap-same-meaning-public" is not installed\. Turn it on by installing the package/);
+    expect(semantic?.note).toMatch(/"dustmap-same-meaning" is not installed\. Turn it on by installing the package/);
     expect(scan.stdout).toMatch(/^note: semantic — same-meaning layer off/m);
     expect(report.findings.some((f) => f.source === "knip" || f.kind.startsWith("unused-"))).toBe(
       true,

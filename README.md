@@ -104,7 +104,14 @@ A composite GitHub Action scans the pull-request diff, uploads SARIF to code sca
 
 ## Models — optional, local by default
 
-The text layers need no model. Two optional models sharpen the duplicate layers: an **embedding model** (same meaning, different code) and a **pair judge** (same job, or only the same skeleton?). Each can be Dustmap's local model package (ONNX, GPU or CPU, offline), any OpenAI-compatible API (OpenAI, or Ollama / vLLM on your machine), the Anthropic API, or nothing.
+The text layers need no model. Two optional models sharpen the duplicate layers: an **embedding model** (same meaning, different code) and a **pair judge** (same job, or only the same skeleton?). Each can be Dustmap's ONNX package (offline, GPU or CPU), any OpenAI-compatible API (OpenAI, or Ollama / vLLM on your machine), the Anthropic API, or nothing.
+
+```bash
+dustmap model pull dustmap-same-meaning   # default embedding (~395 MB)
+dustmap model pull dustmap-pair-judge     # optional pair judge (~725 MB)
+```
+
+Packages come from [Hugging Face](https://huggingface.co/Mensamayne/dustmap-models) (MIT), with SHA-256 checked on every file. Dustmap never downloads on its own — only when you run `model pull`.
 
 - Code leaves your machine only with `"allowRemote": true` in the config; API keys are read from the environment only, never from the config or into the report.
 - No model installed → that layer is off, the report says so in one line with how to turn it on, and everything else runs.
@@ -119,7 +126,7 @@ Measured, not guessed — every number has a write-up in [docs/experiments/](doc
 |---|---|
 | Copies by constants + near copies, confirmed by the pair judge | precision **0.74 → 0.97** on the gold set |
 | Pair judge, random review of 20 groups on a 1.27 M-line monorepo | confirmed 10/10 real; "same skeleton" 9/10 right |
-| Public embedding model (fine-tuned `unixcoder-base`, permissive code only) | AP **0.787** on held-out gold (base model 0.672) |
+| Embedding model (fine-tuned `unixcoder-base`, MIT on HF) | AP **0.741** on held-out gold (published default `dustmap-same-meaning`) |
 | Full scan of a 1.27 M-line TypeScript monorepo | ~5 min first scan, ~12 s with a warm cache |
 | A small, clean service | 145 findings — a clean repo gets a short report |
 
@@ -151,7 +158,7 @@ Architecture: [docs/architecture/](docs/architecture/). Working rules for agents
 
 ## Status
 
-v1: every layer above works and is measured; the CLI and the MCP server are used on real repositories. Not yet: an npm release, the public embedding model on Hugging Face (`dustmap model pull`), a public pair-judge package (use an API or a local model meanwhile), languages other than TypeScript / JavaScript / CSS.
+v1: every layer above works and is measured; the CLI and the MCP server are used on real repositories; embedding and pair-judge packages are on Hugging Face (`dustmap model pull`). Not yet: an npm release; languages other than TypeScript / JavaScript / CSS.
 
 ## License
 

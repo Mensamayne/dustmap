@@ -67,17 +67,17 @@ Fails with exit **1** when there are **new** findings above the configured confi
 
 ### Duplicates by meaning
 
-Duplicates by meaning (`semantic-duplicate`) come from an embedding model, and a pair judge can confirm duplicate groups of every layer. Both are optional: by default the embedding model is Dustmap's public ONNX package (offline, GPU when it works, else CPU; checked against the SHA-256 in its manifest before use) and there is no judge. A model that is not installed turns its layer off with a `note:` line saying how to turn it on; everything else runs. Dustmap never downloads a model on its own — `dustmap model pull <id> --from <url>` is the only command that touches the network.
+Duplicates by meaning (`semantic-duplicate`) come from an embedding model, and a pair judge can confirm duplicate groups of every layer. Both are optional: by default the embedding model is Dustmap's published ONNX package (offline, GPU when it works, else CPU; checked against the SHA-256 in its manifest before use) and there is no judge. A model that is not installed turns its layer off with a `note:` line saying how to turn it on; everything else runs. Dustmap never downloads a model on its own — `dustmap model pull <id>` is the only command that touches the network (default source: Hugging Face).
 
 ```json
-{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning-public", "device": "auto" } }
+{ "semantic": { "provider": "onnx", "model": "dustmap-same-meaning", "device": "auto" } }
 ```
 
 Any OpenAI-compatible embeddings API, the Anthropic or OpenAI chat APIs as the judge, local servers (Ollama, vLLM), privacy rules (`allowRemote`, keys from the environment only) and cost: [docs/MODELS.md](../../docs/MODELS.md).
 
 ### `dustmap model pull <id> [--from <url>] [--model-dir <dir>] [--json]` · `dustmap model list`
 
-Install a model package (refuses packages marked private and any file whose SHA-256 differs from the manifest) and list what is installed.
+Install a model package from Hugging Face by default (refuses packages marked `private: true` and any file whose SHA-256 differs from the manifest) and list what is installed. `--from` is only for mirrors.
 
 ## Categories
 

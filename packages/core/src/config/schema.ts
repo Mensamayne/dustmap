@@ -69,9 +69,9 @@ export type ClonesConfig = z.infer<typeof ClonesConfig>;
 
 /**
  * Semantic (embedding) duplicate detection — default (EMB-10): Dustmap's own ONNX model package
- * in-process, offline, with calibrated bands (EMB-09). The default id is the public package
- * (`dustmap model pull dustmap-same-meaning-public`); not installed, the layer is off with a note saying how
- * to turn it on (REL-02).
+ * in-process, offline, with calibrated bands (EMB-09). The default id is the published package
+ * (`dustmap model pull dustmap-same-meaning`); not installed, the layer is off with a note saying how
+ * to turn it on (REL-02 / REL-06).
  */
 export const SemanticConfig = z
   .object({
@@ -81,7 +81,7 @@ export const SemanticConfig = z
      */
     provider: z.enum(["onnx", "http", "none"]).default("onnx"),
     /** Model: onnx package id (installed under modelDir), or the HTTP model field. */
-    model: z.string().min(1).default("dustmap-same-meaning-public"),
+    model: z.string().min(1).default("dustmap-same-meaning"),
     /**
      * `onnx` only: where model packages live (`<modelDir>/<model>/manifest.json`). Default: the user
      * cache, `$DUSTMAP_MODELS_DIR` or `~/.cache/dustmap/models`. Never inside the scanned repo's source.

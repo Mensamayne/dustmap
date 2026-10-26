@@ -10,7 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { parseArgs, UsageError } from "../src/args.js";
-import { runModelList, runModelPull } from "../src/model-cmd.js";
+import { DEFAULT_MODEL_SOURCE, runModelList, runModelPull } from "../src/model-cmd.js";
 
 const fixture = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../core/fixtures/onnx-model/dustmap-test-tiny");
 const ID = "dustmap-test-tiny";
@@ -66,11 +66,18 @@ describe("dustmap model pull", () => {
     expect(readdirSync(dir)).toEqual([]);
   });
 
-  it("without --from says where things stand instead of guessing a server", async () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "dustmap-models-none-"));
-    const r = await runModelPull({ command: "model-pull", id: ID, modelDir: dir, json: false });
-    expect(r.exitCode).toBe(2);
-    expect(r.stderr).toMatch(/--from <url>/);
+  it("without --from uses the published Hugging Face source", async () => {
+    expect(DEFAULT_MODEL_SOURCE).toBe("https://huggingface.co/Mensamayne/dustmap-models/resolve/main");
+    const dir = mkdtempSync(path.join(tmpdir(), "dustmap-models-default-"));
+    const prefix = `${DEFAULT_MODEL_SOURCE}/${ID}/`;
+    const r = await runModelPull({ command: "model-pull", id: ID, modelDir: dir, json: true }, process.cwd(), async (url) => {
+      expect(url.startsWith(prefix)).toBe(true);
+      const file = url.slice(prefix.length);
+      const res = await fetch(`${base}/ok/${ID}/${file}`);
+      return { ok: res.ok, status: res.status, arrayBuffer: () => res.arrayBuffer() };
+    });
+    expect(r.exitCode, r.stderr).toBe(0);
+    expect(JSON.parse(r.stdout)).toMatchObject({ id: ID, kind: "embedding" });
   });
 
   it("parses the verbs and rejects stray flags", () => {

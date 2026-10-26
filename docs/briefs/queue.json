@@ -673,9 +673,7 @@
       ],
       "epic": "DUST",
       "status": "todo",
-      "kind": "feature",
-      "startedAt": null,
-      "startedBy": null
+      "kind": "feature"
     },
     {
       "id": "DUST-25",
@@ -1718,9 +1716,11 @@
         "REL-02"
       ],
       "epic": "REL",
-      "status": "blocked",
+      "status": "in_progress",
       "kind": "feature",
-      "closureNotes": "Czeka na konto maintainera na Hugging Face (25.10.2026)."
+      "closureNotes": "Maintainer 26.10.2026: HF account Mensamayne; former private models may be published (MIT); upload dustmap-same-meaning + dustmap-pair-judge.",
+      "startedAt": "2026-10-26T01:37:09.913Z",
+      "startedBy": "agent"
     }
   ]
 }

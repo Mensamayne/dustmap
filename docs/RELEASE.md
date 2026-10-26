@@ -37,6 +37,22 @@ Every tool works without `private/`: the gold set is its public part, `verify:ta
 
 Commit hashes of the public history differ from the working repo's; `Fixes {ID}` messages and the queue's `gitProofSha` refer to the working repo.
 
+5. **Models (REL-06).** Published under MIT at [Mensamayne/dustmap-models](https://huggingface.co/Mensamayne/dustmap-models):
+
+   | Id on HF | Built from (local name) |
+   |---|---|
+   | `dustmap-same-meaning` | `dustmap-same-meaning-private` (EMB-15) |
+   | `dustmap-pair-judge` | `dustmap-pair-judge-private` |
+
+   Layout: `<id>/manifest.json` + listed files. `dustmap model pull <id>` uses
+   `https://huggingface.co/Mensamayne/dustmap-models/resolve/main` by default. Re-upload after
+   rebuilding a package:
+
+   ```bash
+   hf upload Mensamayne/dustmap-models .tmp/hf-upload --repo-type model
+   ```
+
 ## Tools used
 
 - [`git-filter-repo`](https://github.com/newren/git-filter-repo) 2.47.0 (MIT), installed 25.10.2026 into a scratch virtual environment with `uv pip install git-filter-repo==2.47.0` — not a dependency of Dustmap.
+- [`huggingface_hub`](https://github.com/huggingface/huggingface_hub) CLI (`hf`), for model upload only — not a dependency of Dustmap.

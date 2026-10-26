@@ -205,7 +205,7 @@ export async function runSemanticAdapter(ctx: AdapterContext): Promise<FindingTy
     if (err instanceof OnnxModelError && err.code === "onnx_model_missing") {
       const id = ctx.config.semantic.model;
       throw new LayerUnavailableError(
-        `same-meaning layer off: embedding model "${id}" is not installed. Turn it on by installing the package (\`dustmap model pull ${id} --from <url>\`), by pointing semantic at another model (an OpenAI-compatible API or a local server), or silence this with semantic.provider "none" — see docs/MODELS.md.`,
+        `same-meaning layer off: embedding model "${id}" is not installed. Turn it on by installing the package (\`dustmap model pull ${id}\`), by pointing semantic at another model (an OpenAI-compatible API or a local server), or silence this with semantic.provider "none" — see docs/MODELS.md.`,
       );
     }
     throw err;
